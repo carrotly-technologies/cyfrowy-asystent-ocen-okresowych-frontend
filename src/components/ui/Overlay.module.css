@@ -8,6 +8,19 @@
   background: var(--bg-surface);
   color: var(--text);
   box-shadow: var(--shadow-dialog);
+  /* never inherit layout quirks from the call site */
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+  overflow-x: hidden;
+}
+
+.dialogWide {
+  width: min(760px, calc(100% - 2 * var(--s-4)));
+}
+
+.dialogError {
+  margin-top: var(--s-3);
 }
 
 .dialog::backdrop {
@@ -60,8 +73,13 @@
 }
 
 .dialogBody {
+  min-width: 0;
   color: var(--text-secondary);
   font-size: var(--text-md);
+}
+
+.dialogBody > * + * {
+  margin-top: var(--s-3);
 }
 
 .dialogActions {
@@ -74,7 +92,8 @@
 
 @media (max-width: 767px) {
   /* bottom sheet on phones */
-  .dialog {
+  .dialog,
+  .dialogWide {
     width: 100%;
     max-width: none;
     margin: auto 0 0;
