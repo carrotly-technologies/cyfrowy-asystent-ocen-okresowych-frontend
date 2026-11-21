@@ -48,6 +48,10 @@ The app is **Cyfrowy Asystent Ocen Okresowych** (UI in Polish): the periodic ass
   with new scores, ponowne sporządzenie); the evaluator's case file shows pending termin requests and „fikcja zapoznania”;
 - `/hr` — HR monitoring with counters, filters, (simulated) reminders and „Fikcja zapoznania” for cases awaiting
   acknowledgement; `/baza-wiedzy` — assistant;
+- `/kartoteka`, `/kartoteka/:id` — HR register (HR, ADMIN edit; SUPERVISOR reads own team): search/sort/filter,
+  add/edit/delete employee, evaluator (podległość), substitutions, absences (with the art. 81 ust. 7 extension shown),
+  history of assessments, start of a new cycle, CSV import of past assessments and CSV export;
+- `/statystyki` — HR, ADMIN, DIRECTOR: results, levels, timeliness, stages, promotions, per unit, CSV export;
 - `/admin/uzytkownicy` — admin only: accounts and their roles;
 - `/ustawienia` — appearance settings (theme, text size, high contrast), kept in `localStorage` `ocena.prefs`.
 

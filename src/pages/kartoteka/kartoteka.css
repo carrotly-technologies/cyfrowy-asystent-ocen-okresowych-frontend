@@ -1,0 +1,163 @@
+/* HR register, employee card and statistics. Colours only from tokens.css. */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.th-sort {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.th-sort:hover {
+  color: var(--link);
+}
+
+.filters__search {
+  width: min(100%, 18rem);
+}
+
+.filters--register {
+  flex-wrap: wrap;
+  row-gap: var(--s-2);
+}
+
+.filters--register .select {
+  width: auto;
+  max-width: min(100%, 18rem);
+}
+
+.filters--register .checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  white-space: nowrap;
+}
+
+.emp-tag {
+  display: block;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.emp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--s-4);
+  margin: var(--s-4) 0;
+}
+
+.emp-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.emp-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--s-3) var(--s-4);
+}
+
+.emp-form__set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.emp-form__set legend {
+  width: 100%;
+  margin-bottom: var(--s-2);
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.inline-form .field {
+  min-width: min(100%, 11rem);
+}
+
+.block {
+  display: block;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--s-4);
+}
+
+.stat-card .h-sub {
+  margin: 0 0 var(--s-3);
+}
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.bars__row {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) 1fr 2.5rem;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: 0.875rem;
+}
+
+.bars__label {
+  overflow-wrap: anywhere;
+}
+
+.bars__track {
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  overflow: hidden;
+}
+
+.bars__fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--accent);
+}
+
+.bars__fill--ok {
+  background: var(--ok);
+}
+
+.bars__fill--danger {
+  background: var(--danger);
+}
+
+.bars__fill--warn {
+  background: var(--warn);
+}
+
+.bars__value {
+  text-align: right;
+}
+
+@media (max-width: 40rem) {
+  .counters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

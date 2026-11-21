@@ -113,6 +113,9 @@
   letter-spacing: -0.005em;
   white-space: nowrap;
   margin-left: 4px;
+  /* many nav items (e.g. HR): truncate the name instead of overlapping the links */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar__right {

@@ -14,6 +14,8 @@ import {
   UserCog,
   FilePen,
   Users,
+  Contact,
+  ChartColumn,
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -186,6 +188,10 @@ function navItems(role: Role): NavItem[] {
   return [
     ...(byRole[role] ?? []),
     ...(role === 'ADMIN' ? [{ to: '/admin/korekty', label: 'Tryb korekty', Icon: FilePen, match: ['/admin/korekty'] }] : []),
+    ...(role === 'HR' || role === 'ADMIN' || role === 'SUPERVISOR'
+      ? [{ to: '/kartoteka', label: role === 'SUPERVISOR' ? 'Pracownicy' : 'Kartoteka', Icon: Contact, match: ['/kartoteka'] }]
+      : []),
+    ...(role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR' ? [{ to: '/statystyki', label: 'Statystyki', Icon: ChartColumn, match: ['/statystyki'] }] : []),
     { to: '/baza-wiedzy', label: 'Baza wiedzy', Icon: BookOpen, match: ['/baza-wiedzy'] },
   ]
 }
