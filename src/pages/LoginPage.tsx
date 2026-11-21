@@ -70,12 +70,18 @@ export function LoginPage() {
   const fieldError = (id: string) => errors.find((x) => x.id === id)?.message
 
   return (
-    <main className={s.root} id="main">
-      <div className={s.card}>
+    <div className={s.page}>
+      <header className={s.header}>
         <div className={s.brand}>
-          <ClipboardCheck size={24} strokeWidth={1.75} aria-hidden="true" />
+          <ClipboardCheck size={26} strokeWidth={1.75} aria-hidden="true" />
           <span>Cyfrowy Asystent Ocen Okresowych</span>
         </div>
+      </header>
+      <div className={s.servicebar}>
+        <span>Logowanie</span>
+      </div>
+    <main className={s.root} id="main">
+      <div className={s.card}>
         <h1 className={s.h1}>Zaloguj się</h1>
         <p className={s.lead}>Użyj loginu i hasła swojego konta. Uprawnienia wynikają z roli przypisanej do konta.</p>
 
@@ -122,6 +128,7 @@ export function LoginPage() {
             Zaloguj się
           </Button>
         </form>
+      </div>
 
         {DEMO_ACCOUNTS_ENABLED && (
           <section className={s.demo} aria-labelledby="demo-accounts">
@@ -146,8 +153,14 @@ export function LoginPage() {
             </ul>
           </section>
         )}
-      </div>
     </main>
+      <footer className={s.footer}>
+        <p>
+          <strong>Cyfrowy Asystent Ocen Okresowych</strong> · narzędzie wewnętrzne urzędu do ocen okresowych w służbie cywilnej.
+        </p>
+        <p>Nie jest usługą portalu gov.pl, KPRM ani aplikacji mObywatel. Oprogramowanie otwarte na licencji EUPL-1.2.</p>
+      </footer>
+    </div>
   )
 }
 
