@@ -20,10 +20,13 @@ type Props = {
   /** Button card only. */
   disabled?: boolean
   forceState?: 'hover' | 'focus'
+  /** Highlighted card (SC tint + 2px SC-blue frame), e.g. "Twoja ocena do podpisu". */
+  important?: boolean
   className?: string
 }
 
-export function Card({ title, as: H = 'h3', icon, children, to, onClick, loading, disabled, forceState, className }: Props) {
+export function Card({ title, as: H = 'h3', icon, children, to, onClick, loading, disabled, forceState, important, className: extra }: Props) {
+  const className = cx(important && s.important, extra)
   if (to) {
     return (
       <Link to={to} className={cx(s.card, s.clickable, className)} data-force={forceState}>

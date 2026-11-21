@@ -25,7 +25,7 @@
 
 .input:hover:not(:disabled),
 .select:hover:not(:disabled) {
-  border-color: var(--text-secondary);
+  border-color: var(--text);
 }
 
 .input:focus-visible,
@@ -164,10 +164,10 @@
   min-height: var(--control-h);
   padding: 0 var(--s-4);
   border: var(--border-w) solid var(--accent);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-btn);
   background: var(--bg-surface);
   color: var(--accent);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   cursor: pointer;
 }
 
