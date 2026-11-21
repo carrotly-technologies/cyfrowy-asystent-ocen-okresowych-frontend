@@ -134,6 +134,10 @@ export interface CaseDetail extends CaseSummary {
   sentForAckOn: string | null
   acknowledgedOn: string | null
   objectionDeadline: Deadline | null
+  /** "Co dalej?" under the pouczenie: the objection path in plain words, with legal basis. */
+  objectionNextSteps?: { text: string; legalBasis: string }[]
+  /** To whom the sprzeciw goes (genitive in `to`), when the API provides it. */
+  objectionAddressee?: { to: string; who: string; legalBasis: string }
   /** Korekty administratora (tryb korekty błędów): kto, kiedy, stara → nowa wartość, powód. */
   corrections?: Correction[]
   /** Dlaczego część I / części II–III są zablokowane (null = edytowalne). */
@@ -210,6 +214,7 @@ export type LegalAction =
   | 'FILE_OBJECTION'
   | 'DECIDE_OBJECTION'
   | 'REQUEST_DUE_DATE_CHANGE'
+  | 'WITHDRAW_DUE_DATE_REQUEST'
   | 'DECIDE_DUE_DATE_REQUEST'
 
 export interface ActorRef {
@@ -257,7 +262,7 @@ export interface DueDateRequest {
   filedOn: string
   reason: string
   proposedDate: string | null
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN'
   decidedOn: string | null
   decisionNote: string | null
   newDate: string | null
@@ -365,6 +370,7 @@ export const decideObjection = (
 ) => apiPost<CaseDetail>(casePath(id, 'objection/decision'), body)
 export const requestDueDateChange = (id: string, body: { reason: string; proposedDate?: string | null }) =>
   apiPost<CaseDetail>(casePath(id, 'due-date-request'), body)
+export const withdrawDueDateRequest = (id: string) => apiPost<CaseDetail>(casePath(id, 'due-date-request/withdraw'), {})
 export const decideDueDateRequest = (id: string, body: { approve: boolean; newDate?: string | null; note?: string | null }) =>
   apiPost<CaseDetail>(casePath(id, 'due-date-request/decision'), body)
 export const getObjections = (signal?: AbortSignal) => apiGet<ObjectionListItem[]>('/objections', signal)

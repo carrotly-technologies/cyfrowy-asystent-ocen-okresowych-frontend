@@ -61,7 +61,7 @@ export function StatisticsPage() {
         <div className="btn-row filters--register">
           <select className="select" value={unit} onChange={(e) => setUnit(e.target.value)} aria-label="Komórka organizacyjna">
             <option value="">Cały urząd</option>
-            {units.map((u) => <option key={u} value={u}>{u.split(',')[0]}</option>)}
+            {units.map((u) => <option key={u} value={u}>{unitLabel(u, units)}</option>)}
           </select>
           <button type="button" className="btn" onClick={() => void onDownload()}>
             <Download size={15} aria-hidden="true" /> Pobierz CSV
@@ -129,4 +129,10 @@ export function StatisticsPage() {
       </section>
     </div>
   )
+}
+
+/** Short unit name for the filter; the full name when two units share the same short one. */
+function unitLabel(unit: string, all: string[]): string {
+  const short = unit.split(',')[0].trim()
+  return all.filter((u) => u.split(',')[0].trim() === short).length > 1 ? unit : short
 }

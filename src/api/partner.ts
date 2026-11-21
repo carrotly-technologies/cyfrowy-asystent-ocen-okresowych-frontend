@@ -95,7 +95,6 @@ export interface PulsePoint {
   answers: PulseAnswers
   index: number
   sharedComment: string | null
-  hasPrivateComment: boolean
 }
 
 export interface WorkContext {

@@ -2241,3 +2241,35 @@
 .legal-form input[type='date'] {
   max-width: 14rem;
 }
+
+/* /sprzeciwy/:id: the assessment sheet first, the decision form beside it on wide screens. */
+.objection-layout {
+  display: grid;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.objection-layout > * {
+  min-width: 0;
+}
+
+@media (min-width: 75rem) {
+  .objection-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+
+  .objection-layout__form {
+    position: sticky;
+    top: var(--s-4);
+    max-height: calc(100vh - 2 * var(--s-4));
+    overflow-y: auto;
+  }
+}
+
+/* A table cell with a sentence (status with what to do, a named deadline): wraps instead of being cut. */
+.table td.td-wrap {
+  min-width: 11rem;
+  white-space: normal;
+  overflow-wrap: break-word;
+}

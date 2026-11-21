@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { getCases, type CaseAction, type CaseDetail, type CaseSummary } from '../api/cases'
+import { getCases, type CaseAction, type CaseDetail, type CaseSummary, type Deadline } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, Button, InfoList, InfoRow, InlineAlert, StageStepper, StatusBadge } from '../components/ui'
@@ -9,6 +10,7 @@ import { fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, findCriterion, useCriteria, useSheets } from '../lib/model'
 import { allows, caseSteps, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 import { useMe } from '../lib/useAuth'
+import { employeeTodo, isStalePast } from '../lib/employeeTodo'
 import { AckFictionInfo, AssessmentVersions, CaseHistoryList, DueDateRequestSection, ObjectionSection } from '../case/LegalPaths'
 import { legalErrorText } from '../lib/legalQueries'
 import { EmployeeDeadlinesSection } from '../case/DeadlinesPanel'
@@ -37,6 +39,7 @@ export function MyAssessmentsPage() {
           <p className="page-head__meta">{me.name} · {me.position}</p>
         </div>
       </header>
+      <p className="muted">Tu widzisz swoje oceny okresowe: na jakim są etapie, czy masz coś do zrobienia i do kiedy.</p>
       {cases.length === 0 ? (
         <p className="muted">Nie masz jeszcze żadnej oceny okresowej w systemie.</p>
       ) : (
@@ -62,7 +65,7 @@ function CaseTable({ id, title, cases, empty }: { id: string; title: string; cas
               <tr>
                 <th>Cykl oceny</th>
                 <th>Etap</th>
-                <th>Najbliższy termin</th>
+                <th>Termin</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -74,8 +77,11 @@ function CaseTable({ id, title, cases, empty }: { id: string; title: string; cas
                     <div className="faint small">{c.sheetId ? `Arkusz ${c.sheetId}` : 'Arkusz do ustalenia'}</div>
                   </td>
                   <td>{STAGE_SHORT[c.currentStage]}</td>
-                  <td><DeadlineText deadline={c.nextDeadline} /></td>
-                  <td><StatusBadge tone={STATUS_TONE[c.status]}>{CASE_STATUS_LABEL[c.status]}</StatusBadge></td>
+                  <td className="td-wrap">
+                    {c.nextDeadline && <div className="small">{deadlineName(c.nextDeadline)}</div>}
+                    <EmployeeDeadline deadline={c.nextDeadline} closed={c.status === 'ZAKONCZONA'} />
+                  </td>
+                  <td className="td-wrap"><CaseStatusCell c={c} /></td>
                 </tr>
               ))}
             </tbody>
@@ -83,6 +89,29 @@ function CaseTable({ id, title, cases, empty }: { id: string; title: string; cas
         </div>
       )}
     </section>
+  )
+}
+
+/** "Termin sporządzenia oceny" / "Rozmowa rozpoczynająca (część I) do" → a name without the trailing "do". */
+function deadlineName(d: Deadline): string {
+  return d.label.replace(/,?\s+do$/, '')
+}
+
+/** A deadline; once the matter is closed a passed date is shown neutrally (no red "po terminie"). */
+function EmployeeDeadline({ deadline, closed, showLegal }: { deadline: Deadline | null; closed: boolean; showLegal?: boolean }) {
+  if (deadline && closed && isStalePast(deadline)) return <span className="faint num">{fmtDate(deadline.date)} · minął</span>
+  return <DeadlineText deadline={deadline} showLegal={showLegal} />
+}
+
+function CaseStatusCell({ c }: { c: CaseSummary }) {
+  const todo = employeeTodo(c)
+  return (
+    <>
+      <StatusBadge tone={todo?.required ? 'warning' : STATUS_TONE[c.status]}>
+        {todo?.required ? 'Wymaga Twojego działania' : CASE_STATUS_LABEL[c.status]}
+      </StatusBadge>
+      {todo && <div className="small">{`${todo.text[0].toUpperCase()}${todo.text.slice(1)}.`}</div>}
+    </>
   )
 }
 
@@ -99,6 +128,25 @@ export function MyCasePage() {
   const criteria = caseCriteria(detail, sheets.data)
   const template = sheets.data?.find((sh) => sh.id === detail.sheetId)?.template
   const notice = detail.sentForAckOn && template ? [template.objectionNotice, template.objectionNoticeNote].filter(Boolean).join(' ') : undefined
+  const todo = employeeTodo(detail)
+  const closed = detail.status === 'ZAKONCZONA'
+  const objectionFiled = detail.objections.length > 0
+  const ackPartI = allows(detail, 'EMPLOYEE_ACK_PART_I')
+  const criteriaList = (
+    <ul className="bullets">
+      {criteria.all.map((c) => (
+        <li key={c}>
+          <strong>{criterionName(model.data, c)}</strong>
+          {criteria.additional.includes(c) && <span className="faint"> (kryterium dodatkowe)</span>}
+          <div className="small muted">{findCriterion(model.data, c)?.description.join(' ')}</div>
+          {detail.partI.expectations[c] && <div className="small">Oczekiwania: {detail.partI.expectations[c]}</div>}
+        </li>
+      ))}
+    </ul>
+  )
+  // The objection term matters only while no sprzeciw was filed and it has not passed.
+  const showObjectionTerm = !!detail.objectionDeadline && !objectionFiled && !isStalePast(detail.objectionDeadline) && detail.objectionDeadline.date !== detail.nextDeadline?.date
+  const dueIsNext = detail.nextDeadline?.label === 'Termin sporządzenia oceny'
   return (
     <div className="page">
       <BackLink to="/moje-oceny" />
@@ -109,22 +157,32 @@ export function MyCasePage() {
             {detail.sheetId ? `Arkusz ${detail.sheetId}` : 'Arkusz do ustalenia'} · oceniający: {detail.evaluator.firstName} {detail.evaluator.lastName}
           </p>
         </div>
-        <StatusBadge tone={STATUS_TONE[detail.status]}>{CASE_STATUS_LABEL[detail.status]}</StatusBadge>
+        <StatusBadge tone={todo?.required ? 'warning' : STATUS_TONE[detail.status]}>
+          {todo?.required ? 'Wymaga Twojego działania' : CASE_STATUS_LABEL[detail.status]}
+        </StatusBadge>
       </header>
+      <p className="muted">
+        Ocenę prowadzi Twój oceniający. Tutaj potwierdzasz kolejne kroki, widzisz terminy i możesz wnieść sprzeciw, jeśli nie zgadzasz się z oceną.
+      </p>
 
       <StageStepper label="Etapy oceny okresowej" steps={caseSteps(detail).map((s) => ({ key: s.key, label: s.label, status: s.status }))} />
 
       <section className="section">
-        <EmployeeActions detail={detail} />
+        <EmployeeActions detail={detail} criteria={ackPartI && detail.sheetId ? criteriaList : null} />
       </section>
 
       <section className="section" aria-labelledby="status-h">
         <h2 id="status-h" className="h-section">Stan i terminy</h2>
         <InfoList>
-          <InfoRow label="Status" value={CASE_STATUS_LABEL[detail.status]} />
+          <InfoRow label="Status" value={todo?.required ? `Wymaga Twojego działania: ${todo.text}` : CASE_STATUS_LABEL[detail.status]} />
           <InfoRow label="Bieżący etap" value={STAGE_SHORT[detail.currentStage]} />
-          <InfoRow label={detail.nextDeadline?.label ?? 'Najbliższy termin'} value={<DeadlineText deadline={detail.nextDeadline} showLegal />} />
-          {detail.objectionDeadline && detail.objectionDeadline.date !== detail.nextDeadline?.date && <InfoRow label="Termin na sprzeciw" value={<DeadlineText deadline={detail.objectionDeadline} showLegal />} />}
+          {detail.nextDeadline && (
+            <InfoRow label={deadlineName(detail.nextDeadline)} value={<EmployeeDeadline deadline={detail.nextDeadline} closed={closed} showLegal />} />
+          )}
+          {detail.partI.assessmentDue && !dueIsNext && !detail.signedByEvaluatorOn && !ackPartI && (
+            <InfoRow label="Termin sporządzenia oceny" value={<span className="num">{fmtDate(detail.partI.assessmentDue)}</span>} />
+          )}
+          {showObjectionTerm && <InfoRow label="Termin na sprzeciw" value={<DeadlineText deadline={detail.objectionDeadline} showLegal />} />}
         </InfoList>
       </section>
 
@@ -133,29 +191,17 @@ export function MyCasePage() {
       <DueDateRequestSection detail={detail} />
       <EmployeeDeadlinesSection detail={detail} />
 
-      {detail.sheetId && (
+      {detail.sheetId && !ackPartI && (
         <section className="section" aria-labelledby="crit-h">
-          <h2 id="crit-h" className="h-section">Kryteria oceny i termin</h2>
-          <InfoList>
-            <InfoRow label="Termin sporządzenia oceny" value={detail.partI.assessmentDue ? fmtDate(detail.partI.assessmentDue) : '—'} />
-          </InfoList>
-          <ul className="bullets">
-            {criteria.all.map((c) => (
-              <li key={c}>
-                <strong>{criterionName(model.data, c)}</strong>
-                {criteria.additional.includes(c) && <span className="faint"> (kryterium dodatkowe)</span>}
-                <div className="small muted">{findCriterion(model.data, c)?.description.join(' ')}</div>
-                {detail.partI.expectations[c] && <div className="small">Oczekiwania: {detail.partI.expectations[c]}</div>}
-              </li>
-            ))}
-          </ul>
+          <h2 id="crit-h" className="h-section">Kryteria oceny</h2>
+          {criteriaList}
         </section>
       )}
 
       {detail.sentForAckOn && (
         <section className="section" aria-label="Arkusz oceny">
           <p>
-            <Link to={`/teczka/${detail.id}/arkusz`}>Otwórz arkusz na pełnym ekranie (druk, pobieranie PDF)</Link>
+            <Link to={`/moje-oceny/${detail.id}/arkusz`}>Otwórz arkusz na pełnym ekranie (druk, pobieranie PDF)</Link>
           </p>
           <div className="paper-preview">
             <SheetDocument detail={detail} model={model.data} criteria={criteria} />
@@ -182,14 +228,27 @@ const ACK_TEXT: Partial<Record<CaseAction, { title: string; text: string; button
   },
 }
 
-function EmployeeActions({ detail }: { detail: CaseDetail }) {
+function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: ReactNode }) {
   const act = useCaseAction(detail.id, { follow: false })
   const action = (['EMPLOYEE_ACK_PART_I', 'EMPLOYEE_ACK_ASSESSMENT'] as const).find((a) => allows(detail, a))
   if (action) {
     const t = ACK_TEXT[action]!
     return (
-      <InlineAlert tone="warning" title={t.title}>
+      <InlineAlert tone="warning" title={`Wymaga Twojego działania: ${t.title.toLowerCase()}`}>
         <p>{t.text}</p>
+        {action === 'EMPLOYEE_ACK_PART_I' && criteria && (
+          <>
+            <p>
+              <strong>Kryteria, według których będziesz oceniany(-a):</strong>
+            </p>
+            {criteria}
+            {detail.partI.assessmentDue && (
+              <p>
+                <strong>Termin sporządzenia oceny:</strong> <span className="num">{fmtDate(detail.partI.assessmentDue)}</span>
+              </p>
+            )}
+          </>
+        )}
         <Button loading={act.isPending} onClick={() => act.mutate(action)}>
           {t.button}
         </Button>
@@ -198,19 +257,29 @@ function EmployeeActions({ detail }: { detail: CaseDetail }) {
     )
   }
   if (detail.acknowledgedOn) {
+    const d = detail.objectionDeadline
+    const filed = detail.objections.at(-1)
     return (
       <InlineAlert tone="info" title={`${detail.ackFiction ? 'Zapoznanie z oceną odnotowano' : 'Zapoznałeś(-aś) się z oceną'} ${fmtDate(detail.acknowledgedOn)}`}>
-        {detail.objectionDeadline && (
+        {filed ? (
           <p>
-            Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} />
+            {filed.decision
+              ? `Sprzeciw z ${fmtDate(filed.filedOn)} został rozstrzygnięty ${fmtDate(filed.decision.decidedOn)}. Szczegóły poniżej.`
+              : `Wniosłeś(-aś) sprzeciw ${fmtDate(filed.filedOn)}. Czeka na rozstrzygnięcie; szczegóły poniżej.`}
           </p>
-        )}
+        ) : d && isStalePast(d) ? (
+          <p>Termin na wniesienie sprzeciwu minął {fmtDate(d.date)}.</p>
+        ) : d ? (
+          <p>
+            Termin na sprzeciw: <DeadlineText deadline={d} />
+          </p>
+        ) : null}
       </InlineAlert>
     )
   }
   return (
     <InlineAlert tone="info" title={`Etap: ${STAGE_SHORT[detail.currentStage]}`}>
-      Nie masz teraz nic do potwierdzenia. Ocena jest prowadzona przez oceniającego.
+      Nie masz teraz nic do potwierdzenia. Ocenę prowadzi Twój oceniający.
       {detail.partI.acknowledgedByEmployeeOn && <> Część I potwierdziłeś(-aś) {fmtDate(detail.partI.acknowledgedByEmployeeOn)}.</>}
     </InlineAlert>
   )
