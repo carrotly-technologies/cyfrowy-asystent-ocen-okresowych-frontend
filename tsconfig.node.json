@@ -19,5 +19,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "dev-mock-api.ts", "dev-mock-v2.ts"]
+  "include": ["vite.config.ts", "dev-mock-api.ts", "dev-mock-v2.ts", "playwright.config.ts", "e2e"]
 }
