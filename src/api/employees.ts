@@ -74,6 +74,26 @@ export interface ImportResult {
   rows: { line: number; employeeId: string; name: string; assessedOn: string; result: 'POSITIVE' | 'NEGATIVE'; level: string | null; skipped: boolean }[]
 }
 
+/** POST /employees/import: preview (dryRun) or save of the register from CSV. */
+export interface EmployeesImportResult {
+  dryRun: boolean
+  created: number
+  updated: number
+  unchanged: number
+  failed: number
+  rows: {
+    line: number
+    action: 'CREATE' | 'UPDATE' | 'UNCHANGED'
+    /** null in a preview of a new person without an identyfikator. */
+    employeeId: string | null
+    name: string
+    unit: string
+    evaluatorName: string | null
+    sheetId: SheetId
+  }[]
+  errors: { line: number; message: string }[]
+}
+
 export interface Evaluator {
   id: string
   name: string
@@ -163,6 +183,10 @@ export const deleteAbsence = (id: string, absenceId: string) =>
   apiDelete(`/employees/${encodeURIComponent(id)}/absences/${encodeURIComponent(absenceId)}`)
 export const getHistory = (id: string, signal?: AbortSignal) => apiGet<HistoryResponse>(`/employees/${encodeURIComponent(id)}/history`, signal)
 export const importHistory = (csv: string) => apiPost<ImportResult>('/employees/history/import', { csv })
+export const importEmployees = (csv: string, dryRun: boolean) =>
+  apiPost<EmployeesImportResult>('/employees/import', { csv, dryRun })
+/** Sample file served by the API from docs/import/. */
+export const downloadEmployeesTemplate = () => apiDownload('/docs/import/pracownicy-wzor.csv', 'pracownicy-wzor.csv')
 export const getUnits = (signal?: AbortSignal) => apiGet<string[]>('/employees/units', signal)
 export const getSubstitutions = (signal?: AbortSignal) => apiGet<Substitution[]>('/substitutions', signal)
 export const addSubstitution = (body: { evaluatorId: string; substituteId: string; from: string; to: string; note?: string }) =>
