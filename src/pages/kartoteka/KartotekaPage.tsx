@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, FileUp, Trash2, UserPlus } from 'lucide-react'
+import { Download, FileUp, Trash2, UserPlus, Users } from 'lucide-react'
 import { useMemo, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import {
@@ -23,6 +23,7 @@ import { countLabel, fmtDate } from '../../lib/format'
 import { evaluatorLabel } from '../../lib/evaluator'
 import { useMe } from '../../lib/useAuth'
 import { EmployeeForm } from './EmployeeForm'
+import { EmployeesImportDialog } from './EmployeesImportDialog'
 import { EMPTY_EMPLOYEE } from './emptyEmployee'
 import './kartoteka.css'
 
@@ -67,6 +68,7 @@ export function KartotekaPage() {
   const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: 'name', asc: true })
   const [adding, setAdding] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [importingEmployees, setImportingEmployees] = useState(false)
 
   const create = useMutation({
     mutationFn: createEmployee,
@@ -126,6 +128,9 @@ export function KartotekaPage() {
           <div className="btn-row">
             <button type="button" className="btn" onClick={() => void downloadEmployeesCsv()}>
               <Download size={15} aria-hidden="true" /> Pobierz kartotekę (CSV)
+            </button>
+            <button type="button" className="btn" onClick={() => setImportingEmployees(true)}>
+              <Users size={15} aria-hidden="true" /> Importuj pracowników (CSV)
             </button>
             <button type="button" className="btn" onClick={() => setImporting(true)}>
               <FileUp size={15} aria-hidden="true" /> Import ocen historycznych
@@ -258,6 +263,7 @@ export function KartotekaPage() {
         </Dialog>
       )}
       {canEdit && <ImportDialog open={importing} onClose={() => setImporting(false)} />}
+      {canEdit && <EmployeesImportDialog open={importingEmployees} onClose={() => setImportingEmployees(false)} />}
     </div>
   )
 }
