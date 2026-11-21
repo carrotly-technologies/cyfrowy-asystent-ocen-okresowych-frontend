@@ -541,7 +541,6 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow-y: auto;
   background: var(--bg-surface);
 }
 
@@ -629,7 +628,7 @@
 
 .two-col__side {
   position: sticky;
-  top: 0;
+  top: var(--case-sticky-h, 0px);
   padding: var(--s-5) var(--s-5) var(--s-6);
   border-left: 1px solid var(--border);
   min-height: 100%;
@@ -1196,8 +1195,16 @@
   background: var(--bg-surface);
 }
 
+/* Case file: a slide-over panel on the right, full height below the top bar (does not depend on the page layout). */
 .assistant--dock {
+  position: fixed;
+  top: var(--topbar-h);
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-overlay);
+  width: min(var(--assistant-w), 100vw);
   border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-dialog);
 }
 
 .assistant--page {
@@ -2007,13 +2014,8 @@
   }
   /* Case file: workspace scrolls with the page */
 
-  .case-work {
-    overflow: visible;
-  }
-
   .assistant--dock {
-    min-height: 480px;
-    border-top: 1px solid var(--border);
+    width: 100vw;
     border-left: 0;
   }
 

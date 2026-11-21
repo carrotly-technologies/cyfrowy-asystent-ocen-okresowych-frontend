@@ -19,7 +19,17 @@ const TABS: { mode: AssistantMode; label: string; blurb: string }[] = [
 
 let seq = 0
 
-export function AssistantPanel({ context, onClose, variant = 'dock' }: { context: AssistantContext; onClose?: () => void; variant?: 'dock' | 'page' }) {
+export function AssistantPanel({
+  context,
+  onClose,
+  variant = 'dock',
+  id,
+}: {
+  context: AssistantContext
+  onClose?: () => void
+  variant?: 'dock' | 'page'
+  id?: string
+}) {
   const [mode, setMode] = useState<AssistantMode>('FORMAL')
   const [threads, setThreads] = useState<Record<AssistantMode, Msg[]>>({ FORMAL: [], CONVERSATION: [] })
   const [input, setInput] = useState('')
@@ -61,7 +71,7 @@ export function AssistantPanel({ context, onClose, variant = 'dock' }: { context
   const tab = TABS.find((t) => t.mode === mode)!
 
   return (
-    <aside className={`assistant assistant--${variant}`} aria-label="Asystent">
+    <aside id={id} className={`assistant assistant--${variant}`} aria-label="Asystent">
       <div className="assistant__tabs" role="tablist" aria-label="Rodzaj asystenta">
         {TABS.map((t) => (
           <button key={t.mode} type="button" role="tab" aria-selected={mode === t.mode} className={`assistant__tab ${mode === t.mode ? 'is-on' : ''}`} onClick={() => setMode(t.mode)}>

@@ -1,14 +1,14 @@
-/* Case file (teczka): back link, the assessed person, the stage stepper, then the full-width stage workspace (+ assistant). */
+/* Case file (teczka): the whole page scrolls as one document inside #main. Only the stage stepper stays sticky;
+   the header, the terms/requests frame and the history scroll away, and the work area always keeps room (min-height). */
 .root {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  --case-sticky-h: 0px;
+  display: block;
+  min-height: 100%;
+  background: var(--bg-surface);
 }
 
 .head {
-  padding: var(--s-2) var(--s-6) var(--s-4);
-  border-bottom: var(--border-w) solid var(--border);
+  padding: var(--s-2) var(--s-6) var(--s-3);
   background: var(--bg-surface);
 }
 
@@ -54,18 +54,76 @@
 }
 
 .stepper {
-  margin-top: var(--s-4);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: var(--s-2) var(--s-6);
+  border-bottom: var(--border-w) solid var(--border);
+  background: var(--bg-surface);
 }
 
-.body {
+.panels {
   display: grid;
-  flex: 1;
-  grid-template-columns: minmax(0, 1fr);
-  min-height: 0;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-6) 0;
 }
 
-.withAssistant .body {
-  grid-template-columns: minmax(0, 1fr) var(--assistant-w);
+.panels:empty {
+  display: none;
+}
+
+.panelBox {
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+}
+
+.panelSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.panelSummary::-webkit-details-marker {
+  display: none;
+}
+
+.panelChevron {
+  flex: none;
+  transition: transform 0.15s;
+  transform: rotate(-90deg);
+}
+
+.panelBox[open] .panelChevron {
+  transform: none;
+}
+
+.panelTitle {
+  font-weight: var(--weight-semibold);
+}
+
+.panelChip {
+  padding: 0 var(--s-2);
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: var(--text-xs);
+}
+
+.panelChipWarn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.panelBody {
+  display: grid;
+  gap: var(--s-3);
+  padding: 0 var(--s-3) var(--s-3);
 }
 
 .work {
@@ -73,16 +131,21 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow-y: auto;
+  min-height: 60vh;
+  margin-top: var(--s-3);
+  border-top: var(--border-w) solid var(--border);
   background: var(--bg-surface);
+  scroll-margin-top: var(--case-sticky-h);
+}
+
+/* Wide screens: the open assistant overlay sits beside the content instead of covering it. */
+@media (min-width: 1400px) {
+  .withAssistant {
+    padding-right: var(--assistant-w);
+  }
 }
 
 @media (max-width: 767px) {
-  .root {
-    height: auto;
-    min-height: 100%;
-  }
-
   .head {
     padding: var(--s-1) var(--s-4) var(--s-4);
   }
@@ -99,13 +162,9 @@
     font-size: var(--text-xl);
   }
 
-  .body,
-  .withAssistant .body {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .work {
-    overflow: visible;
+  .stepper,
+  .panels {
+    padding-right: var(--s-4);
+    padding-left: var(--s-4);
   }
 }

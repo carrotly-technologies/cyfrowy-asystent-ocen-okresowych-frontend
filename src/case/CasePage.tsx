@@ -4,8 +4,8 @@ import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
 import { apiDownload, errorMessage } from '../api/client'
 import type { CriteriaCatalogue } from '../api/reference'
-import { EvaluatorDeadlinesPanel } from './DeadlinesPanel'
-import { EvaluatorLegalPanel } from './LegalPaths'
+import { CasePanels } from './CasePanels'
+import { scrollToCaseWork } from './scroll'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, StageStepper, StatusBadge } from '../components/ui'
@@ -33,12 +33,10 @@ export interface StageProps {
 
 function readAssistantPref(): boolean {
   try {
-    const v = localStorage.getItem('ocena.assistant')
-    if (v !== null) return v === '1'
+    return localStorage.getItem('ocena.assistant') === '1'
   } catch {
-    // ignore
+    return false
   }
-  return window.innerWidth >= 1500
 }
 
 const STATUS_TONE = {
@@ -59,20 +57,42 @@ export function CasePage() {
   const [assistantPref, setAssistantOpen] = useState(readAssistantPref)
   const [pdfError, setPdfError] = useState<string | null>(null)
   const assistantOpen = features.assistant && assistantPref
-  const workRef = useRef<HTMLElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const stepperRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    workRef.current?.scrollTo({ top: 0 })
+    scrollToCaseWork()
   }, [slug])
+  // The sticky stepper's height → `--case-sticky-h`, so sticky side panels and scroll targets sit below it.
+  useEffect(() => {
+    const el = stepperRef.current
+    const root = rootRef.current
+    if (!el || !root || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => root.style.setProperty('--case-sticky-h', `${el.offsetHeight}px`))
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
+  // Escape closes the assistant overlay
+  useEffect(() => {
+    if (!assistantPref) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.querySelector('dialog[open], [role="dialog"]')) closeAssistant()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  })
 
-  const toggleAssistant = () => {
-    setAssistantOpen((v) => {
-      try {
-        localStorage.setItem('ocena.assistant', v ? '0' : '1')
-      } catch {
-        // ignore
-      }
-      return !v
-    })
+  const setAssistant = (open: boolean) => {
+    try {
+      localStorage.setItem('ocena.assistant', open ? '1' : '0')
+    } catch {
+      // ignore
+    }
+    setAssistantOpen(open)
+  }
+  const toggleAssistant = () => setAssistant(!assistantPref)
+  function closeAssistant() {
+    setAssistant(false)
+    document.getElementById('case-assistant-btn')?.focus()
   }
 
   if (q.isPending || model.isPending || sheets.isPending) return <div className="page"><LoadingState /></div>
@@ -95,7 +115,7 @@ export function CasePage() {
   const activeStep = steps.find((st) => st.stages.some((x) => x.id === stage))
 
   return (
-    <div className={`${s.root} ${assistantOpen ? s.withAssistant : ''}`}>
+    <div ref={rootRef} className={`${s.root} ${assistantOpen ? s.withAssistant : ''}`}>
       <header className={s.head}>
         <div className={s.headTop}>
           <BackLink to={HOME_BY_ROLE[me.role]} />
@@ -119,7 +139,14 @@ export function CasePage() {
               Pobierz PDF
             </button>
             {features.assistant && (
-              <button type="button" className={`btn ${assistantOpen ? 'btn--pressed' : ''}`} aria-pressed={assistantOpen} onClick={toggleAssistant}>
+              <button
+                type="button"
+                id="case-assistant-btn"
+                className={`btn ${assistantOpen ? 'btn--pressed' : ''}`}
+                aria-expanded={assistantOpen}
+                aria-controls="case-assistant"
+                onClick={toggleAssistant}
+              >
                 <MessageSquareText size={15} strokeWidth={1.75} aria-hidden="true" />
                 Asystent
               </button>
@@ -134,34 +161,34 @@ export function CasePage() {
           {detail.person.position}
           <span className={s.cycle}> · {detail.cycleLabel} · {sheetLabel}</span>
         </p>
-        <div className={s.stepper}>
-          <StageStepper
-            label="Etapy oceny okresowej"
-            activeKey={activeStep?.key}
-            steps={steps.map((st) => ({ key: st.key, label: st.label, status: st.status, to: caseUrl(detail.id, stepTarget(st)) }))}
-          />
-        </div>
-        <EvaluatorLegalPanel detail={detail} />
-        {me.role === 'SUPERVISOR' && <EvaluatorDeadlinesPanel detail={detail} />}
       </header>
-
-      {pdfError && <p className="sheet-bar__error" role="alert">{pdfError}</p>}
-      <CaseHistory detail={detail} />
-      <div className={s.body}>
-        <section ref={workRef} className={`case-work ${s.work}`} aria-label={`Etap: ${STAGE_SHORT[stage]}`}>
-          {canOpenStage(detail, stage) ? <StageWorkspace {...props} /> : <StageNotOpen detail={detail} stage={stage} />}
-        </section>
-        {assistantOpen && (
-          <AssistantPanel
-            context={{
-              caseId: detail.id,
-              stageId: stage,
-              label: `${STAGE_SHORT[stage]} · ${name} · ${sheetLabel}`,
-            }}
-            onClose={toggleAssistant}
-          />
-        )}
+      <div ref={stepperRef} className={s.stepper}>
+        <StageStepper
+          label="Etapy oceny okresowej"
+          activeKey={activeStep?.key}
+          steps={steps.map((st) => ({ key: st.key, label: st.label, status: st.status, to: caseUrl(detail.id, stepTarget(st)) }))}
+        />
       </div>
+      <div className={s.panels}>
+        <CasePanels detail={detail} supervisor={me.role === 'SUPERVISOR'} />
+        {pdfError && <p className="sheet-bar__error" role="alert">{pdfError}</p>}
+        <CaseHistory detail={detail} />
+      </div>
+
+      <section className={`case-work ${s.work}`} aria-label={`Etap: ${STAGE_SHORT[stage]}`}>
+        {canOpenStage(detail, stage) ? <StageWorkspace {...props} /> : <StageNotOpen detail={detail} stage={stage} />}
+      </section>
+      {assistantOpen && (
+        <AssistantPanel
+          id="case-assistant"
+          context={{
+            caseId: detail.id,
+            stageId: stage,
+            label: `${STAGE_SHORT[stage]} · ${name} · ${sheetLabel}`,
+          }}
+          onClose={closeAssistant}
+        />
+      )}
     </div>
   )
 }
