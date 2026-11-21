@@ -17,7 +17,7 @@ import {
 } from '../../api/employees'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
-import { BackLink, Dialog, InlineAlert } from '../../components/ui'
+import { BackLink, DateInput, Dialog, InlineAlert } from '../../components/ui'
 import { MutationError } from '../../case/stages/common'
 import { days, fmtDate } from '../../lib/format'
 import { CASE_STATUS_LABEL } from '../../lib/stages'
@@ -261,11 +261,11 @@ function Absences({ employeeId, canEdit, onChange }: { employeeId: string; canEd
           </div>
           <div className="field">
             <label className="field__label" htmlFor="abs-from">Od</label>
-            <input id="abs-from" type="date" className="input" required value={form.from} onChange={(ev) => setForm({ ...form, from: ev.target.value })} />
+            <DateInput id="abs-from" width="full" required value={form.from} onChange={(ev) => setForm({ ...form, from: ev.target.value })} />
           </div>
           <div className="field">
             <label className="field__label" htmlFor="abs-to">Do (włącznie)</label>
-            <input id="abs-to" type="date" className="input" required value={form.to} onChange={(ev) => setForm({ ...form, to: ev.target.value })} />
+            <DateInput id="abs-to" width="full" required value={form.to} onChange={(ev) => setForm({ ...form, to: ev.target.value })} />
           </div>
           <div className="field">
             <label className="field__label" htmlFor="abs-note">Uwagi <span className="field__optional">(opcjonalnie)</span></label>

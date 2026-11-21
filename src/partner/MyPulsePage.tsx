@@ -5,7 +5,7 @@ import { getMyPulse, type MyPulse, type PulseAnswers, sharePulse, submitPulse } 
 import { errorMessage } from '../api/client'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { Button, Checkbox, InlineAlert, RadioMatrix, TextArea } from '../components/ui'
-import { fmtDate } from '../lib/format'
+import { fmtDate, fmtNumber } from '../lib/format'
 import { PrivacyNote, Sparkline } from './common'
 import s from './Partner.module.css'
 
@@ -110,7 +110,7 @@ function History({ pulse }: { pulse: MyPulse }) {
         <ul className={s.privacy}>
           {history.map((r) => (
             <li key={r.id}>
-              <strong>{fmtDate(r.date)}</strong> – indeks {r.index} (
+              <strong>{fmtDate(r.date)}</strong> – indeks {fmtNumber(r.index)} (
               {pulse.questions.map((q) => `${q.label.toLowerCase()} ${r.answers[q.id]}`).join(', ')})
               {r.comment && (
                 <div className={s.row}>

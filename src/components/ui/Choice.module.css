@@ -82,10 +82,14 @@
   background: var(--bg-surface);
 }
 
+.radio:checked {
+  border-width: 0.1875rem;
+}
+
 .radio:checked::after {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 0.1875rem;
   border-radius: 50%;
   background: var(--accent);
 }
@@ -128,6 +132,10 @@
 
 .input:disabled:checked + .label {
   color: var(--text);
+  font-weight: var(--weight-semibold);
+}
+
+.item:has(.input:checked:not(:disabled)) > .label {
   font-weight: var(--weight-semibold);
 }
 

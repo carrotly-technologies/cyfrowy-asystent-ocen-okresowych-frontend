@@ -23,7 +23,8 @@ import { Link, Outlet, useLocation } from 'react-router'
 import { resetDemo, type Role } from '../api/cases'
 import { ApiStatus } from '../components/ApiStatus'
 import { NotificationBell } from '../notifications/NotificationBell'
-import { UserMenu } from '../components/ui'
+import { ConfirmDialog, UserMenu } from '../components/ui'
+import { demoToolsFor } from '../lib/demoTools'
 import { ROLE_LABEL, useAuth, useMe } from '../lib/useAuth'
 
 export function AppShell() {
@@ -56,8 +57,8 @@ export function AppShell() {
     }
   }, [menuOpen])
 
+  const [resetOpen, setResetOpen] = useState(false)
   const onReset = async () => {
-    if (!window.confirm('Przywrócić dane demonstracyjne do stanu początkowego?')) return
     try {
       await resetDemo()
     } finally {
@@ -65,6 +66,7 @@ export function AppShell() {
       qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
     }
   }
+  const demoTools = demoToolsFor(me.role)
 
   const userRole = me.position || ROLE_LABEL[me.role]
   const settingsActive = isUnder(location.pathname, '/ustawienia')
@@ -77,7 +79,9 @@ export function AppShell() {
       <header className="topbar">
         <div className="topbar__brand">
           <ClipboardCheck className="topbar__logo" size={22} strokeWidth={1.75} aria-hidden="true" />
-          <span className="topbar__product">Cyfrowy Asystent Ocen Okresowych</span>
+          <span className="topbar__product">
+            Cyfrowy Asystent<span className="topbar__product-tail"> Ocen Okresowych</span>
+          </span>
         </div>
 
         <button
@@ -131,13 +135,15 @@ export function AppShell() {
               </li>
             </ul>
           </nav>
-          <div className="topbar__tools">
-            <button type="button" className="topbar__tool" onClick={onReset} title="Przywróć dane demonstracyjne">
-              <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
-              <span>Reset</span>
-            </button>
-            <ApiStatus />
-          </div>
+          {demoTools && (
+            <div className="topbar__tools">
+              <button type="button" className="topbar__tool" onClick={() => setResetOpen(true)} title="Przywróć dane demonstracyjne" aria-label="Reset: przywróć dane demonstracyjne">
+                <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
+                <span>Reset</span>
+              </button>
+              <ApiStatus />
+            </div>
+          )}
         </div>
 
         <div className="topbar__right">
@@ -163,6 +169,17 @@ export function AppShell() {
       <main className="main" id="main" tabIndex={-1}>
         <Outlet />
       </main>
+
+      <ConfirmDialog
+        open={resetOpen}
+        title="Przywrócić dane demonstracyjne?"
+        confirmLabel="Przywróć dane"
+        destructive
+        onConfirm={onReset}
+        onCancel={() => setResetOpen(false)}
+      >
+        <p>Wszystkie zmiany wprowadzone w wersji demonstracyjnej (oceny, decyzje, wpisy w kartotece) zostaną usunięte, a dane wrócą do stanu początkowego. Pozostaniesz zalogowany.</p>
+      </ConfirmDialog>
     </div>
   )
 }

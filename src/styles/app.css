@@ -113,9 +113,37 @@
   letter-spacing: -0.005em;
   white-space: nowrap;
   margin-left: 4px;
-  /* many nav items (e.g. HR): truncate the name instead of overlapping the links */
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* Below 1440px the product name shortens to "Cyfrowy Asystent" instead of being cut ("Cyfrowy As…") */
+@media (max-width: 1439px) {
+  .topbar__product-tail {
+    display: none;
+  }
+
+  .topbar__tools .api-status__label {
+    display: none;
+  }
+}
+
+/* 1024–1365px: tighter links so up to six of them, the tools and the avatar fit in one row */
+@media (min-width: 1024px) and (max-width: 1365px) {
+  .topbar {
+    gap: var(--s-3);
+  }
+
+  .topbar__menu {
+    gap: var(--s-2);
+  }
+
+  .topnav__link {
+    gap: 4px;
+    padding: 0 var(--s-2);
+  }
+
+  .topbar__tool span {
+    display: none;
+  }
 }
 
 .topbar__right {
@@ -156,7 +184,7 @@
 /* Main navigation in the top bar: brand | links … tools | user */
 .topbar__menu {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--s-4);
   min-width: 0;
@@ -414,6 +442,29 @@
   white-space: nowrap;
 }
 
+/* Buttons in a table never get cut with "…": the action cell grows (the table scrolls inside its panel) and stacks
+   several buttons. */
+.table td.cell-action {
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+}
+
+.table td.cell-action .btn {
+  white-space: nowrap;
+}
+
+.table td.cell-action .btn + .btn {
+  margin-top: var(--s-1);
+}
+
+.table td.cell-action > * {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
+  width: fit-content;
+}
+
 .cell-sub {
   display: block;
   margin-top: 2px;
@@ -431,34 +482,42 @@
   white-space: nowrap;
 }
 
-/* Deadline */
+/* Deadline: date and "za N dni" never get cut; the row wraps instead, the legal basis goes to its own line */
 .deadline {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
+  gap: 0 8px;
   max-width: 100%;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .deadline > * {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .deadline__label {
   flex: 0 1 auto;
-}
-
-.deadline__label {
   color: var(--text-secondary);
 }
 
-.deadline__date {
+.deadline__date,
+.deadline__rel {
   flex: none;
+  white-space: nowrap;
+}
+
+.deadline__date {
   font-weight: var(--weight-semibold);
+}
+
+.deadline .deadline__legal {
+  flex: 1 0 100%;
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .deadline__rel {
@@ -1831,10 +1890,6 @@
 }
 
 .table .person {
-  max-width: 200px;
-}
-
-.table td .deadline {
   max-width: 200px;
 }
 

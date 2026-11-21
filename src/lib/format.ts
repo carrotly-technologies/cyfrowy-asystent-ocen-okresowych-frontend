@@ -20,7 +20,11 @@ export function fmtDateLong(iso: string | null | undefined): string {
   return `${d} ${MONTHS_GEN[m - 1]} ${y}`
 }
 
-function plural(n: number, one: string, few: string, many: string) {
+/**
+ * Polish plural form: plural(1, 'nieprzeczytane', 'nieprzeczytane', 'nieprzeczytanych'), (2–4, 22–24…) → few,
+ * (0, 5–21, 25…) → many. Use countLabel() to get "5 dni".
+ */
+export function plural(n: number, one: string, few: string, many: string) {
   const abs = Math.abs(n)
   if (abs === 1) return one
   const d = abs % 10
@@ -67,4 +71,46 @@ export function addDaysIso(iso: string, n: number): string {
 
 export function initials(first: string, last: string) {
   return `${first.charAt(0)}${last.charAt(0)}`
+}
+
+const NUM = new Map<number, Intl.NumberFormat>()
+
+/** Number for display, Polish style: 4.6 → "4,6", 1234.5 → "1 234,5". `digits` = max fraction digits (default 1). */
+export function fmtNumber(n: number | null | undefined, digits = 1): string {
+  if (n === null || n === undefined || Number.isNaN(n)) return '—'
+  let f = NUM.get(digits)
+  if (!f) {
+    f = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: digits, useGrouping: true })
+    NUM.set(digits, f)
+  }
+  return f.format(n)
+}
+
+/** 0.456 → "45,6%". */
+export function fmtPercent(share: number | null | undefined, digits = 1): string {
+  if (share === null || share === undefined || Number.isNaN(share)) return '—'
+  return `${fmtNumber(share * 100, digits)}%`
+}
+
+/** "21.11.2026" / "21.11.26" / "1.2.2026" → "2026-11-21"; null when not a real date. */
+export function parsePlDate(text: string): string | null {
+  const m = /^\s*(\d{1,2})[.\-/ ](\d{1,2})[.\-/ ](\d{4})\s*$/.exec(text)
+  if (!m) return null
+  const d = Number(m[1])
+  const mo = Number(m[2])
+  const y = Number(m[3])
+  const dt = new Date(Date.UTC(y, mo - 1, d))
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null
+  return `${String(y).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
+/** "9:30" / "0930" / "9" → "09:30" / "09:30" / "09:00" (24 h); null when not a valid time. */
+export function parsePlTime(text: string): string | null {
+  const t = text.trim()
+  const m = /^(\d{1,2})(?:[:.]?(\d{2}))?$/.exec(t)
+  if (!m) return null
+  const h = Number(m[1])
+  const min = m[2] === undefined ? 0 : Number(m[2])
+  if (h > 23 || min > 59) return null
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }

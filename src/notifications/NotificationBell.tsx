@@ -11,7 +11,7 @@ import {
   runReminders,
   type AppNotification,
 } from '../api/notifications'
-import { fmtDate } from '../lib/format'
+import { countLabel, fmtDate } from '../lib/format'
 import s from './NotificationBell.module.css'
 
 const KEY = ['notifications'] as const
@@ -90,7 +90,7 @@ export function NotificationBell({ role }: { role: Role }) {
         className={s.button}
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label={unread > 0 ? `Powiadomienia: ${unread} nieprzeczytanych` : 'Powiadomienia'}
+        aria-label={unread > 0 ? `Powiadomienia: ${countLabel(unread, 'nieprzeczytane', 'nieprzeczytane', 'nieprzeczytanych')}` : 'Powiadomienia'}
         title="Powiadomienia"
         onClick={() => setOpen((o) => !o)}
       >

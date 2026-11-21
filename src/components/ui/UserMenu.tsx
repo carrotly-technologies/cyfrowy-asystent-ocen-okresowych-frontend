@@ -66,6 +66,7 @@ export function UserMenu({ name, role, note, items, defaultOpen = false }: Props
         className={s.button}
         aria-expanded={open}
         aria-controls={menuId}
+        title={`${name} — ${role}`}
         onClick={() => setOpen((v) => !v)}
       >
         <span className={s.avatar} aria-hidden="true">
