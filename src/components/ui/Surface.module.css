@@ -9,9 +9,20 @@
   box-shadow: var(--shadow-card);
 }
 
+/* Important card ("Twoja ocena do podpisu"): SC tint + 2px SC-blue frame */
+.important {
+  border: var(--border-w-strong) solid var(--sc-blue);
+  background: var(--sc-faint);
+}
+
+/* Section with the short civil-service top rule */
+.ruled {
+  border-top: var(--section-rule);
+}
+
 .cardTitle {
   font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
 }
 
