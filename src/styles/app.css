@@ -115,8 +115,8 @@
   margin-left: 4px;
 }
 
-/* Below 1440px the product name shortens to "Cyfrowy Asystent" instead of being cut ("Cyfrowy As…") */
-@media (max-width: 1439px) {
+/* Below 1600px the product name shortens to "Cyfrowy Asystent" instead of being cut ("Cyfrowy As…") */
+@media (max-width: 1599px) {
   .topbar__product-tail {
     display: none;
   }
