@@ -276,7 +276,7 @@ export function AssessmentVersions({ detail }: { detail: CaseDetail }) {
   )
 }
 
-export function CaseHistory({ detail }: { detail: CaseDetail }) {
+export function CaseHistoryList({ detail }: { detail: CaseDetail }) {
   if (detail.history.length === 0) return null
   return (
     <section className="section" aria-labelledby="history-h">

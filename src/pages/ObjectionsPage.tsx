@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { decideObjection, getObjections, type CaseDetail, type ObjectionOutcome } from '../api/cases'
-import { AssessmentVersions, CaseHistory, ObjectionStatus } from '../case/LegalPaths'
+import { AssessmentVersions, CaseHistoryList, ObjectionStatus } from '../case/LegalPaths'
 import { legalErrorText, OUTCOME_SHORT, useLegalMutation } from '../lib/legalQueries'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
@@ -123,7 +123,7 @@ export function ObjectionCasePage() {
         </section>
       )}
       <AssessmentVersions detail={detail} />
-      <CaseHistory detail={detail} />
+      <CaseHistoryList detail={detail} />
     </div>
   )
 }

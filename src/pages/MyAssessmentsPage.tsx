@@ -9,7 +9,7 @@ import { fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, findCriterion, useCriteria, useSheets } from '../lib/model'
 import { allows, caseSteps, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 import { useMe } from '../lib/useAuth'
-import { AckFictionInfo, AssessmentVersions, CaseHistory, DueDateRequestSection, ObjectionSection } from '../case/LegalPaths'
+import { AckFictionInfo, AssessmentVersions, CaseHistoryList, DueDateRequestSection, ObjectionSection } from '../case/LegalPaths'
 import { legalErrorText } from '../lib/legalQueries'
 import { SheetDocument } from '../sheet/SheetDocument'
 
@@ -162,7 +162,7 @@ export function MyCasePage() {
       )}
 
       <AssessmentVersions detail={detail} />
-      <CaseHistory detail={detail} />
+      <CaseHistoryList detail={detail} />
     </div>
   )
 }
