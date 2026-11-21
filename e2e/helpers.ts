@@ -42,3 +42,14 @@ export async function sessionFor(browser: Browser, login: string): Promise<Page>
   await signIn(page, login)
   return page
 }
+
+/**
+ * Confirms the shared ConfirmDialog (native <dialog>, role "dialog" named by its title): clicks its primary button
+ * and waits until the dialog closes, i.e. until the action it confirms has been saved.
+ */
+export async function confirmDialog(page: Page, title: string | RegExp, confirmLabel: string): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: title })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: confirmLabel, exact: true }).click()
+  await expect(dialog).toBeHidden({ timeout: 20_000 })
+}

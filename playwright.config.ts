@@ -20,8 +20,9 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  timeout: 90_000,
-  expect: { timeout: 10_000 },
+  // Generous limits so a loaded machine (dev server compiling on first visit, other builds) does not fail the run.
+  timeout: 120_000,
+  expect: { timeout: 15_000 },
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   outputDir: 'test-results',
   use: {
@@ -29,6 +30,8 @@ export default defineConfig({
     locale: 'pl-PL',
     timezoneId: 'Europe/Warsaw',
     viewport: { width: 1280, height: 900 },
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -37,7 +40,7 @@ export default defineConfig({
     command: `npm run dev -- --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
     // Same origin for the app and the API: VITE_API_URL empty, the dev proxy forwards /api to the backend.
     env: { API_PROXY_TARGET: API_URL, VITE_API_URL: '', VITE_DEMO_ACCOUNTS: 'true' },
   },

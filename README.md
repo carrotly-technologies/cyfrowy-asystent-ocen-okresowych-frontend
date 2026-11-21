@@ -75,7 +75,8 @@ demo seed (specs in `e2e/`):
 
 1. the supervisor picks the sheet and additional criteria, confirms part I, the assessed person confirms it, the
    supervisor scores part II, signs and hands the assessment over, the assessed person acknowledges it
-   (case c-004, accounts `j.kaminska` and `j.mazur`);
+   (case c-004, accounts `j.kaminska` and `j.mazur`); the confirmation dialogs (accepting the sheet, signing,
+   handing over) are confirmed explicitly (`confirmDialog` in `e2e/helpers.ts`);
 2. a negative assessment cannot be signed without a justification (case c-007).
 
 ```bash
