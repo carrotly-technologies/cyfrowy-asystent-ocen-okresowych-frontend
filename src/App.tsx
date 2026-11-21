@@ -3,6 +3,9 @@ import { CasePage } from './case/CasePage'
 import { AdminCorrectionsPage } from './pages/AdminCorrectionsPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
 import { HrPage } from './pages/HrPage'
+import { EmployeePage } from './pages/kartoteka/EmployeePage'
+import { KartotekaPage } from './pages/kartoteka/KartotekaPage'
+import { StatisticsPage } from './pages/kartoteka/StatisticsPage'
 import { KnowledgePage } from './pages/KnowledgePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyAssessmentsPage, MyCasePage } from './pages/MyAssessmentsPage'
@@ -44,6 +47,13 @@ export default function App() {
           <Route element={<RequireRole roles={['DIRECTOR']} />}>
             <Route path="/sprzeciwy" element={<ObjectionsPage />} />
             <Route path="/sprzeciwy/:id" element={<ObjectionCasePage />} />
+          </Route>
+          <Route element={<RequireRole roles={['HR', 'ADMIN', 'SUPERVISOR']} />}>
+            <Route path="/kartoteka" element={<KartotekaPage />} />
+            <Route path="/kartoteka/:id" element={<EmployeePage />} />
+          </Route>
+          <Route element={<RequireRole roles={['HR', 'ADMIN', 'DIRECTOR']} />}>
+            <Route path="/statystyki" element={<StatisticsPage />} />
           </Route>
           <Route element={<RequireRole roles={['ADMIN']} />}>
             <Route path="/admin/uzytkownicy" element={<AdminUsersPage />} />

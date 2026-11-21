@@ -113,3 +113,7 @@ export async function apiDownload(path: string, fallbackName: string): Promise<v
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
+
+export function apiDelete<T = void>(path: string, signal?: AbortSignal): Promise<T> {
+  return request<T>(path, { method: 'DELETE', signal })
+}
