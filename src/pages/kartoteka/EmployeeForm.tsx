@@ -22,6 +22,9 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
   const id = useId()
   const set = <K extends keyof EmployeeFields>(k: K, v: EmployeeFields[K]) => setF((old) => ({ ...old, [k]: v }))
   const urzednik = f.employment === 'URZEDNIK'
+  // Unit from the list; a new one only on purpose (the API refuses near-duplicates).
+  const [newUnit, setNewUnit] = useState(() => !!initial.unit && !units.includes(initial.unit))
+  const unitOptions = units.includes(initial.unit) || !initial.unit ? units : [...units, initial.unit]
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -42,8 +45,32 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
         {text('lastName', 'Nazwisko')}
         <div className="field">
           <label className="field__label" htmlFor={`${id}-unit`}>Komórka organizacyjna</label>
-          <input id={`${id}-unit`} className="input" required list={`${id}-units`} value={f.unit} onChange={(e) => set('unit', e.target.value)} />
-          <datalist id={`${id}-units`}>{units.map((u) => <option key={u} value={u} />)}</datalist>
+          {newUnit ? (
+            <>
+              <input id={`${id}-unit`} className="input" required value={f.unit} onChange={(e) => set('unit', e.target.value)} aria-describedby={`${id}-unit-hint`} placeholder="np. Wydział Kontroli, Departament Prawny" />
+              <span className="field__hint" id={`${id}-unit-hint`}>
+                Pełna nazwa nowej komórki.{' '}
+                <button type="button" className="link-btn" onClick={() => { setNewUnit(false); set('unit', '') }}>Wybierz z listy</button>
+              </span>
+            </>
+          ) : (
+            <select
+              id={`${id}-unit`}
+              className="select"
+              required
+              value={f.unit}
+              onChange={(e) => {
+                if (e.target.value === '__new__') {
+                  setNewUnit(true)
+                  set('unit', '')
+                } else set('unit', e.target.value)
+              }}
+            >
+              <option value="">— wybierz —</option>
+              {unitOptions.map((u) => <option key={u} value={u}>{u}</option>)}
+              <option value="__new__">+ Nowa komórka…</option>
+            </select>
+          )}
         </div>
         {text('position', 'Stanowisko')}
         <div className="field">
@@ -62,11 +89,11 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
 
       <fieldset className="emp-form__set">
         <legend className="field__label">Status w służbie cywilnej</legend>
-        <label className="checkbox">
-          <input type="radio" name={`${id}-emp`} checked={f.employment === 'PRACOWNIK'} onChange={() => set('employment', 'PRACOWNIK')} /> pracownik służby cywilnej
+        <label className="check-label">
+          <input type="radio" className="checkbox" name={`${id}-emp`} checked={f.employment === 'PRACOWNIK'} onChange={() => set('employment', 'PRACOWNIK')} /> pracownik służby cywilnej
         </label>
-        <label className="checkbox">
-          <input type="radio" name={`${id}-emp`} checked={urzednik} onChange={() => set('employment', 'URZEDNIK')} /> urzędnik służby cywilnej (mianowany)
+        <label className="check-label">
+          <input type="radio" className="checkbox" name={`${id}-emp`} checked={urzednik} onChange={() => set('employment', 'URZEDNIK')} /> urzędnik służby cywilnej (mianowany)
         </label>
       </fieldset>
 
@@ -92,11 +119,11 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
 
       <fieldset className="emp-form__set">
         <legend className="field__label">Stanowisko a wybór arkusza</legend>
-        <label className="checkbox">
-          <input type="checkbox" checked={f.officeHead} onChange={(e) => set('officeHead', e.target.checked)} /> kierownik urzędu (arkusz A)
+        <label className="check-label">
+          <input type="checkbox" className="checkbox" checked={f.officeHead} onChange={(e) => set('officeHead', e.target.checked)} /> kierownik urzędu (arkusz A)
         </label>
-        <label className="checkbox">
-          <input type="checkbox" checked={f.managesPeople} onChange={(e) => set('managesPeople', e.target.checked)} /> bezpośrednio kieruje pracownikami (arkusz B)
+        <label className="check-label">
+          <input type="checkbox" className="checkbox" checked={f.managesPeople} onChange={(e) => set('managesPeople', e.target.checked)} /> bezpośrednio kieruje pracownikami (arkusz B)
         </label>
       </fieldset>
 

@@ -1,0 +1,27 @@
+/* Tryb korekty (/admin/korekty). Colours only from tokens.css. */
+
+.corr-lead {
+  max-width: 48rem;
+  margin-top: 6px;
+  white-space: normal;
+}
+
+.corr-count--short {
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+.corr-page .select,
+.corr-page select {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Użytkownicy: the unit wraps instead of being cut off. */
+.users-table td {
+  white-space: normal;
+}
+
+.users-table td > div {
+  overflow-wrap: break-word;
+}

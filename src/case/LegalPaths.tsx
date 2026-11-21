@@ -149,7 +149,7 @@ export function ObjectionStatus({ objection: o }: { objection: ObjectionView }) 
 // ---------------------------------------------------------------------------------------------------------------
 // Fikcja zapoznania: evaluator or HR
 
-export function AckFictionForm({ detail, onDone }: { detail: CaseDetail; onDone?: () => void }) {
+export function AckFictionForm({ detail, onDone, onCancel }: { detail: CaseDetail; onDone?: () => void; onCancel?: () => void }) {
   const [date, setDate] = useState(DEMO_TODAY)
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string>()
@@ -172,7 +172,10 @@ export function AckFictionForm({ detail, onDone }: { detail: CaseDetail; onDone?
       <Field label="Powód braku potwierdzenia" error={error}>
         {(c) => <TextArea {...c} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />}
       </Field>
-      <Button type="submit" variant="secondary" loading={m.isPending}>Stwierdź fikcję zapoznania</Button>
+      <div className="legal-form__buttons">
+        {onCancel && <Button type="button" variant="secondary" onClick={onCancel} disabled={m.isPending}>Anuluj</Button>}
+        <Button type="submit" variant={onCancel ? 'primary' : 'secondary'} loading={m.isPending}>Stwierdź fikcję zapoznania</Button>
+      </div>
       {m.error ? <p role="alert" className="form-error">{legalErrorText(m.error)}</p> : null}
     </form>
   )
@@ -398,10 +401,15 @@ export function AckFictionButton({ caseId, name }: { caseId: string; name: strin
 
 function AckFictionLoader({ caseId, onDone }: { caseId: string; onDone: () => void }) {
   const q = useCase(caseId)
+  const close = (
+    <div className="legal-form__buttons">
+      <Button type="button" variant="secondary" onClick={onDone}>Anuluj</Button>
+    </div>
+  )
   if (q.isPending) return <p className="muted">Wczytywanie…</p>
-  if (q.isError) return <p role="alert" className="form-error">{legalErrorText(q.error)}</p>
+  if (q.isError) return <><p role="alert" className="form-error">{legalErrorText(q.error)}</p>{close}</>
   if (!q.data.legalActions?.includes('RECORD_ACK_FICTION')) {
-    return <p className="muted">W tej sprawie nie można teraz odnotować fikcji zapoznania (ocena nie została przekazana albo zapoznanie jest już odnotowane).</p>
+    return <><p className="muted">W tej sprawie nie można teraz odnotować fikcji zapoznania (ocena nie została przekazana albo zapoznanie jest już odnotowane).</p>{close}</>
   }
-  return <AckFictionForm detail={q.data} onDone={onDone} />
+  return <AckFictionForm detail={q.data} onDone={onDone} onCancel={onDone} />
 }

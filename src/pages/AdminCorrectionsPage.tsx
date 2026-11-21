@@ -7,6 +7,7 @@ import { CaseHistory } from '../case/CaseHistory'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { Field, InlineAlert, Select, Snackbar, TextArea, TextInput } from '../components/ui'
 import { CASE_STATUS_LABEL } from '../lib/stages'
+import './admin.css'
 
 const RESULT_LABEL: Record<string, string> = { POSITIVE: 'pozytywna', NEGATIVE: 'negatywna', YES: 'TAK', NO: 'NIE' }
 const MIN_REASON = 10
@@ -37,11 +38,11 @@ export function AdminCorrectionsPage() {
   if (cases.isError) return <div className="page"><ErrorState error={cases.error} what="lista teczek" onRetry={() => cases.refetch()} /></div>
 
   return (
-    <div className="page page--wide">
+    <div className="page page--wide corr-page">
       <header className="page-head">
         <div>
           <h1 className="h-page">Tryb korekty błędów</h1>
-          <p className="page-head__meta">
+          <p className="muted corr-lead">
             Pola arkusza blokują się po każdym potwierdzeniu. Zmienić je można wyłącznie tutaj, z podaniem powodu; każda
             korekta (kto, kiedy, stara → nowa wartość) trafia do historii teczki.
           </p>
@@ -98,7 +99,10 @@ function CaseCorrections({ id }: { id: string }) {
     save.reset()
   }
   const locks = [detail.locks?.partI, detail.locks?.partII].filter((x): x is string => !!x)
-  const reasonOk = reason.trim().length >= MIN_REASON
+  const reasonLength = reason.trim().length
+  const reasonOk = reasonLength >= MIN_REASON
+  // Sections in sheet order (część I, II, III), each once.
+  const sections = [...new Set(fields.map((f) => f.section))].sort((a, b) => a.localeCompare(b, 'pl'))
 
   return (
     <section className="section" aria-labelledby="corr-h">
@@ -118,15 +122,20 @@ function CaseCorrections({ id }: { id: string }) {
       )}
 
       <div className="panel" style={{ padding: 16, display: 'grid', gap: 12, maxWidth: '48rem' }}>
-        <Field id="corr-field" label="Pole do korekty">
+        <Field id="corr-field" label="Pole do korekty" hint="Pola pogrupowane według części arkusza.">
           {(p) => (
-            <Select
-              {...p}
-              placeholder="Wybierz pole"
-              value={fieldName}
-              onChange={(e) => pick(e.target.value)}
-              options={fields.map((f) => ({ value: f.field, label: `${f.section} · ${f.label} (obecnie: ${f.display})` }))}
-            />
+            <select {...p} className="select" value={fieldName} onChange={(e) => pick(e.target.value)}>
+              <option value="">Wybierz pole</option>
+              {sections.map((section) => (
+                <optgroup key={section} label={section}>
+                  {fields
+                    .filter((f) => f.section === section)
+                    .map((f) => (
+                      <option key={f.field} value={f.field}>{`${f.label} (obecnie: ${f.display})`}</option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
           )}
         </Field>
         {field && (
@@ -151,7 +160,18 @@ function CaseCorrections({ id }: { id: string }) {
                 )
               }
             </Field>
-            <Field id="corr-reason" label="Powód korekty (wymagany)" hint={`Co najmniej ${MIN_REASON} znaków; trafia do historii teczki.`}>
+            <Field
+              id="corr-reason"
+              label="Powód korekty (wymagany)"
+              hint={
+                <>
+                  Co najmniej {MIN_REASON} znaków; trafia do historii teczki.{' '}
+                  <span className={reasonOk ? 'num' : 'num corr-count--short'} aria-live="polite">
+                    {reasonOk ? `${reasonLength} znaków ✓` : `${reasonLength}/${MIN_REASON} znaków`}
+                  </span>
+                </>
+              }
+            >
               {(p) => <TextArea {...p} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />}
             </Field>
             {save.isError && (

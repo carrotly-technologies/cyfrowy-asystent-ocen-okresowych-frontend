@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, FileUp, Trash2, UserPlus } from 'lucide-react'
 import { useMemo, useState, type ChangeEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import {
   addSubstitution,
   createEmployee,
@@ -9,15 +9,17 @@ import {
   downloadEmployeesCsv,
   getEvaluators,
   getSubstitutions,
+  getUnits,
   importHistory,
   listEmployees,
   type EmployeeView,
 } from '../../api/employees'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
-import { DateInput, Dialog, FileInput } from '../../components/ui'
+import { DateInput, Dialog, FileInput, InlineAlert } from '../../components/ui'
 import { MutationError } from '../../case/stages/common'
 import { countLabel, fmtDate } from '../../lib/format'
+import { evaluatorLabel } from '../../lib/evaluator'
 import { useMe } from '../../lib/useAuth'
 import { EmployeeForm } from './EmployeeForm'
 import { EMPTY_EMPLOYEE } from './emptyEmployee'
@@ -37,10 +39,16 @@ const deptOf = (unit: string) => unit.split(',')[0]
 
 export function KartotekaPage() {
   const me = useMe()
-  const canEdit = me.role === 'HR' || me.role === 'ADMIN'
+  // ADMIN is a technical role: it reads the register, data errors in cases go through „Tryb korekty”.
+  const canEdit = me.role === 'HR'
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('widok') === 'zastepstwa' ? 'subs' : 'people'
+  const setTab = (t: 'people' | 'subs') => setParams(t === 'subs' ? { widok: 'zastepstwa' } : {}, { replace: true })
   const q = useQuery({ queryKey: ['employees'], queryFn: ({ signal }) => listEmployees(signal) })
+  const subsCount = useQuery({ queryKey: ['substitutions'], queryFn: ({ signal }) => getSubstitutions(signal) })
+  const knownUnits = useQuery({ queryKey: ['employee-units'], queryFn: ({ signal }) => getUnits(signal), enabled: canEdit })
   const [search, setSearch] = useState('')
   const [unit, setUnit] = useState('')
   const [employment, setEmployment] = useState('')
@@ -60,6 +68,7 @@ export function KartotekaPage() {
   })
 
   const units = useMemo(() => [...new Set((q.data ?? []).map((e) => e.unit))].sort((a, b) => a.localeCompare(b, 'pl')), [q.data])
+  const formUnits = useMemo(() => [...new Set([...units, ...(knownUnits.data ?? [])])].sort((a, b) => a.localeCompare(b, 'pl')), [units, knownUnits.data])
 
   if (q.isPending) return <div className="page"><LoadingState /></div>
   if (q.isError) return <div className="page"><ErrorState error={q.error} what="kartoteka pracowników" onRetry={() => q.refetch()} /></div>
@@ -91,7 +100,9 @@ export function KartotekaPage() {
           <p className="page-head__meta">
             {canEdit
               ? 'Dane pracowników, podległość służbowa, nieobecności i historia ocen'
-              : 'Osoby, które oceniasz (także w zastępstwie) · tylko do odczytu'}
+              : me.role === 'ADMIN'
+                ? 'Podgląd kartoteki · tylko do odczytu'
+                : 'Osoby, które oceniasz (także w zastępstwie) · tylko do odczytu'}
           </p>
         </div>
         {canEdit && (
@@ -109,6 +120,27 @@ export function KartotekaPage() {
         )}
       </header>
 
+      {me.role === 'ADMIN' && (
+        <InlineAlert tone="info" title="Administrator widzi kartotekę tylko do odczytu">
+          Dane pracowników zmieniają kadry. Błąd w zablokowanym polu oceny poprawisz w <Link to="/admin/korekty">Trybie korekty</Link>.
+        </InlineAlert>
+      )}
+
+      <div className="tabs" role="tablist" aria-label="Widok kartoteki">
+        <button type="button" role="tab" id="tab-people" aria-controls="panel-people" aria-selected={tab === 'people'} className={`tabs__tab ${tab === 'people' ? 'is-on' : ''}`} onClick={() => setTab('people')}>
+          Pracownicy <span className="tabs__n num">{q.data.length}</span>
+        </button>
+        <button type="button" role="tab" id="tab-subs" aria-controls="panel-subs" aria-selected={tab === 'subs'} className={`tabs__tab ${tab === 'subs' ? 'is-on' : ''}`} onClick={() => setTab('subs')}>
+          Zastępstwa oceniających {subsCount.data && <span className="tabs__n num">{subsCount.data.length}</span>}
+        </button>
+      </div>
+
+      {tab === 'subs' ? (
+        <div role="tabpanel" id="panel-subs" aria-labelledby="tab-subs">
+          <Substitutions canEdit={canEdit} />
+        </div>
+      ) : (
+      <div role="tabpanel" id="panel-people" aria-labelledby="tab-people">
       <div className="filters filters--register">
         <input type="search" className="input filters__search" placeholder="Szukaj: nazwisko, stanowisko, komórka" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Szukaj pracownika" />
         <select className="select" value={unit} onChange={(e) => setUnit(e.target.value)} aria-label="Komórka organizacyjna">
@@ -126,8 +158,8 @@ export function KartotekaPage() {
           <option value="B">Arkusz B</option>
           <option value="C">Arkusz C</option>
         </select>
-        <label className="checkbox small">
-          <input type="checkbox" checked={onlyWithout} onChange={(e) => setOnlyWithout(e.target.checked)} /> bez oceny w toku
+        <label className="check-label small">
+          <input type="checkbox" className="checkbox" checked={onlyWithout} onChange={(e) => setOnlyWithout(e.target.checked)} /> bez oceny w toku
         </label>
         <span className="faint small" role="status">{countLabel(rows.length, 'osoba', 'osoby', 'osób')}</span>
         {filtered && (
@@ -138,7 +170,7 @@ export function KartotekaPage() {
       </div>
 
       <div className="panel table-scroll">
-        <table className="table">
+        <table className="table register-table">
           <caption className="visually-hidden">Kartoteka pracowników; nagłówki kolumn sortują listę</caption>
           <thead>
             <tr>
@@ -166,8 +198,8 @@ export function KartotekaPage() {
                   {e.employment === 'URZEDNIK' ? 'urzędnik' : 'pracownik'}
                   {e.obligatoryPromotion.due && <span className="tag tag--warn emp-tag" title={e.obligatoryPromotion.reason}>obowiązkowy kolejny stopień</span>}
                 </td>
-                <td>
-                  {e.effectiveEvaluatorName ?? <span className="tag tag--danger">brak oceniającego</span>}
+                <td className="cell-evaluator">
+                  {e.evaluatorId ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : <span className="tag tag--danger">brak oceniającego</span>}
                   {e.substitution && <span className="cell-sub">zastępstwo do {fmtDate(e.substitution.to)}</span>}
                 </td>
                 <td>{e.sheetId}{!e.currentCase?.sheetId && <span className="cell-sub">sugestia</span>}</td>
@@ -199,13 +231,14 @@ export function KartotekaPage() {
         </table>
       </div>
 
-      <Substitutions canEdit={canEdit} />
+      </div>
+      )}
 
       {canEdit && (
-        <Dialog open={adding} onClose={() => setAdding(false)} title="Nowy pracownik w kartotece">
+        <Dialog open={adding} onClose={() => setAdding(false)} title="Nowy pracownik w kartotece" wide>
           {adding && (
             <>
-              <EmployeeForm initial={EMPTY_EMPLOYEE} units={units} submitLabel="Dodaj pracownika" pending={create.isPending} onSubmit={(f) => create.mutate(f)} onCancel={() => setAdding(false)} />
+              <EmployeeForm initial={EMPTY_EMPLOYEE} units={formUnits} submitLabel="Dodaj pracownika" pending={create.isPending} onSubmit={(f) => create.mutate(f)} onCancel={() => setAdding(false)} />
               <MutationError error={create.error} />
             </>
           )}
@@ -214,6 +247,24 @@ export function KartotekaPage() {
       {canEdit && <ImportDialog open={importing} onClose={() => setImporting(false)} />}
     </div>
   )
+}
+
+/** Sample file for HR: header and two example rows (fictional people). */
+const CSV_TEMPLATE = [
+  'pracownik;data_sporzadzenia;ocena;poziom;data_zapoznania',
+  'Jan Przykładowy;2024-05-06;pozytywna;powyżej oczekiwań;2024-05-08',
+  'p-identyfikator;12.03.2022;pozytywna;na poziomie oczekiwań;',
+].join('\r\n')
+
+function downloadTemplate() {
+  // BOM so that a spreadsheet opens the Polish letters as UTF-8.
+  const blob = new Blob(['﻿', CSV_TEMPLATE, '\r\n'], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'wzor-import-ocen.csv'
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -238,6 +289,7 @@ function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void })
     <Dialog
       open={open}
       onClose={close}
+      wide
       title="Import ocen historycznych (CSV)"
       actions={
         <>
@@ -257,15 +309,34 @@ function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void })
         identyfikator z kartoteki albo „Imię Nazwisko”. Ocena: pozytywna / negatywna. Poziom: np. „powyżej oczekiwań”. Daty:
         RRRR-MM-DD lub DD.MM.RRRR. Plik z błędem nie jest importowany wcale; powtórzone oceny są pomijane.
       </p>
+      <p>
+        <button type="button" className="btn btn--sm" onClick={downloadTemplate}>
+          <Download size={15} aria-hidden="true" /> Pobierz wzór CSV
+        </button>
+      </p>
       <div className="field">
         <label className="field__label" htmlFor="csv-file">Plik CSV</label>
         <FileInput id="csv-file" accept=".csv,text/csv" onChange={(e) => void onFile(e)} />
       </div>
       {run.isSuccess && (
-        <p className="notice notice--ok" role="status">
-          Zaimportowano {countLabel(run.data.imported, 'ocenę', 'oceny', 'ocen')}
-          {run.data.skipped > 0 && `, pominięto ${countLabel(run.data.skipped, 'powtórzoną', 'powtórzone', 'powtórzonych')}`}.
-        </p>
+        <div className="notice notice--ok" role="status">
+          <p>
+            Zaimportowano {countLabel(run.data.imported, 'ocenę', 'oceny', 'ocen')}
+            {run.data.skipped > 0 && `, pominięto ${countLabel(run.data.skipped, 'powtórzoną', 'powtórzone', 'powtórzonych')}`}.
+          </p>
+          {run.data.rows.length > 0 && (
+            <ul className="import-rows">
+              {run.data.rows.map((r) => (
+                <li key={r.line}>
+                  <Link to={`/kartoteka/${r.employeeId}`} onClick={close}>{r.name}</Link>
+                  {' · '}<span className="num">{fmtDate(r.assessedOn)}</span>
+                  {' · '}{r.result === 'POSITIVE' ? 'pozytywna' : 'negatywna'}{r.level && `, ${r.level}`}
+                  {r.skipped && <span className="faint"> (pominięta: już była w kartotece)</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
       <MutationError error={run.error} />
     </Dialog>
@@ -294,6 +365,7 @@ function Substitutions({ canEdit }: { canEdit: boolean }) {
     <section className="section" aria-labelledby="subs-h">
       <div className="section__head">
         <h2 id="subs-h" className="h-section">Zastępstwa oceniających</h2>
+        {subs.isPending && <span className="visually-hidden" role="status">Wczytywanie zastępstw…</span>}
         <span className="faint small">W okresie zastępstwa osoba zastępująca widzi zespół zastępowanego</span>
       </div>
       <div className="panel table-scroll">
@@ -302,7 +374,15 @@ function Substitutions({ canEdit }: { canEdit: boolean }) {
             <tr><th>Zastępowany</th><th>Zastępuje</th><th>Okres</th><th>Uwagi</th>{canEdit && <th><span className="visually-hidden">Akcje</span></th>}</tr>
           </thead>
           <tbody>
-            {(subs.data ?? []).length === 0 && <tr><td colSpan={5} className="muted">Brak zastępstw.</td></tr>}
+            {subs.isPending &&
+              [0, 1].map((i) => (
+                <tr key={i} aria-hidden="true">
+                  {[0, 1, 2, 3].map((j) => <td key={j}><div className="skeleton" style={{ width: '70%' }} /></td>)}
+                  {canEdit && <td />}
+                </tr>
+              ))}
+            {subs.isError && <tr><td colSpan={5}><ErrorState error={subs.error} what="zastępstwa" onRetry={() => subs.refetch()} /></td></tr>}
+            {subs.isSuccess && subs.data.length === 0 && <tr><td colSpan={5} className="muted">Brak zastępstw.</td></tr>}
             {(subs.data ?? []).map((s) => (
               <tr key={s.id}>
                 <td>{s.evaluatorName}</td>

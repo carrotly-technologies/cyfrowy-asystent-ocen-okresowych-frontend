@@ -47,9 +47,31 @@ export interface EmployeeView extends EmployeeFields {
     status: CaseStatus
     sheetId: SheetId | null
     nextDeadline: Deadline | null
+    /** Assessment term; `extended` when absences > 1 month moved it (art. 81 ust. 7). */
+    assessmentDue: (Deadline & { baseDate: string | null; extended: boolean }) | null
   } | null
   lastAssessment: PastAssessment | null
-  obligatoryPromotion: { due: boolean; reason: string; legalBasis: string }
+  obligatoryPromotion: ObligatoryPromotion
+}
+
+export interface ObligatoryPromotion {
+  due: boolean
+  reason: string
+  legalBasis: string
+  /** Last day to grant the grade (30 days from acknowledgement), when known. */
+  deadline: string | null
+  nextStep: string | null
+}
+
+/** GET /employees/:id only: preview of "Rozpocznij nowy cykl" (null with an open case). */
+export interface EmployeeDetail extends EmployeeView {
+  nextCycle: { ok: boolean; reason: string; openingTalk: Deadline | null } | null
+}
+
+export interface ImportResult {
+  imported: number
+  skipped: number
+  rows: { line: number; employeeId: string; name: string; assessedOn: string; result: 'POSITIVE' | 'NEGATIVE'; level: string | null; skipped: boolean }[]
 }
 
 export interface Evaluator {
@@ -124,7 +146,7 @@ export interface Statistics {
 }
 
 export const listEmployees = (signal?: AbortSignal) => apiGet<EmployeeView[]>('/employees', signal)
-export const getEmployee = (id: string, signal?: AbortSignal) => apiGet<EmployeeView>(`/employees/${encodeURIComponent(id)}`, signal)
+export const getEmployee = (id: string, signal?: AbortSignal) => apiGet<EmployeeDetail>(`/employees/${encodeURIComponent(id)}`, signal)
 export const createEmployee = (body: EmployeeFields) => apiPost<EmployeeView>('/employees', body)
 export const updateEmployee = (id: string, body: Partial<EmployeeFields>) => apiPatch<EmployeeView>(`/employees/${encodeURIComponent(id)}`, body)
 export const deleteEmployee = (id: string) => apiDelete(`/employees/${encodeURIComponent(id)}`)
@@ -138,7 +160,8 @@ export const addAbsence = (id: string, body: { type: string; from: string; to: s
 export const deleteAbsence = (id: string, absenceId: string) =>
   apiDelete(`/employees/${encodeURIComponent(id)}/absences/${encodeURIComponent(absenceId)}`)
 export const getHistory = (id: string, signal?: AbortSignal) => apiGet<HistoryResponse>(`/employees/${encodeURIComponent(id)}/history`, signal)
-export const importHistory = (csv: string) => apiPost<{ imported: number; skipped: number }>('/employees/history/import', { csv })
+export const importHistory = (csv: string) => apiPost<ImportResult>('/employees/history/import', { csv })
+export const getUnits = (signal?: AbortSignal) => apiGet<string[]>('/employees/units', signal)
 export const getSubstitutions = (signal?: AbortSignal) => apiGet<Substitution[]>('/substitutions', signal)
 export const addSubstitution = (body: { evaluatorId: string; substituteId: string; from: string; to: string; note?: string }) =>
   apiPost<Substitution>('/substitutions', body)

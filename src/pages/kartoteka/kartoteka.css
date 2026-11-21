@@ -159,3 +159,118 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* .check-label itself is global (base.css). */
+.filters--register .check-label {
+  white-space: nowrap;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  margin: var(--s-4) 0 var(--s-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.tabs__tab:hover {
+  color: var(--text);
+}
+
+.tabs__tab.is-on {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.tabs__n {
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-muted);
+  font-size: var(--text-xs);
+}
+
+.import-rows {
+  margin: var(--s-2) 0 0;
+  padding-left: 1.1rem;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.cell-evaluator {
+  overflow-wrap: anywhere;
+}
+
+.emp-due-note {
+  display: block;
+  margin-top: 2px;
+}
+
+.emp-dl-text {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Register table fits ~1150px: text wraps instead of widening the table. */
+.register-table td {
+  white-space: normal;
+}
+
+.register-table .cell-unit {
+  min-width: 8.5rem;
+  max-width: 12rem;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.register-table .person {
+  max-width: 13rem;
+}
+
+.register-table .cell-evaluator {
+  min-width: 9rem;
+}
+
+.register-table .deadline {
+  flex-wrap: wrap;
+  row-gap: 0;
+  white-space: normal;
+}
+
+.register-table .deadline > * {
+  white-space: nowrap;
+}
+
+.register-table .tag {
+  height: auto;
+  min-height: 1.375rem;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border-radius: var(--radius-sm);
+  line-height: 1.2;
+  white-space: normal;
+}

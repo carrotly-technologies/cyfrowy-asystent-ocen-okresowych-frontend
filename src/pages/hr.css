@@ -1,0 +1,84 @@
+/* Monitoring ocen (/hr). Colours only from tokens.css. */
+
+.hr-scroll {
+  overflow-x: auto;
+}
+
+.hr-table .hr-actions {
+  min-width: 0;
+  text-align: right;
+  white-space: normal;
+}
+
+.hr-table .hr-actions > * + * {
+  margin-top: 4px;
+}
+
+.hr-table .hr-actions .btn {
+  height: auto;
+  min-height: 2rem;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+
+.hr-table .cell-evaluator {
+  min-width: 8rem;
+  overflow-wrap: anywhere;
+}
+
+.hr-table td .tag {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.2;
+  height: auto;
+  min-height: 1.375rem;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.hr-obligatory {
+  margin: 0 0 var(--s-2);
+  padding-left: 1.1rem;
+}
+
+.hr-obligatory li + li {
+  margin-top: var(--s-1);
+}
+
+.block {
+  display: block;
+}
+
+/* Fit 8 columns at ~1150px: text cells wrap instead of widening the table. */
+.hr-table td,
+.hr-table td:nth-child(3),
+.hr-table td:nth-child(4),
+.hr-table .stage-cell__name {
+  white-space: normal;
+}
+
+.hr-table .deadline {
+  flex-wrap: wrap;
+  row-gap: 0;
+  white-space: normal;
+}
+
+.hr-table .deadline > * {
+  white-space: nowrap;
+}
+
+.hr-table .person,
+.hr-table .cell-unit {
+  max-width: 11rem;
+}
+
+.hr-table .cell-unit {
+  min-width: 8.5rem;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
