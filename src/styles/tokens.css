@@ -1,8 +1,8 @@
-/* Design tokens — Kompas Kompetencji.
-   Public-service look (gov.pl web palette + the token scale of the public e-service app):
-   white cards on a light grey canvas, one blue accent, red only for errors/alerts, and a
-   single diverging palette for the 1–3–5–7–9 scale. Only the style is borrowed: no official
-   logos, emblems or names. Dark mode follows the system (prefers-color-scheme) unless the user picks
+/* Design tokens — Cyfrowy Asystent Ocen Okresowych.
+   Public-service look of the gov.pl / mObywatel family (WDS: typography, spacing, focus, 48px controls) with the
+   civil-service partner palette (navy + SC blue, "angular" shapes: 4px radii, 0 for bars, menus and tables, no
+   shadows on cards). Only the style is borrowed: no emblem, no official logos, marks or names
+   (review/design-mobywatel.md). Dark mode follows the system (prefers-color-scheme) unless the user picks
    a theme in /ustawienia: then <html> carries data-theme="light" | "dark" (src/lib/preferences.ts).
    data-contrast="high" on <html> switches the semantic roles to the high-contrast set at the end.
    Catalogue and rules: docs/DESIGN.md. Components (src/components/ui) use only these variables. */
@@ -11,37 +11,45 @@
   color-scheme: light;
 
   /* ---------- Primitives (light) ---------- */
-  /* Neutrals */
+  /* Neutrals (WDS greys, text = civil-service navy-black #0B1F35) */
   --gray-0: #ffffff;
-  --gray-25: #f8f9fb;
-  --gray-50: #f2f4f7;
-  --gray-100: #e9ecf1;
-  --gray-200: #dde1e8;
-  --gray-300: #c5cbd5;
-  --gray-400: #949cab;
-  --gray-500: #5d6675;
-  --gray-600: #4a5260;
-  --gray-700: #343b47;
-  --gray-900: #1b1f26;
+  --gray-25: #eff3f7;
+  --gray-50: #f6f8f9;
+  --gray-100: #edeff4;
+  --gray-200: #e7eaed;
+  --gray-300: #ced2d7;
+  --gray-400: #a4aab2;
+  --gray-500: #656a75;
+  --gray-600: #52575f;
+  --gray-700: #34383f;
+  --gray-900: #0b1f35;
 
-  /* Blue (gov.pl primary #0052A5, link/hover #006CD7, focus #0452A8) */
-  --blue-900: #003d7a;
+  /* Blue (gov.pl primary #0052A5, navy #052D64) */
+  --blue-900: #052d64;
   --blue-800: #0052a5;
-  --blue-700: #006cd7;
-  --blue-200: #bcd0ee;
-  --blue-100: #e1ebf8;
-  --blue-50: #f0f5fc;
+  --blue-700: #1f71cc;
+  --blue-200: #bcd9f9;
+  --blue-100: #ddebfb;
+  --blue-50: #f4f6fb;
+
+  /* Civil-service partner colours: SC blue for list titles, bars and highlight borders; navy for the service bar */
+  --sc-blue: #35659a;
+  --sc-navy: #052d64;
+  --sc-band: #35659a; /* background of the footer link bar and KPI band (white text 6.0:1) */
+  --sc-faint: #eff3f7;
+  --sc-divider: #78a1cf;
+  --on-sc: #ffffff;
 
   /* ---------- Semantic roles ---------- */
-  --bg-app: var(--gray-50);
+  --bg-app: var(--gray-0); /* page is white (gov.pl), grey only for navigation, filters and table heads */
   --bg-surface: var(--gray-0);
   --bg-subtle: var(--gray-25);
   --bg-muted: var(--gray-100);
-  --bg-hover: #f0f4fa;
-  --bg-overlay: rgb(16 24 40 / 0.45);
-  --border: var(--gray-200);
-  --border-strong: var(--gray-300);
-  --border-input: #8a919c; /* ≥ 3:1 against the surface (WCAG 1.4.11) */
+  --bg-hover: #e8eef5;
+  --bg-overlay: rgb(16 19 23 / 0.65);
+  --border: var(--gray-300);
+  --border-strong: var(--gray-400);
+  --border-input: #808893; /* ≥ 3:1 against the surface (WCAG 1.4.11) */
   --text: var(--gray-900);
   --text-secondary: var(--gray-600);
   --text-muted: var(--gray-500);
@@ -53,24 +61,24 @@
   --accent-faint: var(--blue-50);
   --on-accent: #ffffff;
   --link: var(--blue-800);
-  --link-hover: var(--blue-700);
-  --focus: #0452a8;
+  --link-hover: var(--blue-900);
+  --focus: #0b1f35;
   --focus-inner: #ffffff;
-  --focus-ring: rgb(4 82 168 / 0.25);
+  --focus-ring: rgb(11 31 53 / 0.25);
 
   /* Status (deadlines, results, alerts, badges) */
-  --ok: #2f6b2a;
+  --ok: #007a34;
   --ok-bg: #eefae1;
   --ok-border: #b5dba0;
   --on-ok: #ffffff;
-  --warn: #8a5300;
-  --warn-bg: #fcf1dc;
+  --warn: #8a4a00;
+  --warn-bg: #fdf1d2;
   --warn-border: #efd29a;
   --on-warn: #ffffff;
-  --danger: #c41e38; /* gov.pl #D5233F darkened to reach 4.5:1 on light tints */
-  --danger-bg: #fdecee;
-  --danger-border: #f3c2c8;
-  --danger-strong: #900e1d;
+  --danger: #c22222;
+  --danger-bg: #f9f1f0;
+  --danger-border: #f0c4bb;
+  --danger-strong: #a30c11;
   --on-danger: #ffffff;
   --info: var(--accent);
   --info-bg: var(--accent-faint);
@@ -91,10 +99,10 @@
   --score-9-bg: #d6e4f6;
   --on-score: #ffffff;
 
-  /* Elevation */
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.05);
-  --shadow-pop: 0 6px 20px rgb(16 24 40 / 0.12), 0 0 0 1px rgb(16 24 40 / 0.05);
-  --shadow-dialog: 0 16px 48px rgb(16 24 40 / 0.22);
+  /* Elevation: cards are flat (border only); shadows only for menus and dialogs */
+  --shadow-card: none;
+  --shadow-pop: 0 0 12px rgb(101 106 117 / 0.35);
+  --shadow-dialog: 0 0 24px rgb(16 19 23 / 0.35);
 }
 
 /* ---------- Dark mode (from the system setting, unless the user chose "Jasny") ----------
@@ -124,7 +132,7 @@
     --bg-overlay: rgb(0 0 0 / 0.6);
     --border-input: #7c8595;
     --on-accent: #0b1626;
-    --focus: #8ab8f8;
+    --focus: #f6f8f9;
     --focus-inner: #111318;
     --focus-ring: rgb(138 184 248 / 0.35);
     --ok: #8fd28a;
@@ -147,9 +155,16 @@
     --score-5-bg: #262a32;
     --score-7-bg: #1b2a42;
     --score-9-bg: #18284a;
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-card: none;
     --shadow-pop: 0 6px 20px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06);
     --shadow-dialog: 0 16px 48px rgb(0 0 0 / 0.6);
+    --bg-app: var(--gray-50);
+    --sc-blue: #9db9da;
+    --sc-navy: #0b1f35;
+    --sc-band: #1d3d63;
+    --sc-faint: #172234;
+    --sc-divider: #4f79b3;
+    --on-sc: #ffffff;
   }
 }
 
@@ -177,7 +192,7 @@
   --bg-overlay: rgb(0 0 0 / 0.6);
   --border-input: #7c8595;
   --on-accent: #0b1626;
-  --focus: #8ab8f8;
+  --focus: #f6f8f9;
   --focus-inner: #111318;
   --focus-ring: rgb(138 184 248 / 0.35);
   --ok: #8fd28a;
@@ -200,9 +215,16 @@
   --score-5-bg: #262a32;
   --score-7-bg: #1b2a42;
   --score-9-bg: #18284a;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-card: none;
   --shadow-pop: 0 6px 20px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06);
   --shadow-dialog: 0 16px 48px rgb(0 0 0 / 0.6);
+  --bg-app: var(--gray-50);
+  --sc-blue: #9db9da;
+  --sc-navy: #0b1f35;
+  --sc-band: #1d3d63;
+  --sc-faint: #172234;
+  --sc-divider: #4f79b3;
+  --on-sc: #ffffff;
 }
 
 /* Theme wrappers re-resolve the semantic aliases, so nested light/dark previews work. */
@@ -212,8 +234,8 @@
   --bg-surface: var(--gray-0);
   --bg-subtle: var(--gray-25);
   --bg-muted: var(--gray-100);
-  --border: var(--gray-200);
-  --border-strong: var(--gray-300);
+  --border: var(--gray-300);
+  --border-strong: var(--gray-400);
   --text: var(--gray-900);
   --text-secondary: var(--gray-600);
   --text-muted: var(--gray-500);
@@ -224,7 +246,7 @@
   --accent-border: var(--blue-200);
   --accent-faint: var(--blue-50);
   --link: var(--blue-800);
-  --link-hover: var(--blue-700);
+  --link-hover: var(--blue-900);
   --info: var(--accent);
   --info-bg: var(--accent-faint);
   --info-border: var(--accent-border);
@@ -271,6 +293,9 @@
   --score-7: #164282;
   --score-9: #08376f;
   --on-score: #ffffff;
+  --sc-blue: #1f4470;
+  --sc-band: #052d64;
+  --sc-navy: #031b3d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -322,6 +347,9 @@
     --score-9: #9ec3f5;
     --score-9-bg: #0c1a36;
     --on-score: #000000;
+    --sc-blue: #c5d7ec;
+    --sc-band: #000000;
+    --sc-navy: #000000;
   }
 }
 
@@ -373,27 +401,30 @@
   --score-9: #9ec3f5;
   --score-9-bg: #0c1a36;
   --on-score: #000000;
+  --sc-blue: #c5d7ec;
+  --sc-band: #000000;
+  --sc-navy: #000000;
 }
 
 :root {
-  /* ---------- Typography (Open Sans 400 / 600 / 700) ---------- */
+  /* ---------- Typography (Open Sans 400 / 700, WDS sizes: body 16/24, h1 28/36, h2 24/32, h3 20/26) ---------- */
   --font-sans: 'Open Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-base: 0.875rem;
-  --text-md: 0.9375rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1rem;
   --text-body: 1rem; /* forms and long-form reading */
   --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.625rem;
-  --text-3xl: 2rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.75rem;
   --leading-tight: 1.25;
   --leading: 1.5;
   --leading-loose: 1.6;
   --weight-regular: 400;
-  --weight-medium: 400; /* emphasis in running text is 600 */
-  --weight-semibold: 600;
+  --weight-medium: 400;
+  --weight-semibold: 700; /* WDS has only 400 and 700 */
   --weight-bold: 700;
 
   /* ---------- Spacing (app scale 2…56; --s-N = N × 4px) ---------- */
@@ -408,20 +439,27 @@
   --s-10: 40px;
   --s-12: 48px;
   --s-14: 56px;
+  --s-16: 64px;
 
   /* ---------- Shape ---------- */
-  --radius-xs: 4px; /* fields, checkboxes, alerts (gov.pl) */
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px; /* cards */
-  --radius-xl: 16px; /* dialogs, sheets */
-  --radius-2xl: 24px;
-  --radius-pill: 999px; /* buttons, badges, switches */
+  /* "Angular" civil-service shapes: 4px for controls, cards, badges and dialogs; 0 for bars, menus and tables.
+     No pills: --radius-pill stays only as a name and resolves to 4px; true circles use --radius-round. */
+  --radius-xs: 4px;
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-btn: 4px;
+  --radius-badge: 4px;
+  --radius-pill: 4px;
+  --radius-round: 999px;
   --border-w: 1px;
   --border-w-strong: 2px;
 
-  /* ---------- Focus (gov.pl triple ring) ---------- */
-  --focus-shadow: 0 0 0 2px var(--focus), 0 0 0 4px var(--focus-inner), 0 0 0 6px var(--focus);
+  /* ---------- Focus (WDS: white gap + dark ring, visible on blue buttons too) ---------- */
+  --focus-shadow: 0 0 0 2px var(--focus-inner), 0 0 0 4px var(--focus);
+  --section-rule: 4px solid var(--sc-blue);
 
   /* ---------- Sizes & motion ---------- */
   --control-h: 3rem;
@@ -439,8 +477,10 @@
   --z-toast: 200;
 
   /* ---------- Layout ---------- */
-  --topbar-h: 3.5rem;
-  --rail-w: 248px;
+  --topbar-h: 4rem;
+  --service-bar-h: 3rem;
+  --rail-w: 280px;
+  --bottom-nav-h: 4rem;
   --assistant-w: 360px;
 }
 
