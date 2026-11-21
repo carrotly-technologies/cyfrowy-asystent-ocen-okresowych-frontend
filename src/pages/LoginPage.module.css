@@ -1,41 +1,82 @@
-.root {
-  display: grid;
+/* Sign-in in the gov.pl service layout: white header with our wordmark, navy service bar, form box with the
+   SC-blue top rule, demo accounts as a grid of tiles, footer with the "not an official service" note. */
+.page {
+  display: flex;
+  flex-direction: column;
   min-height: 100dvh;
-  place-items: center;
-  padding: var(--s-8) var(--s-4);
   background: var(--bg-app);
 }
 
-.card {
-  width: 100%;
-  max-width: 440px;
-  padding: var(--s-8);
-  border: var(--border-w) solid var(--border);
-  border-radius: var(--radius-lg);
+.header {
+  display: flex;
+  align-items: center;
+  min-height: var(--topbar-h);
+  padding: 0 var(--s-6);
+  border-bottom: var(--border-w) solid var(--border);
   background: var(--bg-surface);
-  box-shadow: var(--shadow-card);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
-  margin-bottom: var(--s-6);
-  color: var(--accent);
-  font-weight: var(--weight-semibold);
+  gap: var(--s-3);
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
 }
 
-.office {
-  margin-top: var(--s-1);
-  color: var(--text-muted);
+.brand svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.servicebar {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--service-bar-h);
+  padding: 0 var(--s-6);
+  background: var(--sc-navy);
+  color: var(--on-sc);
+}
+
+.servicebar span {
+  display: flex;
+  align-items: center;
+  padding-top: 4px;
+  border-bottom: 4px solid var(--on-sc);
   font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.root {
+  display: grid;
+  flex: 1 0 auto;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  gap: var(--s-10);
+  align-items: start;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--s-10) var(--s-8) var(--s-12);
+}
+
+.card {
+  padding: var(--s-6);
+  border: var(--border-w) solid var(--border);
+  border-top: var(--section-rule);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
 }
 
 .h1 {
   margin-bottom: var(--s-2);
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
   font-weight: var(--weight-bold);
-  line-height: var(--leading-tight);
+  line-height: 1.2857;
 }
 
 .lead {
@@ -52,41 +93,42 @@
   margin-bottom: var(--s-4);
 }
 
-@media (max-width: 480px) {
-  .card {
-    padding: var(--s-6) var(--s-4);
-  }
-}
-
 .demo {
-  margin-top: var(--s-8);
-  padding-top: var(--s-6);
-  border-top: var(--border-w) solid var(--border);
+  min-width: 0;
 }
 
 .h2 {
   margin-bottom: var(--s-2);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
 }
 
 .demoLead {
   margin-bottom: var(--s-4);
   color: var(--text-secondary);
-  font-size: var(--text-sm);
 }
 
 .demoList {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   gap: var(--s-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.demoList > li {
+  display: flex;
+}
+
+.demoList > li > * {
+  flex: 1;
+}
+
 .demoRole {
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
+  color: var(--text);
 }
 
 .demoLogin {
@@ -94,4 +136,51 @@
   margin-top: var(--s-1);
   color: var(--text-muted);
   font-size: var(--text-sm);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-5) var(--s-8) var(--s-6);
+  border-top: 4px solid var(--sc-band);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.footer strong {
+  color: var(--text);
+}
+
+@media (max-width: 1023px) {
+  .root {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 640px;
+    gap: var(--s-8);
+  }
+}
+
+@media (max-width: 767px) {
+  .header,
+  .servicebar {
+    padding: 0 var(--s-4);
+  }
+
+  .brand {
+    font-size: var(--text-base);
+  }
+
+  .root {
+    padding: var(--s-6) var(--s-4) var(--s-8);
+  }
+
+  .card {
+    padding: var(--s-5) var(--s-4);
+  }
+
+  .footer {
+    padding-right: var(--s-4);
+    padding-left: var(--s-4);
+  }
 }
