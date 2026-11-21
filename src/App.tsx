@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { CasePage } from './case/CasePage'
+import { AdminCorrectionsPage } from './pages/AdminCorrectionsPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
 import { HrPage } from './pages/HrPage'
 import { KnowledgePage } from './pages/KnowledgePage'
@@ -17,7 +18,7 @@ export default function App() {
     <Routes>
       <Route path="/logowanie" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
-        <Route element={<RequireRole roles={['SUPERVISOR']} />}>
+        <Route element={<RequireRole roles={['SUPERVISOR', 'EMPLOYEE', 'HR']} />}>
           <Route path="/teczka/:id/arkusz" element={<SheetPage />} />
         </Route>
         <Route element={<AppShell />}>
@@ -35,6 +36,7 @@ export default function App() {
           </Route>
           <Route element={<RequireRole roles={['ADMIN']} />}>
             <Route path="/admin/uzytkownicy" element={<AdminUsersPage />} />
+            <Route path="/admin/korekty" element={<AdminCorrectionsPage />} />
             <Route path="/admin" element={<Navigate to="/admin/uzytkownicy" replace />} />
           </Route>
           <Route path="/baza-wiedzy" element={<KnowledgePage />} />

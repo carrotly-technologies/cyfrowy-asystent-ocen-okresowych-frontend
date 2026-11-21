@@ -61,6 +61,12 @@ export function SheetPartIII({
 
   const list = grades.data?.grades ?? []
   const options = list.map((g) => ({ value: g.id, label: g.label }))
+  // Part III: the requested grade is the next one after the current (art. 89 ust. 1); none after the highest.
+  const nextOf = (id: string | null) => {
+    const i = list.findIndex((g) => g.id === id)
+    return i >= 0 && i < list.length - 1 ? list[i + 1].id : null
+  }
+  const highest = !!form.currentGrade && list.length > 0 && list.at(-1)?.id === form.currentGrade
 
   const current: Part3 = { ...form, appointedYear: /^\d{4}$/.test(year) ? Number(year) : null }
   const dirty = attached && editable && !same(current, pick(request))
@@ -142,10 +148,18 @@ export function SheetPartIII({
                     placeholder="Wybierz"
                     options={options}
                     value={form.currentGrade ?? ''}
-                    onChange={(e) => setForm((v) => ({ ...v, currentGrade: e.target.value || null }))}
+                    onChange={(e) => {
+                      const currentGrade = e.target.value || null
+                      setForm((v) => ({ ...v, currentGrade, requestedGrade: nextOf(currentGrade) }))
+                    }}
                   />
                 )}
               </Field>
+              {highest && (
+                <InlineAlert tone="warning" title="Najwyższy stopień służbowy">
+                  Ocenianemu nie można przyznać kolejnego stopnia służbowego. Oceniany posiada już najwyższy możliwy stopień służbowy.
+                </InlineAlert>
+              )}
               <Field id={GRANTED_ID} label="Data przyznania stopnia służbowego" error={errorFor(GRANTED_ID)}>
                 {(p) => (
                   <TextInput
@@ -163,7 +177,7 @@ export function SheetPartIII({
           </PartSection>
 
           <PartSection title="Wniosek o przyznanie urzędnikowi służby cywilnej kolejnego stopnia służbowego">
-            <Field id={REQUESTED_ID} label="Wnioskowany stopień służbowy" hint="Kolejny stopień po posiadanym." error={errorFor(REQUESTED_ID)}>
+            <Field id={REQUESTED_ID} label="Wnioskowany stopień służbowy" hint="Uzupełnia się automatycznie: kolejny stopień po posiadanym (art. 89 ust. 1 ustawy)." error={errorFor(REQUESTED_ID)}>
               {(p) => (
                 <Select
                   {...p}

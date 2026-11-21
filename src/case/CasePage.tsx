@@ -2,6 +2,7 @@ import { FileText, MessageSquareText, Printer } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
+import { apiDownload, errorMessage } from '../api/client'
 import type { CriteriaCatalogue } from '../api/reference'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { ErrorState, LoadingState } from '../components/QueryState'
@@ -11,6 +12,7 @@ import { useFeatures } from '../lib/features'
 import { caseCriteria, useCriteria, useSheets, type CaseCriteria } from '../lib/model'
 import { canOpenStage, caseSteps, caseUrl, CASE_STATUS_LABEL, stageFromSlug, stepTarget, STAGE_SHORT, STAGE_SLUG, viewStage } from '../lib/stages'
 import { HOME_BY_ROLE, useMe } from '../lib/useAuth'
+import { CaseHistory } from './CaseHistory'
 import s from './CasePage.module.css'
 import { DocumentStage } from './stages/DocumentStage'
 import { ObservationStage } from './stages/ObservationStage'
@@ -52,6 +54,7 @@ export function CasePage() {
   const sheets = useSheets()
   const features = useFeatures()
   const [assistantPref, setAssistantOpen] = useState(readAssistantPref)
+  const [pdfError, setPdfError] = useState<string | null>(null)
   const assistantOpen = features.assistant && assistantPref
   const workRef = useRef<HTMLElement>(null)
   useEffect(() => {
@@ -98,10 +101,20 @@ export function CasePage() {
               <FileText size={15} strokeWidth={1.75} aria-hidden="true" />
               Podgląd arkusza
             </Link>
-            <Link className="btn" to={`/teczka/${detail.id}/arkusz?druk=1`}>
+            <button
+              type="button"
+              className="btn"
+              title={pdfError ?? 'PDF arkusza generowany na serwerze'}
+              onClick={() =>
+                void apiDownload(`/cases/${encodeURIComponent(detail.id)}/sheet.pdf`, `ocena-${detail.id}.pdf`).then(
+                  () => setPdfError(null),
+                  (err: unknown) => setPdfError(errorMessage(err)),
+                )
+              }
+            >
               <Printer size={15} strokeWidth={1.75} aria-hidden="true" />
               Pobierz PDF
-            </Link>
+            </button>
             {features.assistant && (
               <button type="button" className={`btn ${assistantOpen ? 'btn--pressed' : ''}`} aria-pressed={assistantOpen} onClick={toggleAssistant}>
                 <MessageSquareText size={15} strokeWidth={1.75} aria-hidden="true" />
@@ -127,6 +140,8 @@ export function CasePage() {
         </div>
       </header>
 
+      {pdfError && <p className="sheet-bar__error" role="alert">{pdfError}</p>}
+      <CaseHistory detail={detail} />
       <div className={s.body}>
         <section ref={workRef} className={`case-work ${s.work}`} aria-label={`Etap: ${STAGE_SHORT[stage]}`}>
           {canOpenStage(detail, stage) ? <StageWorkspace {...props} /> : <StageNotOpen detail={detail} stage={stage} />}

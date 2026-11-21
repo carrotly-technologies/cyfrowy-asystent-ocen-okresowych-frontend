@@ -33,7 +33,10 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
   const t = criteria.sheet?.template
   const ev = detail.evaluation
   const extra = criteria.additional
-  const place = officePlace()
+  const place = officePlace(detail)
+  // Sheet A (załącznik nr 2, kierownik urzędu) has no „Komórka organizacyjna” and calls the evaluator's post „Stanowisko”.
+  const isA = sheet === 'A'
+  const evaluatorPostLabel = isA ? 'Stanowisko' : 'Stanowisko pracy'
   const scaleCols = criteria.scale
   const scaleHead = scaleCols.map((p) => model.scale.find((x) => x.points === p)?.label ?? '')
   const prev = detail.previousAssessment
@@ -59,6 +62,7 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
     <article className="doc" lang="pl">
       <div className="doc-page">
         <div className="doc-annex">
+          {detail.office?.logoUrl ? <img className="doc-logo" src={detail.office.logoUrl} alt="" /> : <span />}
           <span>{t?.annex}</span>
         </div>
         <h1 className="doc-title">
@@ -78,15 +82,15 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
             </tr>
             <tr><td className="doc-label">Imię</td><td>{p.firstName}</td></tr>
             <tr><td className="doc-label">Nazwisko</td><td>{p.lastName}</td></tr>
-            <tr><td className="doc-label">Komórka organizacyjna</td><td>{p.unit}</td></tr>
+            {!isA && <tr><td className="doc-label">Komórka organizacyjna</td><td>{p.unit}</td></tr>}
             <tr><td className="doc-label">Stanowisko pracy</td><td>{p.position}</td></tr>
             <tr>
               <th colSpan={2} className="doc-th-group">DANE OCENIAJĄCEGO</th>
             </tr>
             <tr><td className="doc-label">Imię</td><td>{e.firstName}</td></tr>
             <tr><td className="doc-label">Nazwisko</td><td>{e.lastName}</td></tr>
-            <tr><td className="doc-label">Komórka organizacyjna</td><td>{e.unit}</td></tr>
-            <tr><td className="doc-label">Stanowisko pracy</td><td>{e.position}</td></tr>
+            {!isA && <tr><td className="doc-label">Komórka organizacyjna</td><td>{e.unit}</td></tr>}
+            <tr><td className="doc-label">{evaluatorPostLabel}</td><td>{e.position}</td></tr>
           </tbody>
         </table>
 
@@ -244,8 +248,8 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
             <tr><th colSpan={6} className="doc-th-group">DANE OCENIAJĄCEGO</th></tr>
             <tr><td className="doc-label">Imię</td><td colSpan={5}>{e.firstName}</td></tr>
             <tr><td className="doc-label">Nazwisko</td><td colSpan={5}>{e.lastName}</td></tr>
-            <tr><td className="doc-label">Komórka organizacyjna</td><td colSpan={5}>{e.unit}</td></tr>
-            <tr><td className="doc-label">Stanowisko pracy</td><td colSpan={5}>{e.position}</td></tr>
+            {!isA && <tr><td className="doc-label">Komórka organizacyjna</td><td colSpan={5}>{e.unit}</td></tr>}
+            <tr><td className="doc-label">{evaluatorPostLabel}</td><td colSpan={5}>{e.position}</td></tr>
           </tbody>
         </table>
         <Signatures
@@ -270,7 +274,11 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
         </div>
         <div className="doc-box doc-box--note">
           <p><i>Pouczenie</i></p>
-          <p>{t?.objectionNotice}</p>
+          <p>
+            {t?.objectionNotice}
+            {/* Sheet A leaves the addressee blank („sprzeciw do: …”); a preset comes from OBJECTION_RECIPIENT_A. */}
+            {isA && <> <span className="doc-val">{detail.office?.objectionRecipient ?? '……………………………………………'}</span></>}
+          </p>
           {t?.objectionNoticeNote && <p className="doc-muted">{t.objectionNoticeNote}</p>}
         </div>
       </div>

@@ -275,7 +275,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
         </InfoList>
         {signed && (
           <InlineAlert tone="success" title="Data i podpis oceniającego">
-            Podpisano elektronicznie: {evaluator.firstName} {evaluator.lastName}, {officePlace()}, {fmtDate(signed)}
+            Podpisano elektronicznie: {evaluator.firstName} {evaluator.lastName}, {officePlace(detail)}, {fmtDate(signed)}
           </InlineAlert>
         )}
       </PartSection>

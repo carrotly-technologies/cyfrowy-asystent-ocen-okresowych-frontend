@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { getHrOverview, sendReminders, type HrCase, type HrOverview, type ReminderResponse } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
@@ -140,7 +141,13 @@ export function HrPage() {
                   </td>
                   <td className="cell-unit" title={c.person.unit}>{deptOf(c.person.unit)}</td>
                   <td title={c.evaluatorName}>{c.evaluatorName}</td>
-                  <td>{`Okresowa · ${c.sheetId ?? '—'}`}</td>
+                  <td>
+                    {c.sheetId ? (
+                      <Link to={`/teczka/${c.id}/arkusz`} title="Podgląd arkusza i PDF">{`Okresowa · arkusz ${c.sheetId}`}</Link>
+                    ) : (
+                      'Okresowa · —'
+                    )}
+                  </td>
                   <td>
                     <div className="stage-cell">
                       <StageDots stages={c.stages} />

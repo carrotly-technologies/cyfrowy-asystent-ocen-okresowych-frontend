@@ -1,10 +1,10 @@
+import type { CaseDetail } from '../api/cases'
+
 /**
  * Miejscowość wpisywana przy podpisach na arkuszu oceny („miejscowość, data”): w podglądzie arkusza
- * (`SheetDocument`) i przy podpisie oceniającego w części II. Jedyne miejsce w kodzie.
- *
- * Ograniczenie: API nie podaje jeszcze miejscowości urzędu (jest tylko `officeName`), więc to wartość
- * demonstracyjna. Gdy backend ją doda, zmień tylko tę funkcję, żeby czytała ją z teczki.
+ * (`SheetDocument`) i przy podpisie oceniającego w części II. Pochodzi z konfiguracji urzędu w backendzie
+ * (zmienna `OFFICE_CITY`, `CaseDetail.office`), więc każdy urząd ustawia ją bez zmiany kodu.
  */
-export function officePlace(): string {
-  return 'Warszawa'
+export function officePlace(detail: Pick<CaseDetail, 'office'>): string {
+  return detail.office?.city ?? ''
 }
