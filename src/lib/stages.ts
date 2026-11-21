@@ -45,6 +45,7 @@ export const CASE_STATUS_LABEL = {
   W_TOKU: 'W toku',
   DO_ZAPOZNANIA: 'Do zapoznania',
   OKRES_SPRZECIWU: 'Okres sprzeciwu',
+  SPRZECIW_W_ROZPATRZENIU: 'Sprzeciw w rozpatrzeniu',
   ZAKONCZONA: 'Zakończona',
 } as const
 

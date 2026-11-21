@@ -2115,3 +2115,69 @@
   display: grid;
   gap: 4px;
 }
+
+/* Post-assessment paths (src/case/LegalPaths.tsx): sprzeciw, fikcja zapoznania, zmiana terminu */
+.legal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  align-items: flex-start;
+  margin-top: var(--s-3);
+}
+
+.legal-form > * {
+  max-width: 100%;
+}
+
+.legal-form .small + .small {
+  margin-top: 0;
+}
+
+.legal-form__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.legal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: var(--s-3) 0;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.legal-history {
+  list-style: none;
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+}
+
+.legal-history li {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.legal-history li:last-child {
+  border-bottom: 0;
+}
+
+.section > .legal-panel,
+.section > [class*='alert'] + [class*='alert'] {
+  margin-top: var(--s-3);
+}
+
+.panel.legal-form {
+  padding: var(--s-4);
+}
+
+.legal-form input[type='date'] {
+  max-width: 14rem;
+}

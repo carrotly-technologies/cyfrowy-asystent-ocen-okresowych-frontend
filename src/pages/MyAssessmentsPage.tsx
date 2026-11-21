@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
-import { errorMessage } from '../api/client'
-import { getCases, type CaseAction, type CaseDetail } from '../api/cases'
+import { getCases, type CaseAction, type CaseDetail, type CaseSummary } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, Button, InfoList, InfoRow, InlineAlert, StageStepper, StatusBadge } from '../components/ui'
@@ -10,12 +9,15 @@ import { fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, findCriterion, useCriteria, useSheets } from '../lib/model'
 import { allows, caseSteps, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 import { useMe } from '../lib/useAuth'
+import { AckFictionInfo, AssessmentVersions, CaseHistory, DueDateRequestSection, ObjectionSection } from '../case/LegalPaths'
+import { legalErrorText } from '../lib/legalQueries'
 import { SheetDocument } from '../sheet/SheetDocument'
 
 const STATUS_TONE = {
   W_TOKU: 'info',
   DO_ZAPOZNANIA: 'warning',
   OKRES_SPRZECIWU: 'warning',
+  SPRZECIW_W_ROZPATRZENIU: 'warning',
   ZAKONCZONA: 'success',
 } as const
 
@@ -34,39 +36,52 @@ export function MyAssessmentsPage() {
           <p className="page-head__meta">{me.name} · {me.position}</p>
         </div>
       </header>
-      <section className="section" aria-labelledby="mine-h">
-        <h2 id="mine-h" className="h-section">Oceny okresowe</h2>
-        {cases.length === 0 ? (
-          <p className="muted">Nie masz jeszcze żadnej oceny okresowej w systemie.</p>
-        ) : (
-          <div className="panel">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Cykl oceny</th>
-                  <th>Etap</th>
-                  <th>Najbliższy termin</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cases.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      <Link to={`/moje-oceny/${c.id}`}>{c.cycleLabel}</Link>
-                      <div className="faint small">{c.sheetId ? `Arkusz ${c.sheetId}` : 'Arkusz do ustalenia'}</div>
-                    </td>
-                    <td>{STAGE_SHORT[c.currentStage]}</td>
-                    <td><DeadlineText deadline={c.nextDeadline} /></td>
-                    <td><StatusBadge tone={STATUS_TONE[c.status]}>{CASE_STATUS_LABEL[c.status]}</StatusBadge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {cases.length === 0 ? (
+        <p className="muted">Nie masz jeszcze żadnej oceny okresowej w systemie.</p>
+      ) : (
+        <>
+          <CaseTable id="current-h" title="Bieżące oceny" cases={cases.filter((c) => c.status !== 'ZAKONCZONA')} empty="Nie masz teraz oceny w toku." />
+          <CaseTable id="past-h" title="Historia ocen" cases={cases.filter((c) => c.status === 'ZAKONCZONA')} empty="Brak zakończonych ocen." />
+        </>
+      )}
     </div>
+  )
+}
+
+function CaseTable({ id, title, cases, empty }: { id: string; title: string; cases: CaseSummary[]; empty: string }) {
+  return (
+    <section className="section" aria-labelledby={id}>
+      <h2 id={id} className="h-section">{title}</h2>
+      {cases.length === 0 ? (
+        <p className="muted">{empty}</p>
+      ) : (
+        <div className="panel">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Cykl oceny</th>
+                <th>Etap</th>
+                <th>Najbliższy termin</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cases.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <Link to={`/moje-oceny/${c.id}`}>{c.cycleLabel}</Link>
+                    <div className="faint small">{c.sheetId ? `Arkusz ${c.sheetId}` : 'Arkusz do ustalenia'}</div>
+                  </td>
+                  <td>{STAGE_SHORT[c.currentStage]}</td>
+                  <td><DeadlineText deadline={c.nextDeadline} /></td>
+                  <td><StatusBadge tone={STATUS_TONE[c.status]}>{CASE_STATUS_LABEL[c.status]}</StatusBadge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -81,6 +96,8 @@ export function MyCasePage() {
   if (model.isError) return <div className="page"><ErrorState error={model.error} what="wykaz kryteriów oceny" /></div>
   const detail = q.data
   const criteria = caseCriteria(detail, sheets.data)
+  const template = sheets.data?.find((sh) => sh.id === detail.sheetId)?.template
+  const notice = detail.sentForAckOn && template ? [template.objectionNotice, template.objectionNoticeNote].filter(Boolean).join(' ') : undefined
   return (
     <div className="page">
       <BackLink to="/moje-oceny" />
@@ -99,6 +116,20 @@ export function MyCasePage() {
       <section className="section">
         <EmployeeActions detail={detail} />
       </section>
+
+      <section className="section" aria-labelledby="status-h">
+        <h2 id="status-h" className="h-section">Stan i terminy</h2>
+        <InfoList>
+          <InfoRow label="Status" value={CASE_STATUS_LABEL[detail.status]} />
+          <InfoRow label="Bieżący etap" value={STAGE_SHORT[detail.currentStage]} />
+          <InfoRow label={detail.nextDeadline?.label ?? 'Najbliższy termin'} value={<DeadlineText deadline={detail.nextDeadline} showLegal />} />
+          {detail.objectionDeadline && detail.objectionDeadline.date !== detail.nextDeadline?.date && <InfoRow label="Termin na sprzeciw" value={<DeadlineText deadline={detail.objectionDeadline} showLegal />} />}
+        </InfoList>
+      </section>
+
+      <AckFictionInfo detail={detail} />
+      <ObjectionSection detail={detail} notice={notice} />
+      <DueDateRequestSection detail={detail} />
 
       {detail.sheetId && (
         <section className="section" aria-labelledby="crit-h">
@@ -129,6 +160,9 @@ export function MyCasePage() {
           </div>
         </section>
       )}
+
+      <AssessmentVersions detail={detail} />
+      <CaseHistory detail={detail} />
     </div>
   )
 }
@@ -157,13 +191,13 @@ function EmployeeActions({ detail }: { detail: CaseDetail }) {
         <Button loading={act.isPending} onClick={() => act.mutate(action)}>
           {t.button}
         </Button>
-        {act.error ? <p role="alert">{errorMessage(act.error)}</p> : null}
+        {act.error ? <p role="alert">{legalErrorText(act.error)}</p> : null}
       </InlineAlert>
     )
   }
   if (detail.acknowledgedOn) {
     return (
-      <InlineAlert tone="info" title={`Zapoznałeś(-aś) się z oceną ${fmtDate(detail.acknowledgedOn)}`}>
+      <InlineAlert tone="info" title={`${detail.ackFiction ? 'Zapoznanie z oceną odnotowano' : 'Zapoznałeś(-aś) się z oceną'} ${fmtDate(detail.acknowledgedOn)}`}>
         {detail.objectionDeadline && (
           <p>
             Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} />

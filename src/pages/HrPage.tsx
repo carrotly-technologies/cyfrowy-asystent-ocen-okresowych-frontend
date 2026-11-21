@@ -3,6 +3,7 @@ import { Bell } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { getHrOverview, sendReminders, type HrCase, type HrOverview, type ReminderResponse } from '../api/cases'
+import { AckFictionButton } from '../case/LegalPaths'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
@@ -155,12 +156,13 @@ export function HrPage() {
                     </div>
                   </td>
                   <td>{c.nextDeadline ? <DeadlineText deadline={c.nextDeadline} /> : <span className="faint">—</span>}</td>
-                  <td><span title={CASE_STATUS_LABEL[c.status]} className={`tag ${c.status === 'OKRES_SPRZECIWU' || c.status === 'DO_ZAPOZNANIA' ? 'tag--accent' : ''}`}>{CASE_STATUS_LABEL[c.status]}</span></td>
+                  <td><span title={CASE_STATUS_LABEL[c.status]} className={`tag ${c.status === 'OKRES_SPRZECIWU' || c.status === 'SPRZECIW_W_ROZPATRZENIU' || c.status === 'DO_ZAPOZNANIA' ? 'tag--accent' : ''}`}>{CASE_STATUS_LABEL[c.status]}</span></td>
                   <td className="cell-action">
                     <button type="button" className="btn btn--sm" disabled={sentToday || remind.isPending} onClick={() => remind.mutate([c.id])}>
                       {sentToday ? 'Wysłano dziś' : 'Wyślij przypomnienie'}
                     </button>
                     {c.lastReminderOn && !sentToday && <span className="cell-sub num">ostatnio {fmtDate(c.lastReminderOn)}</span>}
+                    {c.status === 'DO_ZAPOZNANIA' && <AckFictionButton caseId={c.id} name={`${c.person.firstName} ${c.person.lastName}`} />}
                   </td>
                 </tr>
               )
