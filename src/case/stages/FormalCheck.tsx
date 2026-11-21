@@ -1,6 +1,8 @@
 import { Check, X } from 'lucide-react'
 import type { CaseAction, CaseDetail, FormalCheckItem } from '../../api/cases'
-import { InlineAlert } from '../../components/ui'
+import { useState } from 'react'
+import { ConfirmDialog, InlineAlert } from '../../components/ui'
+import { errorMessage } from '../../api/client'
 import { SCALE_LABELS } from '../../lib/scale'
 import { useCaseAction } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
@@ -17,8 +19,21 @@ export function SignedStatus({ detail }: { detail: CaseDetail }) {
 }
 
 /** ✓/✗ list from the backend + the signing action, blocked while any item fails. The signed status is not shown here. */
-export function FormalCheck({ detail, action = 'SIGN_ASSESSMENT', label }: { detail: CaseDetail; action?: CaseAction; label: string }) {
+export function FormalCheck({
+  detail,
+  action = 'SIGN_ASSESSMENT',
+  label,
+  onDone,
+}: {
+  detail: CaseDetail
+  action?: CaseAction
+  label: string
+  /** Called after the action succeeded (e.g. to move focus to the next step). */
+  onDone?: () => void
+}) {
   const act = useCaseAction(detail.id)
+  const [confirming, setConfirming] = useState(false)
+  const ev = detail.evaluation
   const items = [...detail.formalCheck, ...localChecks(detail)]
   const errors = items.filter((i) => !i.ok)
   const signed = !!detail.signedByEvaluatorOn
@@ -45,9 +60,33 @@ export function FormalCheck({ detail, action = 'SIGN_ASSESSMENT', label }: { det
         <div className="formal__foot">
           {!signed && (
             <>
-              <button type="button" className="btn btn--primary" disabled={errors.length > 0 || act.isPending || !allows(detail, action)} onClick={() => act.mutate(action)}>
+              <button type="button" className="btn btn--primary" disabled={errors.length > 0 || act.isPending || !allows(detail, action)} onClick={() => setConfirming(true)}>
                 {label}
               </button>
+              <ConfirmDialog
+                open={confirming}
+                title="Podpisać ocenę?"
+                confirmLabel={label}
+                cancelLabel="Wróć"
+                onConfirm={async () => {
+                  await act.mutateAsync(action)
+                  onDone?.()
+                }}
+                onCancel={() => setConfirming(false)}
+                errorText={errorMessage}
+              >
+                <dl className="confirm-summary">
+                  <dt>Wynik</dt>
+                  <dd>{ev ? (ev.result === 'POSITIVE' ? 'ocena pozytywna' : 'ocena negatywna') : '—'}</dd>
+                  <dt>Średnia</dt>
+                  <dd className="num">{ev?.averageDisplay ?? '—'}</dd>
+                  <dt>Poziom</dt>
+                  <dd>{ev?.level?.label.toLowerCase() ?? '—'}</dd>
+                  <dt>Kontrola formalna</dt>
+                  <dd>bez uwag</dd>
+                </dl>
+                <p>Po podpisie pola oceny zostaną zablokowane. Ocenę przekażesz ocenianemu w następnym kroku.</p>
+              </ConfirmDialog>
               {errors.length > 0 && (
                 <BlockedReason>
                   Zatwierdzenie jest zablokowane, dopóki lista zawiera błędy. Popraw: {errors.map((e) => e.message.replace(/\.$/, '')).join('; ')}.

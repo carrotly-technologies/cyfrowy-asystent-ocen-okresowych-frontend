@@ -89,10 +89,10 @@ export interface PartnerTeam {
   disclaimer: string
 }
 
+/** One response as the supervisor sees it: the overall index only (no answers to single questions). */
 export interface PulsePoint {
   id: string
   date: string
-  answers: PulseAnswers
   index: number
   sharedComment: string | null
 }
@@ -111,7 +111,6 @@ export interface PersonCard {
   position: string
   caseId: string
   points: PulsePoint[]
-  questions: { id: PulseQuestionId; label: string }[]
   trend: { kind: TrendKind; delta: number; description: string }
   signals: Signal[]
   notes: string[]

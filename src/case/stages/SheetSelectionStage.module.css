@@ -84,3 +84,25 @@
     align-items: stretch;
   }
 }
+
+/* Summary in the confirmation dialog */
+.summary {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-1) var(--s-4);
+  margin-bottom: var(--s-3);
+}
+
+.summary dt {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .summary dd {
+    margin-bottom: var(--s-2);
+  }
+}

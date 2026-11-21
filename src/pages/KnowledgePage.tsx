@@ -8,7 +8,7 @@ import { useFeatures } from '../lib/features'
 export function KnowledgePage() {
   const { assistant } = useFeatures()
   const meta = assistant
-    ? 'Asystent formalny i asystent rozmowy — bez kontekstu konkretnej teczki'
+    ? 'Zapytaj o procedurę, terminy i przepisy albo przygotuj się do rozmowy z pracownikiem.'
     : 'Akty prawne i poradniki, na których opiera się Cyfrowy Asystent Ocen Okresowych'
   return (
     <div className="page page--knowledge">
@@ -19,7 +19,7 @@ export function KnowledgePage() {
         </div>
       </header>
       <div className={`knowledge ${assistant ? '' : 'knowledge--sources-only'}`}>
-        {assistant && <AssistantPanel context={{}} variant="page" />}
+        {assistant && <AssistantPanel context={{}} variant="page" showSources={false} />}
         <aside className="knowledge__sources panel">
           <div className="panel__head">
             <h2 className="h-section">Źródła asystenta</h2>

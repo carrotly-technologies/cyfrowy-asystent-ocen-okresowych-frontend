@@ -90,7 +90,7 @@ function TeamRow({ c, onOpen }: { c: CaseSummary; onOpen: () => void }) {
         {c.nextDeadline ? (
           <div className="person">
             <DeadlineText deadline={c.nextDeadline} />
-            <span className="person__meta" title={c.nextDeadline.label}>{c.nextDeadline.label.replace(/ do$/, '')}</span>
+            <span className="person__meta" title={c.nextDeadline.label}>{c.nextDeadline.label.replace(/,?\s+do$/, '')}</span>
           </div>
         ) : (
           <span className="faint">—</span>

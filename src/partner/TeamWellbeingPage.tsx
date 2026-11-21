@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { getPartnerTeam, type PartnerTeam, type SignalKind } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { InlineAlert } from '../components/ui'
-import { fmtDate, fmtNumber } from '../lib/format'
+import { countLabel, fmtDate, fmtNumber } from '../lib/format'
 import { PrivacyNote, SignalBadge, Sparkline, TrendBadge } from './common'
 import { SIGNAL_SHORT } from './labels'
 import s from './Partner.module.css'
@@ -44,6 +44,7 @@ export function TeamWellbeingPage() {
       <section className="section" aria-labelledby="agg-h">
         <h2 id="agg-h" className="h-section">Puls zespołu (średnie z okresów 2-tygodniowych)</h2>
         <TeamChart team={t} />
+        <QuestionAverages team={t} />
       </section>
 
       <section className="section" aria-labelledby="mem-h">
@@ -53,7 +54,7 @@ export function TeamWellbeingPage() {
             <thead>
               <tr>
                 <th>Pracownik</th>
-                <th>Puls (indeks 1–5)</th>
+                <th>Wskaźnik dobrostanu (1–5)</th>
                 <th>Trend</th>
                 <th>Sygnały</th>
                 <th aria-label="Akcje" />
@@ -69,8 +70,14 @@ export function TeamWellbeingPage() {
                     </div>
                   </td>
                   <td>
-                    <Sparkline points={m.series} label={`Puls: ${m.name}`} />
-                    <span className={s.muted}>{m.lastPulse ? `ostatni ${fmtDate(m.lastPulse)}` : 'nie wypełnia'}</span>
+                    {m.series.length > 0 ? (
+                      <>
+                        <Sparkline points={m.series} label={`Puls: ${m.name}`} />
+                        <span className={`${s.muted} ${s.block}`}>{m.lastPulse ? `ostatni ${fmtDate(m.lastPulse)}` : ''}</span>
+                      </>
+                    ) : (
+                      <span className={s.muted}>nie wypełnia pulsu</span>
+                    )}
                   </td>
                   <td>
                     <TrendBadge kind={m.trend} />
@@ -137,7 +144,47 @@ function TeamChart({ team }: { team: PartnerTeam }) {
           </li>
         ))}
       </ul>
-      <p className={s.muted}>Średnie pokazujemy tylko, gdy odpowiedziały co najmniej {team.minGroupSize} osoby.</p>
+      <p className={s.muted}>
+        Średnie pokazujemy tylko wtedy, gdy w okresie są odpowiedzi co najmniej {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}.
+      </p>
+    </div>
+  )
+}
+
+/** Per-question averages: only for the whole team and only in a period with enough respondents (privacy). */
+function QuestionAverages({ team }: { team: PartnerTeam }) {
+  const latest = [...team.aggregate].reverse().find((p) => p.averages)
+  if (!latest?.averages) {
+    return (
+      <p className={s.muted}>
+        Średnie dla poszczególnych pytań pokażemy, gdy w okresie będą odpowiedzi co najmniej{' '}
+        {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}.
+      </p>
+    )
+  }
+  const averages = latest.averages
+  return (
+    <div className={s.box}>
+      <h3>
+        Średnie dla pytań – cały zespół, {fmtDate(latest.from)}–{fmtDate(latest.to)} ({countLabel(latest.respondents, 'osoba', 'osoby', 'osób')})
+      </h3>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Pytanie</th>
+            <th>Średnia (1–5)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {team.questions.map((qq) => (
+            <tr key={qq.id}>
+              <td>{qq.label}</td>
+              <td className="num">{fmtNumber(averages[qq.id])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className={s.muted}>Odpowiedzi poszczególnych osób na pytania widzi tylko każda z tych osób.</p>
     </div>
   )
 }

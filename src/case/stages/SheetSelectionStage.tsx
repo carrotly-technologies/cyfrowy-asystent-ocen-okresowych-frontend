@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SheetId } from '../../api/reference'
-import { Button, Checkbox, Field, Fieldset, InlineAlert, RadioGroup, TextInput } from '../../components/ui'
+import { Button, Checkbox, ConfirmDialog, Field, Fieldset, InlineAlert, RadioGroup, TextInput } from '../../components/ui'
 import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { criterionName, findCriterion, useSheets } from '../../lib/model'
@@ -23,6 +23,10 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
   const suggestion = detail.sheetSuggestion
   const done = info.status === 'DONE'
   const canEdit = !done && allows(detail, 'ACCEPT_SHEET')
+  // Until part I is confirmed (after the opening talk) the sheet and criteria can still be corrected.
+  const canCorrect = done && detail.currentStage === 'OPENING_TALK' && !detail.partI.confirmedByEvaluatorOn
+  const [correcting, setCorrecting] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   const [sheetId, setSheetId] = useState<SheetId>(detail.sheetId ?? suggestion.sheetId)
   const [chosen, setChosen] = useState<string[]>(detail.partI.additionalCriteria)
@@ -35,16 +39,14 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
   const catalogue = model.criteria.filter((c) => !mandatory.includes(c.id))
   const toggle = (id: string, on: boolean) => setChosen((list) => (on ? [...list, id] : list.filter((x) => x !== id)))
 
+  // Errors are shown in the dialog (ConfirmDialog) and by StageError.
   const accept = async () => {
-    try {
-      await patch.mutateAsync({ sheetId, partI: { additionalCriteria: selected, ...(due ? { assessmentDue: due } : {}) } })
-      await act.mutateAsync('ACCEPT_SHEET')
-    } catch {
-      // shown by StageError
-    }
+    await patch.mutateAsync({ sheetId, partI: { additionalCriteria: selected, ...(due ? { assessmentDue: due } : {}) } })
+    if (correcting) setCorrecting(false)
+    else await act.mutateAsync('ACCEPT_SHEET')
   }
 
-  if (!canEdit) {
+  if (!canEdit && !correcting) {
     return (
       <StageLayout
         info={info}
@@ -52,6 +54,14 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
           <InlineAlert tone="success" title="Arkusz i kryteria zatwierdzone">
             Arkusz {detail.sheetId}, kryteria dodatkowe: {detail.partI.additionalCriteria.map((c) => criterionName(model, c)).join(', ') || 'brak'}
             {detail.partI.assessmentDue && <>, termin sporządzenia oceny: {fmtDate(detail.partI.assessmentDue)}</>}.
+            {canCorrect && (
+              <p>
+                Do zatwierdzenia części I po rozmowie rozpoczynającej możesz jeszcze to poprawić.{' '}
+                <Button variant="secondary" size="small" onClick={() => setCorrecting(true)}>
+                  Popraw arkusz lub kryteria
+                </Button>
+              </p>
+            )}
           </InlineAlert>
         }
       >
@@ -117,10 +127,42 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
 
       <StageError error={patch.error ?? act.error} />
       <div className={s.finalActions}>
-        <Button loading={patch.isPending || act.isPending} onClick={() => void accept()}>
-          Zatwierdź arkusz i kryteria
+        {correcting && (
+          <Button variant="secondary" onClick={() => setCorrecting(false)}>
+            Anuluj poprawki
+          </Button>
+        )}
+        <Button loading={patch.isPending || act.isPending} onClick={() => setConfirming(true)}>
+          {correcting ? 'Zapisz poprawki' : 'Zatwierdź arkusz i kryteria'}
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirming}
+        title={correcting ? 'Zapisać poprawki arkusza i kryteriów?' : 'Zatwierdzić arkusz i kryteria?'}
+        confirmLabel={correcting ? 'Zapisz poprawki' : 'Zatwierdź'}
+        cancelLabel="Popraw"
+        onConfirm={accept}
+        onCancel={() => setConfirming(false)}
+      >
+        <dl className={s.summary}>
+          <dt>Arkusz</dt>
+          <dd>
+            {sheetId}
+            {sheetId !== suggestion.sheetId && ` (inny niż propozycja systemu: ${suggestion.sheetId})`}
+          </dd>
+          <dt>Kryteria obowiązkowe</dt>
+          <dd>{mandatory.map((c) => criterionName(model, c)).join(', ') || '—'}</dd>
+          <dt>Kryteria dodatkowe ({selected.length}/{max})</dt>
+          <dd>
+            {selected.length > 0
+              ? selected.map((c) => criterionName(model, c)).join(', ')
+              : 'nie wybrano żadnego (to dopuszczalne, ale kryteria dodatkowe pozwalają ocenić najważniejsze obowiązki ze stanowiska)'}
+          </dd>
+          <dt>Termin sporządzenia oceny</dt>
+          <dd>{due ? fmtDate(due) : 'z przepisów (system wpisze go automatycznie)'}</dd>
+        </dl>
+        {!correcting && <p>Arkusz i kryteria możesz jeszcze poprawić do zatwierdzenia części I po rozmowie rozpoczynającej.</p>}
+      </ConfirmDialog>
     </StageLayout>
   )
 }

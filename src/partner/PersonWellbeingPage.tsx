@@ -47,8 +47,12 @@ export function PersonWellbeingPage() {
       </section>
 
       <section className="section" aria-labelledby="pulse-h">
-        <h2 id="pulse-h" className="h-section">Puls</h2>
+        <h2 id="pulse-h" className="h-section">Puls: ogólny wskaźnik dobrostanu</h2>
         <div className={`${s.box} ${s.stack}`}>
+          <p className={s.muted}>
+            Widzisz tylko ogólny wskaźnik i trend. Odpowiedzi na poszczególne pytania widzi wyłącznie pracownik; średnie dla
+            pytań są tylko w widoku zespołu, gdy odpowiedziało wystarczająco wiele osób.
+          </p>
           <div className={s.row}>
             <TrendBadge kind={c.trend.kind} /> <span className={s.muted}>{c.trend.description}</span>
           </div>
@@ -56,23 +60,20 @@ export function PersonWellbeingPage() {
           {c.points.length > 0 && (
             <div className="sheet-scroll">
               <table className="table">
+                <caption className="visually-hidden">Ogólny wskaźnik dobrostanu w kolejnych pulsach</caption>
                 <thead>
                   <tr>
                     <th>Data</th>
-                    {c.questions.map((qq) => (
-                      <th key={qq.id}>{qq.label}</th>
-                    ))}
-                    <th>Indeks</th>
+                    <th>Wskaźnik dobrostanu (1–5)</th>
+                    <th>Komentarz</th>
                   </tr>
                 </thead>
                 <tbody>
                   {c.points.map((p) => (
                     <tr key={p.id}>
                       <td>{fmtDate(p.date)}</td>
-                      {c.questions.map((qq) => (
-                        <td key={qq.id} className="num">{p.answers[qq.id]}</td>
-                      ))}
                       <td className="num"><strong>{fmtNumber(p.index)}</strong></td>
+                      <td>{p.sharedComment ? 'udostępniony' : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

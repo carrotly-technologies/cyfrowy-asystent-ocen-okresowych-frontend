@@ -24,11 +24,14 @@ export function AssistantPanel({
   onClose,
   variant = 'dock',
   id,
+  showSources = true,
 }: {
   context: AssistantContext
   onClose?: () => void
   variant?: 'dock' | 'page'
   id?: string
+  /** False where the page lists the source documents itself (Baza wiedzy). */
+  showSources?: boolean
 }) {
   const [mode, setMode] = useState<AssistantMode>('FORMAL')
   const [threads, setThreads] = useState<Record<AssistantMode, Msg[]>>({ FORMAL: [], CONVERSATION: [] })
@@ -95,7 +98,7 @@ export function AssistantPanel({
         )}
       </div>
 
-      <SourceDocuments />
+      {showSources && <SourceDocuments />}
 
       <div className="assistant__list" ref={listRef} role="log" aria-live="polite">
         {msgs.length === 0 && (
@@ -118,7 +121,19 @@ export function AssistantPanel({
               <p className="msg__text msg__text--pending">Szukam w bazie wiedzy…</p>
             ) : (
               <>
-                <p className="msg__text">{m.text}</p>
+                {m.answer?.summary ? (
+                  <>
+                    <p className="msg__text msg__summary">{m.answer.summary}</p>
+                    {m.answer.details && (
+                      <details className="msg__details">
+                        <summary>Fragmenty przepisów i poradników</summary>
+                        <p className="msg__text">{m.answer.details.replace(/^Na podstawie:\s*/, '')}</p>
+                      </details>
+                    )}
+                  </>
+                ) : (
+                  <p className="msg__text">{m.text}</p>
+                )}
                 {m.answer?.placeholder && <p className="msg__badge">Tryb demonstracyjny — brak połączenia z bazą wiedzy</p>}
                 {m.answer && m.answer.sources.length > 0 && (
                   <ul className="msg__sources">

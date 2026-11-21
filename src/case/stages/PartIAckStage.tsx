@@ -2,6 +2,7 @@ import { InfoList, InfoRow, InlineAlert } from '../../components/ui'
 import { fmtDate } from '../../lib/format'
 import type { StageProps } from '../CasePage'
 import { StageLayout } from './StageLayout'
+import { RemindButton } from '../RemindButton'
 
 /** Step 3 for the evaluator: part I waits for the assessed person's confirmation on their own account. */
 export function PartIAckStage({ detail, stage }: StageProps) {
@@ -19,6 +20,7 @@ export function PartIAckStage({ detail, stage }: StageProps) {
           <InlineAlert tone="warning" title="Czeka na potwierdzenie ocenianego">
             Oceniany potwierdza rozmowę i zapoznanie z kryteriami oraz terminem oceny na swoim koncie („Moje oceny”). Oceniający
             nie może tego zrobić za niego (§6 ust. 2 rozp. PRM z 4.04.2016).
+            <RemindButton detail={detail} />
           </InlineAlert>
         )
       }
