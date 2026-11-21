@@ -22,3 +22,10 @@
   outline: none;
   box-shadow: var(--focus-shadow);
 }
+
+/* From 768px the shell shows breadcrumbs instead (src/shell/Breadcrumbs.tsx) */
+@media (min-width: 768px) {
+  .root {
+    display: none;
+  }
+}

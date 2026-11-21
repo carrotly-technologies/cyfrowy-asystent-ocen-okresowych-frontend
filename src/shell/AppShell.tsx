@@ -7,6 +7,7 @@ import {
   LogOut,
   type LucideIcon,
   Menu,
+  MoreHorizontal,
   RotateCcw,
   Scale,
   Settings,
@@ -26,36 +27,38 @@ import { NotificationBell } from '../notifications/NotificationBell'
 import { ConfirmDialog, UserMenu } from '../components/ui'
 import { demoToolsFor } from '../lib/demoTools'
 import { ROLE_LABEL, useAuth, useMe } from '../lib/useAuth'
+import { Breadcrumbs } from './Breadcrumbs'
 
+/**
+ * Layout of the gov.pl service family (review/design-mobywatel.md):
+ * white header (our text wordmark, bell, settings, user) · navy service bar (role, office, demo tools) ·
+ * side navigation from 1024px · "Menu" drawer below 1024px · bottom tab bar on phones for EMPLOYEE and SUPERVISOR ·
+ * footer with a link bar and the note that this is not an official gov.pl / KPRM / mObywatel service.
+ */
 export function AppShell() {
   const me = useMe()
   const { signOut } = useAuth()
   const location = useLocation()
   const qc = useQueryClient()
-  // Below 1024px the links live under a "Menu" button (CSS hides the button on wider screens)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const menuBtnRef = useRef<HTMLButtonElement>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const drawerRef = useRef<HTMLDialogElement>(null)
+  const openerRef = useRef<HTMLElement | null>(null)
 
-  // Escape closes and returns focus to "Menu"; a click outside the menu (and its button) closes
+  // The drawer is a native modal <dialog>: focus trap, Esc and inert background come from the browser
   useEffect(() => {
-    if (!menuOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      setMenuOpen(false)
-      menuBtnRef.current?.focus()
+    const d = drawerRef.current
+    if (!d) return
+    if (drawerOpen && !d.open) d.showModal()
+    else if (!drawerOpen && d.open) {
+      d.close()
+      openerRef.current?.focus()
     }
-    const onPointer = (e: PointerEvent) => {
-      const t = e.target as Node
-      if (!menuRef.current?.contains(t) && !menuBtnRef.current?.contains(t)) setMenuOpen(false)
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('pointerdown', onPointer)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.removeEventListener('pointerdown', onPointer)
-    }
-  }, [menuOpen])
+  }, [drawerOpen])
+
+  const openDrawer = (e: React.MouseEvent<HTMLElement>) => {
+    openerRef.current = e.currentTarget
+    setDrawerOpen(true)
+  }
 
   const [resetOpen, setResetOpen] = useState(false)
   const onReset = async () => {
@@ -67,84 +70,76 @@ export function AppShell() {
     }
   }
   const demoTools = demoToolsFor(me.role)
+  const items = navItems(me.role)
+  const bottom = BOTTOM_NAV_ROLES.includes(me.role)
 
   const userRole = me.position || ROLE_LABEL[me.role]
   const settingsActive = isUnder(location.pathname, '/ustawienia')
+  const isActive = (match: string[]) => match.some((p) => isUnder(location.pathname, p))
+
+  const navList = (variant: 'side' | 'drawer') => (
+    <ul className="sidenav__list">
+      {items.map(({ to, label, Icon, match, group }, i) => {
+        const active = isActive(match)
+        return (
+          <li key={to} className={group && i > 0 && !items[i - 1].group ? 'sidenav__group-start' : undefined}>
+            <Link to={to} className={`sidenav__link ${active ? 'is-active' : ''}`} aria-current={active ? 'page' : undefined}>
+              <Icon size={22} strokeWidth={1.75} aria-hidden="true" />
+              <span>{label}</span>
+            </Link>
+          </li>
+        )
+      })}
+      {variant === 'drawer' && (
+        <li className="sidenav__group-start">
+          <Link
+            to="/ustawienia"
+            className={`sidenav__link ${settingsActive ? 'is-active' : ''}`}
+            aria-current={settingsActive ? 'page' : undefined}
+          >
+            <Settings size={22} strokeWidth={1.75} aria-hidden="true" />
+            <span>Ustawienia</span>
+          </Link>
+        </li>
+      )}
+    </ul>
+  )
+
+  const tools = demoTools && (
+    <div className="sidenav__tools">
+      <span className="sidenav__tools-label">Wersja demonstracyjna</span>
+      <div className="sidenav__tools-row">
+        <button type="button" className="sidenav__tool" onClick={() => setResetOpen(true)} title="Przywróć dane demonstracyjne">
+          <RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" />
+          <span>Reset danych</span>
+        </button>
+        <ApiStatus />
+      </div>
+    </div>
+  )
 
   return (
-    <div className="shell">
+    <div className={`shell ${bottom ? 'shell--bottom-nav' : ''}`}>
       <a className="skip-link" href="#main">
         Przejdź do treści
       </a>
       <header className="topbar">
-        <div className="topbar__brand">
-          <ClipboardCheck className="topbar__logo" size={22} strokeWidth={1.75} aria-hidden="true" />
+        <button
+          type="button"
+          className="topbar__menu-btn"
+          aria-expanded={drawerOpen}
+          aria-controls="nav-drawer"
+          onClick={openDrawer}
+        >
+          <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
+          <span>Menu</span>
+        </button>
+        <Link to="/" className="topbar__brand" aria-label="Cyfrowy Asystent Ocen Okresowych: strona główna">
+          <ClipboardCheck className="topbar__logo" size={26} strokeWidth={1.75} aria-hidden="true" />
           <span className="topbar__product">
             Cyfrowy Asystent<span className="topbar__product-tail"> Ocen Okresowych</span>
           </span>
-        </div>
-
-        <button
-          type="button"
-          ref={menuBtnRef}
-          className="topbar__menu-btn"
-          aria-expanded={menuOpen}
-          aria-controls="topbar-menu"
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          {menuOpen ? (
-            <X size={18} strokeWidth={1.75} aria-hidden="true" />
-          ) : (
-            <Menu size={18} strokeWidth={1.75} aria-hidden="true" />
-          )}
-          <span>Menu</span>
-        </button>
-
-        <div
-          id="topbar-menu"
-          ref={menuRef}
-          className={`topbar__menu ${menuOpen ? 'is-open' : ''}`}
-          // close the menu once a link is chosen
-          onClick={(e) => {
-            if ((e.target as HTMLElement).closest('a')) setMenuOpen(false)
-          }}
-        >
-          <nav className="topnav" aria-label="Nawigacja główna">
-            <ul className="topnav__list">
-              {navItems(me.role).map(({ to, label, Icon, match }) => {
-                const active = match.some((p) => isUnder(location.pathname, p))
-                return (
-                  <li key={to}>
-                    <Link to={to} className={`topnav__link ${active ? 'is-active' : ''}`} aria-current={active ? 'page' : undefined}>
-                      <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-                      <span>{label}</span>
-                    </Link>
-                  </li>
-                )
-              })}
-              {/* phones only: the gear next to the user menu does not fit there, so settings are a row here */}
-              <li className="topnav__settings">
-                <Link
-                  to="/ustawienia"
-                  className={`topnav__link ${settingsActive ? 'is-active' : ''}`}
-                  aria-current={settingsActive ? 'page' : undefined}
-                >
-                  <Settings size={18} strokeWidth={1.75} aria-hidden="true" />
-                  <span>Ustawienia</span>
-                </Link>
-              </li>
-            </ul>
-          </nav>
-          {demoTools && (
-            <div className="topbar__tools">
-              <button type="button" className="topbar__tool" onClick={() => setResetOpen(true)} title="Przywróć dane demonstracyjne" aria-label="Reset: przywróć dane demonstracyjne">
-                <RotateCcw size={14} strokeWidth={1.75} aria-hidden="true" />
-                <span>Reset</span>
-              </button>
-              <ApiStatus />
-            </div>
-          )}
-        </div>
+        </Link>
 
         <div className="topbar__right">
           <NotificationBell role={me.role} />
@@ -155,7 +150,7 @@ export function AppShell() {
             title="Ustawienia"
             aria-current={settingsActive ? 'page' : undefined}
           >
-            <Settings size={20} strokeWidth={1.75} aria-hidden="true" />
+            <Settings size={22} strokeWidth={1.75} aria-hidden="true" />
           </Link>
           <UserMenu
             name={me.name}
@@ -166,9 +161,101 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="main" id="main" tabIndex={-1}>
-        <Outlet />
-      </main>
+      <div className="servicebar">
+        <span className="servicebar__role">{ROLE_LABEL[me.role]}</span>
+        <span className="servicebar__office one-line" title={officeLabel(me.officeName)}>
+          {officeLabel(me.officeName)}
+        </span>
+      </div>
+
+      <div className="shell__body">
+        <nav className="sidenav" aria-label="Nawigacja główna">
+          {navList('side')}
+          {tools}
+        </nav>
+
+        <main className="main" id="main" tabIndex={-1}>
+          <Breadcrumbs role={me.role} />
+          <div className="main__content">
+            <Outlet />
+          </div>
+          <footer className="footer">
+            <div className="footer__bar">
+              <ul className="footer__links">
+                <li>
+                  <Link to="/baza-wiedzy">Pomoc i baza wiedzy</Link>
+                </li>
+                <li>
+                  <Link to="/ustawienia">Ustawienia dostępności</Link>
+                </li>
+              </ul>
+            </div>
+            <div className="footer__note">
+              <p>
+                <strong>Cyfrowy Asystent Ocen Okresowych</strong> · narzędzie wewnętrzne urzędu do ocen okresowych w służbie
+                cywilnej.
+              </p>
+              <p>Nie jest usługą portalu gov.pl, KPRM ani aplikacji mObywatel. Oprogramowanie otwarte na licencji EUPL-1.2.</p>
+            </div>
+          </footer>
+        </main>
+      </div>
+
+      {bottom && (
+        <nav className="bottomnav" aria-label="Nawigacja na telefonie">
+          <ul className="bottomnav__list">
+            {items
+              .filter((i) => i.bottom)
+              .map(({ to, label, short, Icon, match }) => {
+                const active = isActive(match)
+                return (
+                  <li key={to}>
+                    <Link to={to} className={`bottomnav__link ${active ? 'is-active' : ''}`} aria-current={active ? 'page' : undefined}>
+                      <Icon size={24} strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />
+                      <span>{short ?? label}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            <li>
+              <button type="button" className="bottomnav__link" aria-expanded={drawerOpen} aria-controls="nav-drawer" onClick={openDrawer}>
+                <MoreHorizontal size={24} strokeWidth={1.75} aria-hidden="true" />
+                <span>Więcej</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
+
+      <dialog
+        id="nav-drawer"
+        ref={drawerRef}
+        className="drawer"
+        aria-label="Menu"
+        onCancel={(e) => {
+          e.preventDefault()
+          setDrawerOpen(false)
+        }}
+        onClick={(e) => {
+          // a click on the backdrop or on a link (navigation) closes the drawer
+          if (e.target === drawerRef.current || (e.target as HTMLElement).closest('a')) setDrawerOpen(false)
+        }}
+      >
+        <div className="drawer__inner">
+          <div className="drawer__head">
+            <span className="drawer__title">Menu</span>
+            <button type="button" className="drawer__close" onClick={() => setDrawerOpen(false)} aria-label="Zamknij menu">
+              <X size={22} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
+          <nav aria-label="Nawigacja główna (menu)">{navList('drawer')}</nav>
+          {tools}
+          <button type="button" className="sidenav__link drawer__logout" onClick={() => void signOut()}>
+            <LogOut size={22} strokeWidth={1.75} aria-hidden="true" />
+            <span>Wyloguj</span>
+          </button>
+        </div>
+      </dialog>
 
       <ConfirmDialog
         open={resetOpen}
@@ -184,21 +271,35 @@ export function AppShell() {
   )
 }
 
-type NavItem = { to: string; label: string; Icon: LucideIcon; match: string[] }
+/** Roles that get the bottom tab bar on phones (mObywatel pattern); the others use the "Menu" drawer. */
+const BOTTOM_NAV_ROLES: Role[] = ['EMPLOYEE', 'SUPERVISOR']
+
+type NavItem = {
+  to: string
+  label: string
+  /** Shorter label for the bottom tab bar. */
+  short?: string
+  Icon: LucideIcon
+  match: string[]
+  /** Shown in the phone bottom tab bar (EMPLOYEE, SUPERVISOR). */
+  bottom?: boolean
+  /** Starts the shared group under a divider ("Baza wiedzy"). */
+  group?: boolean
+}
 
 /**
  * Main links for a role; `match` lists the paths that highlight the link (a case file belongs to "Mój zespół").
- * `/ustawienia` is the gear icon next to the user menu (on phones: an item in the "Menu" dropdown).
+ * `/ustawienia` is the gear icon in the header (and a row in the drawer).
  */
 function navItems(role: Role): NavItem[] {
   const byRole: Partial<Record<Role, NavItem[]>> = {
     SUPERVISOR: [
-      { to: '/zespol', label: 'Mój zespół', Icon: Users, match: ['/zespol', '/teczka'] },
-      { to: '/dobrostan', label: 'Dobrostan', Icon: HeartHandshake, match: ['/dobrostan'] },
+      { to: '/zespol', label: 'Mój zespół', short: 'Zespół', Icon: Users, match: ['/zespol', '/teczka'], bottom: true },
+      { to: '/dobrostan', label: 'Dobrostan', Icon: HeartHandshake, match: ['/dobrostan'], bottom: true },
     ],
     EMPLOYEE: [
-      { to: '/moje-oceny', label: 'Moje oceny', Icon: ClipboardCheck, match: ['/moje-oceny'] },
-      { to: '/moj-puls', label: 'Puls', Icon: HeartPulse, match: ['/moj-puls'] },
+      { to: '/moje-oceny', label: 'Moje oceny', short: 'Oceny', Icon: ClipboardCheck, match: ['/moje-oceny'], bottom: true },
+      { to: '/moj-puls', label: 'Puls', Icon: HeartPulse, match: ['/moj-puls'], bottom: true },
     ],
     HR: [{ to: '/hr', label: 'Monitoring', Icon: TableProperties, match: ['/hr'] }],
     ADMIN: [{ to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin/uzytkownicy'] }],
@@ -208,10 +309,18 @@ function navItems(role: Role): NavItem[] {
     ...(byRole[role] ?? []),
     ...(role === 'ADMIN' ? [{ to: '/admin/korekty', label: 'Tryb korekty', Icon: FilePen, match: ['/admin/korekty'] }] : []),
     ...(role === 'HR' || role === 'ADMIN' || role === 'SUPERVISOR'
-      ? [{ to: '/kartoteka', label: role === 'SUPERVISOR' ? 'Pracownicy' : 'Kartoteka', Icon: Contact, match: ['/kartoteka'] }]
+      ? [
+          {
+            to: '/kartoteka',
+            label: role === 'SUPERVISOR' ? 'Pracownicy' : 'Kartoteka',
+            Icon: Contact,
+            match: ['/kartoteka'],
+            bottom: role === 'SUPERVISOR',
+          },
+        ]
       : []),
     ...(role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR' ? [{ to: '/statystyki', label: 'Statystyki', Icon: ChartColumn, match: ['/statystyki'] }] : []),
-    { to: '/baza-wiedzy', label: 'Baza wiedzy', Icon: BookOpen, match: ['/baza-wiedzy'] },
+    { to: '/baza-wiedzy', label: 'Baza wiedzy', short: 'Wiedza', Icon: BookOpen, match: ['/baza-wiedzy'], group: true, bottom: role === 'EMPLOYEE' },
   ]
 }
 
