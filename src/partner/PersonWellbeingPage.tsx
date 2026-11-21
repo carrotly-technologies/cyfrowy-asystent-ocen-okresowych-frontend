@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { Lock } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { getPersonCard } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
@@ -18,7 +17,6 @@ export function PersonWellbeingPage() {
   if (q.isError) return <div className="page"><ErrorState error={q.error} what="karta pracownika" onRetry={() => q.refetch()} /></div>
   const c = q.data
   const shared = c.points.filter((p) => p.sharedComment)
-  const privateCount = c.points.filter((p) => p.hasPrivateComment).length
   return (
     <div className="page">
       <BackLink to="/dobrostan" />
@@ -88,11 +86,6 @@ export function PersonWellbeingPage() {
               {fmtDate(p.date)}: {p.sharedComment}
             </blockquote>
           ))}
-          {privateCount > 0 && (
-            <p className={`${s.row} ${s.muted}`}>
-              <Lock size={14} aria-hidden="true" /> Prywatne komentarze: {privateCount}. Treść widzi tylko pracownik.
-            </p>
-          )}
         </div>
       </section>
 

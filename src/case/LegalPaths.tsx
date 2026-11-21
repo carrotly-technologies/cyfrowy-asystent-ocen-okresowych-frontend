@@ -239,8 +239,8 @@ export function DueDateRequestSection({ detail }: { detail: CaseDetail }) {
           <Field label="Uzasadnienie wniosku o zmianę terminu oceny" error={error}>
             {(c) => <TextArea {...c} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />}
           </Field>
-          <Field label="Proponowany termin" optional hint={proposed ? `Wybrano: ${fmtDate(proposed)} (dzień.miesiąc.rok)` : 'Wybierz dzień z kalendarza; data zostanie zapisana jako dzień.miesiąc.rok.'}>
-            {(c) => <TextInput {...c} type="date" lang="pl" min={DEMO_TODAY} value={proposed} onChange={(e) => setProposed(e.target.value)} />}
+          <Field label="Proponowany termin" optional hint="Format: dd.mm.rrrr">
+            {(c) => <TextInput {...c} type="date" min={DEMO_TODAY} value={proposed} onChange={(e) => setProposed(e.target.value)} />}
           </Field>
           <Button type="submit" variant="secondary" loading={m.isPending}>Złóż wniosek do oceniającego</Button>
           {m.error ? <p role="alert" className="form-error">{legalErrorText(m.error)}</p> : null}
