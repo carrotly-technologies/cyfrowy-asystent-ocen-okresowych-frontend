@@ -46,12 +46,17 @@ export function InvitationList({ detail }: { detail: CaseDetail }) {
   if (list.length === 0) return null
   return (
     <ul className="bullets">
-      {list.map((i) => (
-        <li key={i.id}>
-          <strong>{TALK_LABEL[i.kind]}</strong>: {fmtDate(i.date)}, godz. {i.time}, {i.place}
-          {i.note ? <span className="small muted"> · {i.note}</span> : null} <IcsButton caseId={detail.id} invitation={i} />
-        </li>
-      ))}
+      {list.map((i) => {
+        const past = i.date < DEMO_TODAY
+        const held = i.kind === 'OPENING' ? !!detail.partI.confirmedByEvaluatorOn : !!detail.assessmentTalkOn
+        return (
+          <li key={i.id}>
+            <strong>{TALK_LABEL[i.kind]}</strong>: {fmtDate(i.date)}, godz. {i.time}, {i.place}
+            {i.note ? <span className="small muted"> · {i.note}</span> : null}{' '}
+            {past ? <span className="faint">({held ? 'odbyła się' : 'termin minął'})</span> : <IcsButton caseId={detail.id} invitation={i} />}
+          </li>
+        )
+      })}
     </ul>
   )
 }

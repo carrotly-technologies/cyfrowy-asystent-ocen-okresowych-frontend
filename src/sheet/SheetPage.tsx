@@ -83,7 +83,9 @@ export function SheetPage() {
         <div className="sheet-bar__title">
           <strong>Podgląd arkusza</strong>
           <span className="muted">
-            {name} · {`arkusz ${detail.sheetId ?? '—'}`} · stan na dziś, wypełnia się z decyzji w teczce
+            {me.role === 'EMPLOYEE'
+              ? `Twoja ocena · arkusz ${detail.sheetId ?? '—'} · tak wygląda dokument, który trafi do Twoich akt osobowych`
+              : `${name} · arkusz ${detail.sheetId ?? '—'} · stan na dziś, wypełnia się z decyzji w teczce`}
           </span>
         </div>
         {downloadError && <span className="sheet-bar__error" role="alert">{downloadError}</span>}

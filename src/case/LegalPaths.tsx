@@ -4,11 +4,12 @@ import {
   fileObjection,
   recordAckFiction,
   requestDueDateChange,
+  withdrawDueDateRequest,
   type CaseDetail,
   type ObjectionView,
 } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
-import { Button, Dialog, Field, InlineAlert, TextArea, TextInput } from '../components/ui'
+import { Button, ConfirmDialog, Dialog, Field, InlineAlert, TextArea, TextInput } from '../components/ui'
 import { useCase } from '../lib/caseQueries'
 import { legalErrorText, useLegalMutation } from '../lib/legalQueries'
 import { DEMO_TODAY, fmtDate } from '../lib/format'
@@ -33,15 +34,17 @@ const OUTCOME_LABEL = {
 export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notice?: string }) {
   const [text, setText] = useState('')
   const [error, setError] = useState<string>()
+  const [confirming, setConfirming] = useState(false)
   const m = useLegalMutation(detail.id, (t: string) => fileObjection(detail.id, t))
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!text.trim()) return setError('Opisz, z czym się nie zgadzasz i dlaczego.')
     setError(undefined)
-    m.mutate(text.trim(), { onSuccess: () => setText('') })
+    setConfirming(true)
   }
   const showForm = can(detail, 'FILE_OBJECTION')
   if (!showForm && detail.objections.length === 0 && !detail.acknowledgedOn) return null
+  const termPassed = !!detail.objectionDeadline && (detail.objectionDeadline.daysLeft ?? 0) < 0
   return (
     <section className="section" aria-labelledby="objection-h">
       <h2 id="objection-h" className="h-section">Sprzeciw od oceny</h2>
@@ -50,6 +53,7 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
           <p>{notice}</p>
         </InlineAlert>
       )}
+      {(showForm || (detail.objections.length > 0 && !detail.objections.every((o) => o.decision))) && <ObjectionNextSteps detail={detail} />}
       {detail.objections.map((o) => (
         <ObjectionStatus key={o.id} objection={o} />
       ))}
@@ -62,15 +66,52 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
             {(c) => <TextArea {...c} rows={5} value={text} onChange={(e) => setText(e.target.value)} />}
           </Field>
           <Button type="submit" loading={m.isPending}>Wnieś sprzeciw do dyrektora generalnego</Button>
-          {m.error ? <p role="alert" className="form-error">{legalErrorText(m.error)}</p> : null}
         </form>
       )}
+      <ConfirmDialog
+        open={confirming}
+        title="Wnieść sprzeciw od oceny?"
+        confirmLabel="Tak, wnoszę sprzeciw"
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => m.mutateAsync(text.trim()).then(() => setText(''))}
+        errorText={legalErrorText}
+      >
+        <ul className="bullets">
+          <li>Sprzeciw trafi do {detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu'}. Oceniający zostanie o nim powiadomiony.</li>
+          <li>Po wysłaniu nie można go wycofać ani zmienić jego treści.</li>
+          {detail.objectionNextSteps?.[1] && <li>{detail.objectionNextSteps[1].text}</li>}
+          <li>O rozstrzygnięciu dowiesz się w aplikacji.</li>
+        </ul>
+        <p className="small muted">Treść sprzeciwu: „{text.trim()}”</p>
+      </ConfirmDialog>
       {!showForm && detail.objections.length === 0 && detail.acknowledgedOn && detail.objectionDeadline && (
         <p className="muted">
-          Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} />
+          {termPassed ? (
+            <>Termin na wniesienie sprzeciwu minął {fmtDate(detail.objectionDeadline.date)}.</>
+          ) : (
+            <>Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} /></>
+          )}
         </p>
       )}
     </section>
+  )
+}
+
+/** "Co dalej?": three plain-language steps of the objection path (texts and legal basis from the API). */
+function ObjectionNextSteps({ detail }: { detail: CaseDetail }) {
+  const steps = detail.objectionNextSteps ?? []
+  if (steps.length === 0) return null
+  return (
+    <div className="panel legal-form">
+      <h3 className="h-sub">Co dalej?</h3>
+      <ol className="bullets">
+        {steps.map((st) => (
+          <li key={st.legalBasis}>
+            {st.text} <span className="legal">{st.legalBasis}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
 
@@ -156,7 +197,9 @@ export function DueDateRequestSection({ detail }: { detail: CaseDetail }) {
   const [reason, setReason] = useState('')
   const [proposed, setProposed] = useState('')
   const [error, setError] = useState<string>()
+  const [withdrawing, setWithdrawing] = useState(false)
   const m = useLegalMutation(detail.id, (b: { reason: string; proposedDate: string | null }) => requestDueDateChange(detail.id, b))
+  const w = useLegalMutation(detail.id, () => withdrawDueDateRequest(detail.id))
   const rule = detail.dueDateRequestRule
   const requests = detail.dueDateRequests
   if ((!detail.partI.assessmentDue || detail.signedByEvaluatorOn) && requests.length === 0) return null
@@ -168,24 +211,36 @@ export function DueDateRequestSection({ detail }: { detail: CaseDetail }) {
   }
   return (
     <section className="section" aria-labelledby="ddr-h">
-      <h2 id="ddr-h" className="h-section">Termin oceny</h2>
-      <p>
-        Termin sporządzenia oceny: <strong className="num">{detail.partI.assessmentDue ? fmtDate(detail.partI.assessmentDue) : '—'}</strong>
-      </p>
+      <h2 id="ddr-h" className="h-section">Wniosek o zmianę terminu oceny</h2>
       {detail.dueDateChanges.map((c, i) => (
         <p key={i} className="small muted">
           {fmtDate(c.changedOn)}: termin zmieniony{c.from ? ` z ${fmtDate(c.from)}` : ''} na {fmtDate(c.to)} ({c.by.name}). {c.reason}
         </p>
       ))}
       {requests.map((r) => <DueDateRequestStatus key={r.id} request={r} />)}
+      {can(detail, 'WITHDRAW_DUE_DATE_REQUEST') && (
+        <div>
+          <Button type="button" variant="secondary" size="small" onClick={() => setWithdrawing(true)}>Wycofaj wniosek</Button>
+        </div>
+      )}
+      <ConfirmDialog
+        open={withdrawing}
+        title="Wycofać wniosek o zmianę terminu?"
+        confirmLabel="Wycofaj wniosek"
+        onCancel={() => setWithdrawing(false)}
+        onConfirm={() => w.mutateAsync(undefined)}
+        errorText={legalErrorText}
+      >
+        <p>Oceniający nie będzie już rozpatrywać wniosku, a termin oceny zostanie bez zmian. W razie potrzeby możesz później złożyć nowy wniosek.</p>
+      </ConfirmDialog>
       {can(detail, 'REQUEST_DUE_DATE_CHANGE') ? (
         <form className="panel legal-form" onSubmit={submit} noValidate>
           <p className="small muted">{rule.reason} <span className="legal">{rule.legalBasis}</span></p>
           <Field label="Uzasadnienie wniosku o zmianę terminu oceny" error={error}>
             {(c) => <TextArea {...c} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />}
           </Field>
-          <Field label="Proponowany termin" optional>
-            {(c) => <TextInput {...c} type="date" min={DEMO_TODAY} value={proposed} onChange={(e) => setProposed(e.target.value)} />}
+          <Field label="Proponowany termin" optional hint={proposed ? `Wybrano: ${fmtDate(proposed)} (dzień.miesiąc.rok)` : 'Wybierz dzień z kalendarza; data zostanie zapisana jako dzień.miesiąc.rok.'}>
+            {(c) => <TextInput {...c} type="date" lang="pl" min={DEMO_TODAY} value={proposed} onChange={(e) => setProposed(e.target.value)} />}
           </Field>
           <Button type="submit" variant="secondary" loading={m.isPending}>Złóż wniosek do oceniającego</Button>
           {m.error ? <p role="alert" className="form-error">{legalErrorText(m.error)}</p> : null}
@@ -197,6 +252,12 @@ export function DueDateRequestSection({ detail }: { detail: CaseDetail }) {
           </p>
         )
       )}
+      {(rule.eligible || requests.some((r) => r.status === 'REJECTED')) && (
+        <p className="small muted">
+          Długa nieobecność (np. choroba, urlop rodzicielski) nie wymaga wniosku: jeśli usprawiedliwiona nieobecność trwa dłużej niż miesiąc, termin oceny przedłuża się o jej czas.
+          Nieobecność odnotowują kadry, a nowy termin zobaczysz tutaj. W razie pytań skontaktuj się z kadrami. <span className="legal">art. 81 ust. 7 ustawy o służbie cywilnej</span>
+        </p>
+      )}
     </section>
   )
 }
@@ -207,9 +268,11 @@ function DueDateRequestStatus({ request: r }: { request: CaseDetail['dueDateRequ
       ? `Wniosek o zmianę terminu z ${fmtDate(r.filedOn)} czeka na decyzję oceniającego`
       : r.status === 'APPROVED'
         ? `Wniosek z ${fmtDate(r.filedOn)} uwzględniony: nowy termin ${fmtDate(r.newDate!)}`
-        : `Wniosek z ${fmtDate(r.filedOn)} nieuwzględniony`
+        : r.status === 'WITHDRAWN'
+          ? `Wniosek z ${fmtDate(r.filedOn)} wycofany${r.decidedOn ? ` ${fmtDate(r.decidedOn)}` : ''}`
+          : `Wniosek z ${fmtDate(r.filedOn)} nieuwzględniony`
   return (
-    <InlineAlert tone={r.status === 'PENDING' ? 'warning' : r.status === 'APPROVED' ? 'success' : 'info'} title={title}>
+    <InlineAlert tone={r.status === 'APPROVED' ? 'success' : 'info'} title={title}>
       <p className="small">Uzasadnienie wniosku: {r.reason}{r.proposedDate ? ` · proponowany termin: ${fmtDate(r.proposedDate)}` : ''}</p>
       {r.decisionNote && <p className="small">Odpowiedź oceniającego: {r.decisionNote}</p>}
     </InlineAlert>

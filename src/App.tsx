@@ -31,6 +31,9 @@ export default function App() {
         <Route element={<RequireRole roles={['SUPERVISOR', 'EMPLOYEE', 'HR']} />}>
           <Route path="/teczka/:id/arkusz" element={<SheetPage />} />
         </Route>
+        <Route element={<RequireRole roles={['EMPLOYEE']} />}>
+          <Route path="/moje-oceny/:id/arkusz" element={<SheetPage />} />
+        </Route>
         <Route element={<AppShell />}>
           <Route index element={<HomeRedirect />} />
           <Route element={<RequireRole roles={['SUPERVISOR']} />}>

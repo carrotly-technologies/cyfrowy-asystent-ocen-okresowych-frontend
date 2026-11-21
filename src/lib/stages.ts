@@ -24,11 +24,11 @@ export function viewStage(_stages: Pick<StageInfo, 'id'>[], stage: StageId): Sta
   return stage
 }
 
-/** Short names used in compact places (team table, HR table, stepper, context chip). */
+/** Stage names used everywhere (the same list as STAGE_NAMES in the backend, src/cases/case.rules.ts). */
 export const STAGE_SHORT: Record<StageId, string> = {
   SHEET_SELECTION: 'Arkusz i kryteria',
   OPENING_TALK: 'Rozmowa rozpoczynająca',
-  PART_I_ACK: 'Potwierdzenie ocenianego',
+  PART_I_ACK: 'Potwierdzenie części I',
   OBSERVATION: 'Okres obserwacji',
   ASSESSMENT: 'Rozmowa oceniająca i ocena',
   SIGNATURE: 'Podpis i przekazanie',
