@@ -10,6 +10,9 @@ import { ObjectionCasePage, ObjectionsPage } from './pages/ObjectionsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TeamPage } from './pages/TeamPage'
+import { MyPulsePage } from './partner/MyPulsePage'
+import { PersonWellbeingPage } from './partner/PersonWellbeingPage'
+import { TeamWellbeingPage } from './partner/TeamWellbeingPage'
 import { SheetPage } from './sheet/SheetPage'
 import { AppShell } from './shell/AppShell'
 import { HomeRedirect, RequireAuth, RequireRole } from './shell/RequireAuth'
@@ -27,10 +30,13 @@ export default function App() {
           <Route element={<RequireRole roles={['SUPERVISOR']} />}>
             <Route path="/zespol" element={<TeamPage />} />
             <Route path="/teczka/:id/:stage?" element={<CasePage />} />
+            <Route path="/dobrostan" element={<TeamWellbeingPage />} />
+            <Route path="/dobrostan/:personId" element={<PersonWellbeingPage />} />
           </Route>
           <Route element={<RequireRole roles={['EMPLOYEE']} />}>
             <Route path="/moje-oceny" element={<MyAssessmentsPage />} />
             <Route path="/moje-oceny/:id" element={<MyCasePage />} />
+            <Route path="/moj-puls" element={<MyPulsePage />} />
           </Route>
           <Route element={<RequireRole roles={['HR']} />}>
             <Route path="/hr" element={<HrPage />} />

@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { CaseHintsPanel } from '../../partner/CaseHintsPanel'
 import { useNavigate, useSearchParams } from 'react-router'
 import type { CaseDetail } from '../../api/cases'
 import { FormProgress, InlineAlert } from '../../components/ui'
@@ -82,6 +83,7 @@ export function SheetWizard(props: StageProps) {
           return { key: String(n), label: p.name, state: n < part ? 'done' : n === part ? 'current' : 'todo' }
         })}
       />
+      <CaseHintsPanel caseId={detail.id} />
       {part === 2 && <SheetPartII {...props} onNext={() => goTo(3)} />}
       {part === 3 && (
         <SheetPartIII
