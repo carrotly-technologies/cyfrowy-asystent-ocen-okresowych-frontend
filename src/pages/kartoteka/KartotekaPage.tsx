@@ -170,7 +170,7 @@ export function KartotekaPage() {
       </div>
 
       <div className="panel table-scroll">
-        <table className="table">
+        <table className="table register-table">
           <caption className="visually-hidden">Kartoteka pracowników; nagłówki kolumn sortują listę</caption>
           <thead>
             <tr>

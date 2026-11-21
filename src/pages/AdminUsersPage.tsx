@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from '../components/QueryState'
 import { InlineAlert, Select, Snackbar, StatusBadge } from '../components/ui'
 import { ROLE_LABEL, useMe } from '../lib/useAuth'
 import { countLabel } from '../lib/format'
+import './admin.css'
 
 /** Drafts without the given user. */
 const without = (d: Record<string, Role>, id: string) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)) as Record<string, Role>
@@ -56,7 +57,7 @@ export function AdminUsersPage() {
       <section className="section" aria-labelledby="users-h">
         <h2 id="users-h" className="visually-hidden">Lista kont</h2>
         <div className="panel">
-          <table className="table">
+          <table className="table users-table">
             <thead>
               <tr>
                 <th>Imię i nazwisko</th>

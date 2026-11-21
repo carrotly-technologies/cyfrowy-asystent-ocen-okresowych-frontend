@@ -61,6 +61,9 @@ export function EmployeePage() {
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmLateCycle, setConfirmLateCycle] = useState(false)
+  // Same query as the absences section (cached): is there an absence > 1 month?
+  const absences = useQuery({ queryKey: ['absences', id], queryFn: ({ signal }) => getAbsences(id, signal) })
+  const longAbsence = absences.data?.continuous.some((p) => p.longerThanMonth) ?? false
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['employee', id] })
@@ -165,7 +168,7 @@ export function EmployeePage() {
                     <span className="block small">{e.currentCase.nextDeadline.label}</span>
                     <DeadlineText deadline={e.currentCase.nextDeadline} />
                     <span className="small faint block">{e.currentCase.nextDeadline.legalBasis}</span>
-                    {due?.extended && beforeOpeningTalk && (
+                    {longAbsence && beforeOpeningTalk && (
                       <span className="small block emp-due-note">
                         Termin rozmowy rozpoczynającej nie jest przedłużany o nieobecność; przedłuża się tylko termin sporządzenia oceny
                         (art. 81 ust. 7 ustawy o służbie cywilnej).
@@ -297,7 +300,7 @@ function Absences({ employeeId, canEdit, onChange }: { employeeId: string; canEd
             <span key={p.from} className="block">
               {fmtDate(p.from)} – {fmtDate(p.to)} ({days(p.days)}): termin sporządzenia oceny przedłuża się o czas tej
               nieobecności (dni wolne między nieobecnościami nie przerywają ciągłości). Termin rozmowy rozpoczynającej się nie
-              zmienia. Nowy termin oceny widać w karcie „Bieżąca ocena”.
+              zmienia. Przedłużony termin oceny (gdy jest już ustalony) pokazuje karta „Bieżąca ocena”.
             </span>
           ))}
         </InlineAlert>

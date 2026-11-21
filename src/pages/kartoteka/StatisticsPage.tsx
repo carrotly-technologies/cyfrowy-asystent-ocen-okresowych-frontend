@@ -73,7 +73,7 @@ export function StatisticsPage() {
       <div className="counters" role="list" aria-label="Najważniejsze wskaźniki">
         {[
           ['Pracownicy', s.employees, 'Osoby w kartotece (wybranej komórki).'],
-          ['Oceny niezakończone', s.cases.open, 'Wszystkie oceny przed końcem: w toku, oczekujące na zapoznanie, w okresie sprzeciwu i sprzeciwy u dyrektora generalnego. Monitoring „W toku” liczy tylko oceny przed przekazaniem do zapoznania.'],
+          ['Oceny niezakończone', s.cases.open, 'Oceny w toku, oczekujące na zapoznanie i sprzeciwy u dyrektora generalnego (bez zakończonych i tych w 7-dniowym okresie sprzeciwu). Monitoring „W toku” liczy tylko oceny przed przekazaniem do zapoznania.'],
           ['Oceny negatywne', `${s.results.negativePercent.toLocaleString('pl-PL')}%`, 'Udział ocen negatywnych wśród podpisanych i zaimportowanych.'],
           ['Po terminie', s.timeliness.openOverdue, 'Oceny niezakończone, których najbliższy termin już minął (jak „Po terminie” w Monitoringu).'],
           ['Obowiązkowy kolejny stopień', s.promotions.obligatory, 'Urzędnicy z dwiema kolejnymi ocenami na jednym z dwóch najwyższych poziomów (art. 89 ust. 2).'],
