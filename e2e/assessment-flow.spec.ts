@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { patchCase, resetDemo, sessionFor, signIn } from './helpers.ts'
+import { confirmDialog, patchCase, resetDemo, sessionFor, signIn } from './helpers.ts'
 
 /**
  * The whole periodic assessment in the browser, against the backend demo seed:
@@ -15,12 +15,13 @@ test.beforeEach(async ({ request }) => {
 
 /** Every partial score of part II set to `points` (one radio per criterion row; the choice saves at once). */
 async function scoreAll(page: Page, points: number) {
-  const radios = page.locator(`input[type="radio"][name^="decision-"][value="${points}"]`)
+  // Radio names: "<criterion>, <n> punktów, <level>" (RadioMatrix), in the table "Oceny cząstkowe".
+  const radios = page.getByRole('table', { name: 'Oceny cząstkowe' }).getByRole('radio', { name: new RegExp(`, ${points} punkt[^,]*,`) })
   await expect(radios.first()).toBeVisible()
   const n = await radios.count()
   expect(n).toBeGreaterThan(0)
   for (let i = 0; i < n; i++) {
-    // Controlled by the saved case: the radio is checked once the PATCH answers.
+    // Controlled by the saved case: the radio is checked only once the PATCH answers (so not check(), which asserts at once).
     await radios.nth(i).click()
     await expect(radios.nth(i)).toBeChecked()
   }
@@ -38,6 +39,7 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   await expect(page.getByText('Kryteria dodatkowe (2/3)', { exact: true })).toBeVisible()
   await page.getByLabel('Termin sporządzenia oceny').fill('2028-11-20')
   await page.getByRole('button', { name: 'Zatwierdź arkusz i kryteria' }).click()
+  await confirmDialog(page, 'Zatwierdzić arkusz i kryteria?', 'Zatwierdź')
 
   // Krok 2: rozmowa rozpoczynająca, część I potwierdzona przez oceniającego.
   await expect(page).toHaveURL(new RegExp(`/teczka/${CASE}/rozmowa-rozpoczynajaca`))
@@ -46,11 +48,14 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   await page.getByRole('button', { name: 'Zatwierdź część I' }).click()
   await expect(page.getByRole('link', { name: /Wpisz notatkę do zagadnienia/ }).first()).toBeVisible()
   await expect(page).toHaveURL(/rozmowa-rozpoczynajaca/)
-  const notes = page.locator('form textarea:not([readonly])')
+  // Every editable note of part I: the topics of the talk and the expectations for each criterion.
+  const notes = page.getByRole('textbox').and(page.locator('textarea:not([readonly])'))
   const count = await notes.count()
+  expect(count).toBeGreaterThan(0)
   for (let i = 0; i < count; i++) await notes.nth(i).fill(`Notatka z rozmowy rozpoczynającej ${i + 1}.`)
-  await page.locator('#confirm-part-i-0').check()
-  await page.locator('#confirm-part-i-1').check()
+  const confirmations = page.getByRole('group', { name: /Potwierdzenie oceniającego/ }).getByRole('checkbox')
+  await expect(confirmations).toHaveCount(2)
+  for (const box of await confirmations.all()) await box.check()
   await page.getByRole('button', { name: 'Zatwierdź część I' }).click()
 
   // Krok 3: czeka na ocenianego.
@@ -63,7 +68,7 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   // j.mazur has one assessment: the c-004 cycle.
   await employee.getByRole('list', { name: 'Bieżące oceny' }).getByRole('link').first().click()
   await expect(employee).toHaveURL(new RegExp(`/moje-oceny/${CASE}`))
-  await expect(employee.getByText('Potwierdź rozmowę rozpoczynającą', { exact: true })).toBeVisible()
+  await expect(employee.getByText('Wymaga Twojego działania: potwierdź rozmowę rozpoczynającą', { exact: true })).toBeVisible()
   await employee.getByRole('button', { name: 'Potwierdzam' }).click()
   await expect(employee.getByText('Nie masz teraz nic do potwierdzenia')).toBeVisible()
 
@@ -83,12 +88,14 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   await expect(page).toHaveURL(new RegExp(`/teczka/${CASE}/podpis`))
   await expect(page.getByText('bez uwag', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Podpisz ocenę' }).click()
+  await confirmDialog(page, 'Podpisać ocenę?', 'Podpisz ocenę')
   await page.getByRole('button', { name: 'Przekaż ocenianemu do zapoznania' }).click()
+  await confirmDialog(page, 'Przekazać ocenę ocenianemu?', 'Przekaż do zapoznania')
   await expect(page.getByText('Czeka na zapoznanie ocenianego', { exact: true })).toBeVisible()
 
   // Krok 7: oceniany zapoznaje się z oceną.
   await employee.reload()
-  await expect(employee.getByText('Zapoznaj się z oceną', { exact: true })).toBeVisible()
+  await expect(employee.getByText('Wymaga Twojego działania: zapoznaj się z oceną', { exact: true })).toBeVisible()
   await employee.getByRole('button', { name: 'Zapoznałem(-am) się z oceną' }).click()
   await expect(employee.getByText(/Zapoznałeś\(-aś\) się z oceną/)).toBeVisible()
 
@@ -124,5 +131,6 @@ test('ocena negatywna blokuje podpis bez uzasadnienia', async ({ page, request }
   await expect(page).toHaveURL(/\/teczka\/c-007\/podpis/)
   await expect(page.getByText('bez uwag', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Podpisz ocenę' }).click()
+  await confirmDialog(page, 'Podpisać ocenę?', 'Podpisz ocenę')
   await expect(page.getByRole('button', { name: 'Przekaż ocenianemu do zapoznania' })).toBeEnabled()
 })
