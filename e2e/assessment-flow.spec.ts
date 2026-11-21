@@ -61,7 +61,7 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   const employee = await sessionFor(browser, EMPLOYEE)
   await expect(employee).toHaveURL(/\/moje-oceny/)
   // j.mazur has one assessment: the c-004 cycle.
-  await employee.getByRole('table').getByRole('link').first().click()
+  await employee.getByRole('list', { name: 'Bieżące oceny' }).getByRole('link').first().click()
   await expect(employee).toHaveURL(new RegExp(`/moje-oceny/${CASE}`))
   await expect(employee.getByText('Potwierdź rozmowę rozpoczynającą', { exact: true })).toBeVisible()
   await employee.getByRole('button', { name: 'Potwierdzam' }).click()

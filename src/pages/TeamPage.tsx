@@ -1,16 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
 import { getTeam, type CaseSummary } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
+import { ResultList, ResultRow, type ResultTone } from '../components/ui'
 import { useMe } from '../lib/useAuth'
 import { countLabel } from '../lib/format'
 import { caseUrl, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 
 export function TeamPage() {
-  const navigate = useNavigate()
   const team = useQuery({ queryKey: ['team'], queryFn: ({ signal }) => getTeam(signal) })
   const me = useMe()
 
@@ -33,77 +31,54 @@ export function TeamPage() {
           <h2 id="team-h" className="h-section">Pracownicy</h2>
           <span className="faint small">{countLabel(cases.length, 'osoba', 'osoby', 'osób')}</span>
         </div>
-        <div className="panel">
-          <table className="table team-table">
-            <thead>
-              <tr>
-                <th>Pracownik</th>
-                <th>Rodzaj oceny</th>
-                <th>Etap</th>
-                <th>Najbliższy termin</th>
-                <th>Status</th>
-                <th aria-label="Akcje" />
-              </tr>
-            </thead>
-            <tbody>
-              {cases.map((c) => (
-                <TeamRow key={c.id} c={c} onOpen={() => navigate(caseUrl(c.id))} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResultList label="Pracownicy i ich oceny okresowe">
+          {cases.map((c) => (
+            <TeamRow key={c.id} c={c} />
+          ))}
+        </ResultList>
       </section>
     </div>
   )
 }
 
-function TeamRow({ c, onOpen }: { c: CaseSummary; onOpen: () => void }) {
+/** Status block: overdue first (red), then the case status (closed = grey, waiting for others = blue, running = green). */
+function statusOf(c: CaseSummary): { label: string; sub?: string; tone: ResultTone } {
+  const label = CASE_STATUS_LABEL[c.status]
+  if (c.status === 'ZAKONCZONA') return { label, tone: 'neutral' }
+  if (c.nextDeadline?.state === 'OVERDUE') return { label: 'Po terminie', sub: label, tone: 'danger' }
+  if (c.status === 'OKRES_SPRZECIWU' || c.status === 'DO_ZAPOZNANIA' || c.status === 'SPRZECIW_W_ROZPATRZENIU') return { label, tone: 'accent' }
+  return { label, tone: 'ok' }
+}
+
+function TeamRow({ c }: { c: CaseSummary }) {
   const current = c.stages.find((s) => s.id === c.currentStage)
   const idx = c.stages.findIndex((s) => s.id === c.currentStage)
   const sheet = c.sheetId ? `arkusz ${c.sheetId}` : 'arkusz do ustalenia'
   const stageName = current ? STAGE_SHORT[current.id] : '—'
+  const name = `${c.person.firstName} ${c.person.lastName}`
   return (
-    <tr className="is-link" onClick={onOpen}>
-      <td>
-        <div className="person">
-          <span className="person__name" title={`${c.person.firstName} ${c.person.lastName}`}>
-            {c.person.firstName} {c.person.lastName}
-          </span>
-          <span className="person__meta" title={c.person.position}>{c.person.position}</span>
-        </div>
-      </td>
-      <td>
-        <div className="person">
-          <span>Ocena okresowa</span>
-          <span className="person__meta">{sheet}</span>
-        </div>
-      </td>
-      <td>
-        <div className="stage-cell">
-          <StageDots stages={c.stages} />
-          <span className="stage-cell__name" title={`${idx + 1}/${c.stages.length} ${stageName}`}>
-            <span className="faint num">{idx + 1}/{c.stages.length}</span> {stageName}
-          </span>
-        </div>
-      </td>
-      <td>
-        {c.nextDeadline ? (
-          <div className="person">
+    <ResultRow
+      to={caseUrl(c.id)}
+      linkLabel={`Otwórz teczkę: ${name}`}
+      title={name}
+      status={statusOf(c)}
+      meta={[
+        { label: 'Stanowisko', value: c.person.position },
+        { label: 'Ocena', value: `okresowa, ${sheet}` },
+        { label: 'Etap', value: `${idx + 1}/${c.stages.length} ${stageName}` },
+      ]}
+      aside={
+        c.nextDeadline ? (
+          <>
             <DeadlineText deadline={c.nextDeadline} />
-            <span className="person__meta" title={c.nextDeadline.label}>{c.nextDeadline.label.replace(/,?\s+do$/, '')}</span>
-          </div>
-        ) : (
-          <span className="faint">—</span>
-        )}
-      </td>
-      <td>
-        <span title={CASE_STATUS_LABEL[c.status]} className={`tag ${c.status === 'OKRES_SPRZECIWU' || c.status === 'DO_ZAPOZNANIA' ? 'tag--accent' : ''}`}>{CASE_STATUS_LABEL[c.status]}</span>
-      </td>
-      <td className="cell-action">
-        <Link to={caseUrl(c.id)} className="btn btn--sm" aria-label={`Otwórz teczkę: ${c.person.firstName} ${c.person.lastName}`} onClick={(e) => e.stopPropagation()}>
-          Otwórz <ChevronRight size={14} aria-hidden="true" />
-        </Link>
-      </td>
-    </tr>
+            <span className="small muted">{c.nextDeadline.label.replace(/,?\s+do$/, '')}</span>
+          </>
+        ) : undefined
+      }
+    >
+      <div className="result-dots">
+        <StageDots stages={c.stages} />
+      </div>
+    </ResultRow>
   )
 }

@@ -16,7 +16,8 @@ import {
 } from '../../api/employees'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
-import { DateInput, Dialog, FileInput, InlineAlert } from '../../components/ui'
+import { DateInput, Dialog, FileInput, InlineAlert, ResultList, ResultRow, type ResultTone } from '../../components/ui'
+import { CASE_STATUS_LABEL } from '../../lib/stages'
 import { MutationError } from '../../case/stages/common'
 import { countLabel, fmtDate } from '../../lib/format'
 import { evaluatorLabel } from '../../lib/evaluator'
@@ -36,6 +37,15 @@ const SORTS: Record<SortKey, (e: EmployeeView) => string> = {
 }
 
 const deptOf = (unit: string) => unit.split(',')[0]
+
+/** Status block of a register row: the current assessment (overdue first), or none. */
+function registerStatus(e: EmployeeView): { label: string; sub?: string; tone: ResultTone } {
+  const c = e.currentCase
+  if (!c || c.status === 'ZAKONCZONA') return { label: 'Bez oceny', sub: 'w toku', tone: 'neutral' }
+  if (c.nextDeadline?.state === 'OVERDUE') return { label: 'Po terminie', tone: 'danger' }
+  if (c.status === 'W_TOKU') return { label: 'W toku', tone: 'ok' }
+  return { label: CASE_STATUS_LABEL[c.status], tone: 'accent' }
+}
 
 export function KartotekaPage() {
   const me = useMe()
@@ -82,14 +92,21 @@ export function KartotekaPage() {
     .filter((e) => !onlyWithout || !e.currentCase || e.currentCase.status === 'ZAKONCZONA')
     .sort((a, b) => (sort.asc ? 1 : -1) * SORTS[sort.key](a).localeCompare(SORTS[sort.key](b), 'pl'))
 
-  const th = (key: SortKey, label: string) => (
-    <th aria-sort={sort.key === key ? (sort.asc ? 'ascending' : 'descending') : 'none'}>
-      <button type="button" className="th-sort" onClick={() => setSort((s) => ({ key, asc: s.key === key ? !s.asc : true }))}>
+  const sortButton = (key: SortKey, label: string) => {
+    const on = sort.key === key
+    return (
+      <button
+        type="button"
+        className={`sort-bar__btn ${on ? 'is-on' : ''}`}
+        aria-pressed={on}
+        aria-label={`Sortuj: ${label}${on ? (sort.asc ? ', rosnąco' : ', malejąco') : ''}`}
+        onClick={() => setSort((s) => ({ key, asc: s.key === key ? !s.asc : true }))}
+      >
         {label}
-        <span aria-hidden="true">{sort.key === key ? (sort.asc ? ' ▲' : ' ▼') : ''}</span>
+        <span aria-hidden="true">{on ? (sort.asc ? ' ▲' : ' ▼') : ''}</span>
       </button>
-    </th>
-  )
+    )
+  }
   const filtered = search || unit || employment || sheet || onlyWithout
 
   return (
@@ -169,67 +186,63 @@ export function KartotekaPage() {
         )}
       </div>
 
-      <div className="panel table-scroll">
-        <table className="table register-table">
-          <caption className="visually-hidden">Kartoteka pracowników; nagłówki kolumn sortują listę</caption>
-          <thead>
-            <tr>
-              {th('name', 'Pracownik')}
-              {th('unit', 'Komórka')}
-              <th>Status</th>
-              {th('evaluator', 'Oceniający')}
-              <th>Arkusz</th>
-              {th('deadline', 'Bieżąca ocena')}
-              <th>Ostatnia ocena</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && <tr><td colSpan={7} className="muted">Brak osób spełniających filtry.</td></tr>}
-            {rows.map((e) => (
-              <tr key={e.id}>
-                <td>
-                  <div className="person">
-                    <Link to={`/kartoteka/${e.id}`} className="person__name">{e.lastName} {e.firstName}</Link>
-                    <span className="person__meta">{e.position}</span>
-                  </div>
-                </td>
-                <td className="cell-unit" title={e.unit}>{deptOf(e.unit)}</td>
-                <td>
-                  {e.employment === 'URZEDNIK' ? 'urzędnik' : 'pracownik'}
-                  {e.obligatoryPromotion.due && <span className="tag tag--warn emp-tag" title={e.obligatoryPromotion.reason}>obowiązkowy kolejny stopień</span>}
-                </td>
-                <td className="cell-evaluator">
-                  {e.evaluatorId ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : <span className="tag tag--danger">brak oceniającego</span>}
-                  {e.substitution && <span className="cell-sub">zastępstwo do {fmtDate(e.substitution.to)}</span>}
-                </td>
-                <td>{e.sheetId}{!e.currentCase?.sheetId && <span className="cell-sub">sugestia</span>}</td>
-                <td>
-                  {e.currentCase ? (
-                    <>
-                      <span className="cell-sub">{e.currentCase.stageName}</span>
-                      {e.currentCase.nextDeadline && <DeadlineText deadline={e.currentCase.nextDeadline} />}
-                    </>
-                  ) : (
-                    <span className="faint">brak teczki</span>
-                  )}
-                </td>
-                <td>
-                  {e.lastAssessment ? (
-                    <>
-                      <span className={`tag ${e.lastAssessment.result === 'POSITIVE' ? 'tag--ok' : 'tag--danger'}`}>
-                        {e.lastAssessment.result === 'POSITIVE' ? 'pozytywna' : 'negatywna'}
-                      </span>
-                      <span className="cell-sub num">{fmtDate(e.lastAssessment.assessedOn)}</span>
-                    </>
-                  ) : (
-                    <span className="faint">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="sort-bar" role="group" aria-label="Sortowanie listy">
+        <span className="sort-bar__label" aria-hidden="true">Sortuj:</span>
+        {sortButton('name', 'Nazwisko')}
+        {sortButton('unit', 'Komórka')}
+        {sortButton('evaluator', 'Oceniający')}
+        {sortButton('deadline', 'Termin')}
       </div>
+
+      {rows.length === 0 ? (
+        <p className="muted register-empty">Brak osób spełniających filtry.</p>
+      ) : (
+        <ResultList label="Kartoteka pracowników">
+          {rows.map((e) => (
+            <ResultRow
+              key={e.id}
+              to={`/kartoteka/${e.id}`}
+              title={`${e.lastName} ${e.firstName}`}
+              status={registerStatus(e)}
+              meta={[
+                { label: 'Stanowisko', value: e.position },
+                { label: 'Komórka', value: <span title={e.unit}>{deptOf(e.unit)}</span> },
+                { label: 'Status', value: e.employment === 'URZEDNIK' ? 'urzędnik' : 'pracownik' },
+                {
+                  label: 'Oceniający',
+                  value: e.evaluatorId ? (
+                    <>
+                      {evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName)}
+                      {e.substitution && <span className="faint"> (zastępstwo do {fmtDate(e.substitution.to)})</span>}
+                    </>
+                  ) : (
+                    <span className="tag tag--danger">brak oceniającego</span>
+                  ),
+                },
+                { label: 'Arkusz', value: `${e.sheetId ?? '—'}${!e.currentCase?.sheetId ? ' (sugestia)' : ''}` },
+                {
+                  label: 'Ostatnia ocena',
+                  value: e.lastAssessment ? `${e.lastAssessment.result === 'POSITIVE' ? 'pozytywna' : 'negatywna'}, ${fmtDate(e.lastAssessment.assessedOn)}` : '—',
+                },
+              ]}
+              aside={
+                e.currentCase ? (
+                  <>
+                    <span className="small muted">{e.currentCase.stageName}</span>
+                    {e.currentCase.nextDeadline && <DeadlineText deadline={e.currentCase.nextDeadline} />}
+                  </>
+                ) : undefined
+              }
+            >
+              {e.obligatoryPromotion.due && (
+                <p className="result-note">
+                  <span className="tag tag--warn" title={e.obligatoryPromotion.reason}>obowiązkowy kolejny stopień</span>
+                </p>
+              )}
+            </ResultRow>
+          ))}
+        </ResultList>
+      )}
 
       </div>
       )}
