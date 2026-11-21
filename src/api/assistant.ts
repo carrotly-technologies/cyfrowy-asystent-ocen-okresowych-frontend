@@ -1,3 +1,4 @@
+import { apiPost } from './client'
 import type { StageId } from './cases'
 
 export type AssistantMode = 'FORMAL' | 'CONVERSATION'
@@ -32,18 +33,29 @@ export interface AskAssistantRequest {
   history: { role: 'user' | 'assistant'; text: string }[]
 }
 
-/**
- * Stub. The RAG assistant is a separate task; wire it here (e.g. POST /api/assistant/ask)
- * and the panel will work unchanged.
- */
+interface AskResponse {
+  answer: string
+  grounded: boolean
+  mode: 'LLM' | 'EXTRACTIVE'
+  sources: { n: number; title: string; ref: string; quote: string }[]
+  disclaimer: string
+}
+
+/** POST /api/assistant/ask — answers only from the knowledge base, with sources. */
 export async function askAssistant(req: AskAssistantRequest): Promise<AssistantAnswer> {
-  void req
-  await new Promise((r) => setTimeout(r, 450))
+  const res = await apiPost<AskResponse>('/assistant/ask', {
+    question: req.question,
+    assistant: req.mode,
+    ...(req.context.caseId ? { caseId: req.context.caseId } : {}),
+    ...(req.context.stageId ? { stageId: req.context.stageId } : {}),
+  })
   return {
-    answer:
-      'Asystent zostanie podłączony do bazy wiedzy (ustawa o służbie cywilnej, rozporządzenia z 2015 i 2016 r., model kompetencji, poradniki KPRM). Do tego czasu nie udziela odpowiedzi, żeby nie podawać informacji bez źródła.',
-    sources: [],
-    noAnswer: true,
-    placeholder: true,
+    answer: res.disclaimer ? `${res.answer}\n\n${res.disclaimer}` : res.answer,
+    sources: res.sources.map((s) => ({
+      title: s.ref,
+      locator: s.title,
+      quote: s.quote,
+    })),
+    noAnswer: !res.grounded,
   }
 }
