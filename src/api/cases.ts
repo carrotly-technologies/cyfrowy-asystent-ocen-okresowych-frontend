@@ -116,6 +116,8 @@ export interface FormalCheckItem {
 export interface CaseDetail extends CaseSummary {
   evaluator: { firstName: string; lastName: string; position: string; unit: string }
   officeName: string
+  /** Urząd z konfiguracji backendu (env OFFICE_*): nazwa, miejscowość, logo, adresat sprzeciwu w arkuszu A. */
+  office?: OfficeConfig
   sheetSuggestion: SheetSuggestion
   partI: PartI
   observations: Observation[]
@@ -133,8 +135,32 @@ export interface CaseDetail extends CaseSummary {
   acknowledgedOn: string | null
   objectionDeadline: Deadline | null
   history: { date: string; text: string }[]
+  /** Korekty administratora (tryb korekty błędów): kto, kiedy, stara → nowa wartość, powód. */
+  corrections?: Correction[]
+  /** Dlaczego część I / części II–III są zablokowane (null = edytowalne). */
+  locks?: { partI: string | null; partII: string | null }
   /** Actions the signed-in user may do right now (the assessed person sees only their confirmations). */
   availableActions: CaseAction[]
+}
+
+export interface OfficeConfig {
+  name: string
+  city: string
+  logoUrl: string | null
+  objectionRecipient: string | null
+}
+
+export interface Correction {
+  id: string
+  at: string
+  date: string
+  by: { userId: string; name: string }
+  field: string
+  label: string
+  section: string
+  oldValue: string
+  newValue: string
+  reason: string
 }
 
 export interface CasePatch {

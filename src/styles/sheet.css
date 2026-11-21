@@ -32,6 +32,12 @@
   font-weight: 600;
 }
 
+.doc-logo {
+  align-self: flex-start;
+  max-height: 48px;
+  max-width: 160px;
+}
+
 .doc-annex__wzor {
   align-self: center;
   margin-top: 6px;

@@ -9,6 +9,7 @@ import {
   Settings,
   TableProperties,
   UserCog,
+  FilePen,
   Users,
   X,
 } from 'lucide-react'
@@ -170,11 +171,12 @@ function navItems(role: Role): NavItem[] {
     SUPERVISOR: { to: '/zespol', label: 'Mój zespół', Icon: Users, match: ['/zespol', '/teczka'] },
     EMPLOYEE: { to: '/moje-oceny', label: 'Moje oceny', Icon: ClipboardCheck, match: ['/moje-oceny'] },
     HR: { to: '/hr', label: 'Monitoring', Icon: TableProperties, match: ['/hr'] },
-    ADMIN: { to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin'] },
+    ADMIN: { to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin/uzytkownicy'] },
   }
   const own = byRole[role]
   return [
     ...(own ? [own] : []),
+    ...(role === 'ADMIN' ? [{ to: '/admin/korekty', label: 'Tryb korekty', Icon: FilePen, match: ['/admin/korekty'] }] : []),
     { to: '/baza-wiedzy', label: 'Baza wiedzy', Icon: BookOpen, match: ['/baza-wiedzy'] },
   ]
 }

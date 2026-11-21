@@ -121,6 +121,9 @@ export function MyCasePage() {
 
       {detail.sentForAckOn && (
         <section className="section" aria-label="Arkusz oceny">
+          <p>
+            <Link to={`/teczka/${detail.id}/arkusz`}>Otwórz arkusz na pełnym ekranie (druk, pobieranie PDF)</Link>
+          </p>
           <div className="paper-preview">
             <SheetDocument detail={detail} model={model.data} criteria={criteria} />
           </div>

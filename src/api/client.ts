@@ -84,6 +84,32 @@ export function apiPatch<T>(path: string, body: unknown, signal?: AbortSignal): 
   return request<T>(path, withBody('PATCH', body, signal))
 }
 
+/**
+ * Downloads a file from the API (with the bearer token) and saves it under the server's filename
+ * (Content-Disposition), e.g. the sheet PDF `ocena-<nazwisko>-<data>.pdf`.
+ */
+export async function apiDownload(path: string, fallbackName: string): Promise<void> {
+  const token = getToken()
+  const headers = new Headers()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}/api${path}`, { headers })
+  } catch {
+    throw new ApiError('Brak połączenia z serwerem API. Sprawdź, czy backend jest uruchomiony.', 0)
+  }
+  if (!res.ok) throw new ApiError(await readErrorMessage(res), res.status)
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
