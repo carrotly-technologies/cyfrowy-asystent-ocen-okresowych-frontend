@@ -22,8 +22,19 @@ Start the backend first (`npm run start:dev` in `hacknation-backend`, port 3000)
 npm run dev       # http://localhost:5173
 ```
 
-The home page calls `GET /api/health` and shows the API status, or an error
-message when the backend is not reachable.
+The app is the **Kompas Kompetencji** wizard (UI in Polish): path and sheet →
+criteria → competency assessment via behavioural indicators (with a level
+suggestion from `POST /api/assessments/suggest-level`) → first-assessment
+conditions (FIRST only) → summary (`POST /api/assessments/evaluate`). Model and
+sheets come from `GET /api/competency-model` and `GET /api/sheets`
+(contract: `notatki/api-kontrakt-v1.md`). The header shows the
+`GET /api/health` status. Wizard state is kept in `localStorage` of the browser.
+
+Without a backend you can use a dev-only mock (off by default, never bundled):
+
+```bash
+MOCK_API=1 npm run dev   # serves /api/* from ../notatki/model-kompetencji.json
+```
 
 ## Quality
 
