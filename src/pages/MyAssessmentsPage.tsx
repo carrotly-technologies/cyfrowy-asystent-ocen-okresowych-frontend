@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router'
 import { getCases, type CaseAction, type CaseDetail, type CaseSummary, type Deadline } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { BackLink, Button, InfoList, InfoRow, InlineAlert, StageStepper, StatusBadge } from '../components/ui'
+import { BackLink, Button, InfoList, InfoRow, InlineAlert, ResultList, ResultRow, StageStepper, StatusBadge, type ResultTone } from '../components/ui'
 import { useCase, useCaseAction } from '../lib/caseQueries'
 import { fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, findCriterion, useCriteria, useSheets } from '../lib/model'
@@ -59,34 +59,31 @@ function CaseTable({ id, title, cases, empty }: { id: string; title: string; cas
       {cases.length === 0 ? (
         <p className="muted">{empty}</p>
       ) : (
-        <div className="panel">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Cykl oceny</th>
-                <th>Etap</th>
-                <th>Termin</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cases.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <Link to={`/moje-oceny/${c.id}`}>{c.cycleLabel}</Link>
-                    <div className="faint small">{c.sheetId ? `Arkusz ${c.sheetId}` : 'Arkusz do ustalenia'}</div>
-                  </td>
-                  <td>{STAGE_SHORT[c.currentStage]}</td>
-                  <td className="td-wrap">
-                    {c.nextDeadline && <div className="small">{deadlineName(c.nextDeadline)}</div>}
+        <ResultList label={title}>
+          {cases.map((c) => {
+            const todo = employeeTodo(c)
+            return (
+              <ResultRow
+                key={c.id}
+                to={`/moje-oceny/${c.id}`}
+                title={c.cycleLabel}
+                status={statusOf(c, !!todo?.required)}
+                meta={[
+                  { label: 'Arkusz', value: c.sheetId ?? 'do ustalenia' },
+                  { label: 'Etap', value: STAGE_SHORT[c.currentStage] },
+                ]}
+                aside={
+                  <>
+                    {c.nextDeadline && <span className="small muted">{deadlineName(c.nextDeadline)}</span>}
                     <EmployeeDeadline deadline={c.nextDeadline} closed={c.status === 'ZAKONCZONA'} />
-                  </td>
-                  <td className="td-wrap"><CaseStatusCell c={c} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </>
+                }
+              >
+                {todo && <p className="result-note">{`${todo.text[0].toUpperCase()}${todo.text.slice(1)}.`}</p>}
+              </ResultRow>
+            )
+          })}
+        </ResultList>
       )}
     </section>
   )
@@ -103,16 +100,12 @@ function EmployeeDeadline({ deadline, closed, showLegal }: { deadline: Deadline 
   return <DeadlineText deadline={deadline} showLegal={showLegal} />
 }
 
-function CaseStatusCell({ c }: { c: CaseSummary }) {
-  const todo = employeeTodo(c)
-  return (
-    <>
-      <StatusBadge tone={todo?.required ? 'warning' : STATUS_TONE[c.status]}>
-        {todo?.required ? 'Wymaga Twojego działania' : CASE_STATUS_LABEL[c.status]}
-      </StatusBadge>
-      {todo && <div className="small">{`${todo.text[0].toUpperCase()}${todo.text.slice(1)}.`}</div>}
-    </>
-  )
+/** Status block of a row: "your action needed" first, then the case status. */
+function statusOf(c: CaseSummary, actionNeeded: boolean): { label: string; tone: ResultTone } {
+  if (actionNeeded) return { label: 'Do działania', tone: 'warn' }
+  if (c.status === 'ZAKONCZONA') return { label: CASE_STATUS_LABEL[c.status], tone: 'neutral' }
+  if (c.status === 'W_TOKU') return { label: CASE_STATUS_LABEL[c.status], tone: 'ok' }
+  return { label: CASE_STATUS_LABEL[c.status], tone: 'accent' }
 }
 
 /** One assessment of the signed-in assessed person: read only, with their two confirmations. */

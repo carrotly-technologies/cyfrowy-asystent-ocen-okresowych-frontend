@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { evaluateAssessment, type EvaluateResponse } from '../api/reference'
 import { useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { decideObjection, getObjections, type CaseDetail, type ObjectionOutcome } from '../api/cases'
 import { AssessmentVersions, CaseHistoryList, ObjectionStatus } from '../case/LegalPaths'
 import { legalErrorText, OUTCOME_SHORT, useLegalMutation } from '../lib/legalQueries'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { BackLink, Button, ConfirmDialog, Field, InlineAlert, RadioGroup, Select, StatusBadge, TextArea, TextInput } from '../components/ui'
+import { BackLink, Button, ConfirmDialog, Field, InlineAlert, RadioGroup, ResultList, ResultRow, Select, StatusBadge, TextArea, TextInput } from '../components/ui'
 import { useCase } from '../lib/caseQueries'
 import { DEMO_TODAY, fmtAvg, fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, useCriteria, useSheets, type CaseCriteria } from '../lib/model'
@@ -48,39 +48,40 @@ function ObjectionTable({ id, title, rows, empty }: { id: string; title: string;
       {rows.length === 0 ? (
         <p className="muted">{empty}</p>
       ) : (
-        <div className="panel">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Oceniany</th>
-                <th>Oceniający</th>
-                <th>Wniesiony</th>
-                <th>Termin rozpatrzenia</th>
-                <th>Rozstrzygnięcie</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.objection.id}>
-                  <td>
-                    <Link to={`/sprzeciwy/${r.caseId}`}>{r.person.firstName} {r.person.lastName}</Link>
-                    <div className="faint small">{r.person.position}</div>
-                  </td>
-                  <td>{r.evaluatorName}</td>
-                  <td className="num">{fmtDate(r.objection.filedOn)}</td>
-                  <td>{r.objection.decision ? <span className="faint">—</span> : <DeadlineText deadline={r.objection.decisionDeadline} />}</td>
-                  <td>
-                    {r.objection.decision ? (
-                      <>{OUTCOME_SHORT[r.objection.decision.outcome]} <span className="faint small num">{fmtDate(r.objection.decision.decidedOn)}</span></>
-                    ) : (
-                      <StatusBadge tone="warning">Czeka na Twoją decyzję</StatusBadge>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResultList label={title}>
+          {rows.map((r) => {
+            const d = r.objection.decision
+            const overdue = !d && r.objection.decisionDeadline?.state === 'OVERDUE'
+            return (
+              <ResultRow
+                key={r.objection.id}
+                to={`/sprzeciwy/${r.caseId}`}
+                title={`${r.person.firstName} ${r.person.lastName}`}
+                status={
+                  d
+                    ? { label: 'Rozstrzygnięty', sub: fmtDate(d.decidedOn), tone: 'neutral' }
+                    : overdue
+                      ? { label: 'Po terminie', sub: 'do decyzji', tone: 'danger' }
+                      : { label: 'Do decyzji', tone: 'warn' }
+                }
+                meta={[
+                  { label: 'Stanowisko', value: r.person.position },
+                  { label: 'Oceniający', value: r.evaluatorName },
+                  { label: 'Wniesiony', value: fmtDate(r.objection.filedOn) },
+                  ...(d ? [{ label: 'Rozstrzygnięcie', value: OUTCOME_SHORT[d.outcome] }] : []),
+                ]}
+                aside={
+                  d ? undefined : (
+                    <>
+                      <span className="small muted">Termin rozpatrzenia</span>
+                      <DeadlineText deadline={r.objection.decisionDeadline} />
+                    </>
+                  )
+                }
+              />
+            )
+          })}
+        </ResultList>
       )}
     </section>
   )
