@@ -41,8 +41,13 @@ The app is **Cyfrowy Asystent Ocen Okresowych** (UI in Polish): the periodic ass
   przeprowadzona”), `podpis` (formal check, signature, hand-over), `zapoznanie`; docked assistant panel;
 - `/teczka/:id/arkusz` — official sheet preview (parts I/II/III); print it to get the PDF;
 - `/moje-oceny`, `/moje-oceny/:id` — the assessed person (EMPLOYEE): own assessments, read only, with the two
-  confirmations (part I and the assessment) that only they can make;
-- `/hr` — HR monitoring with counters, filters and (simulated) reminders; `/baza-wiedzy` — assistant;
+  confirmations (part I and the assessment) that only they can make, status and deadlines, the Pouczenie and the
+  sprzeciw form (7 days), the request to change the assessment date (art. 81 ust. 8 pkt 4), earlier versions and history;
+  current and past assessments are listed separately;
+- `/sprzeciwy`, `/sprzeciwy/:id` — dyrektor generalny (DIRECTOR): objections and the decision (oddalenie, zmiana oceny
+  with new scores, ponowne sporządzenie); the evaluator's case file shows pending termin requests and „fikcja zapoznania”;
+- `/hr` — HR monitoring with counters, filters, (simulated) reminders and „Fikcja zapoznania” for cases awaiting
+  acknowledgement; `/baza-wiedzy` — assistant;
 - `/admin/uzytkownicy` — admin only: accounts and their roles;
 - `/ustawienia` — appearance settings (theme, text size, high contrast), kept in `localStorage` `ocena.prefs`.
 

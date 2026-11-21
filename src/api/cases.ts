@@ -14,7 +14,7 @@ export type StageId =
   | 'ACKNOWLEDGEMENT'
 export type StageStatus = 'DONE' | 'CURRENT' | 'UPCOMING' | 'LOCKED'
 export type DeadlineState = 'OK' | 'SOON' | 'OVERDUE' | 'NONE'
-export type CaseStatus = 'W_TOKU' | 'DO_ZAPOZNANIA' | 'OKRES_SPRZECIWU' | 'ZAKONCZONA'
+export type CaseStatus = 'W_TOKU' | 'DO_ZAPOZNANIA' | 'OKRES_SPRZECIWU' | 'SPRZECIW_W_ROZPATRZENIU' | 'ZAKONCZONA'
 export type Points = 1 | 3 | 5 | 7 | 9
 
 export interface Person {
@@ -134,11 +134,19 @@ export interface CaseDetail extends CaseSummary {
   sentForAckOn: string | null
   acknowledgedOn: string | null
   objectionDeadline: Deadline | null
-  history: { date: string; text: string }[]
   /** Korekty administratora (tryb korekty błędów): kto, kiedy, stara → nowa wartość, powód. */
   corrections?: Correction[]
   /** Dlaczego część I / części II–III są zablokowane (null = edytowalne). */
   locks?: { partI: string | null; partII: string | null }
+  history: HistoryEntry[]
+  ackFiction: AckFiction | null
+  objections: ObjectionView[]
+  assessmentVersions: AssessmentVersion[]
+  dueDateRequests: DueDateRequest[]
+  dueDateChanges: DueDateChange[]
+  dueDateRequestRule: { eligible: boolean; reason: string; legalBasis: string }
+  /** Post-assessment actions the signed-in user may take now (backend appeals.rules.ts). */
+  legalActions?: LegalAction[]
   /** Actions the signed-in user may do right now (the assessed person sees only their confirmations). */
   availableActions: CaseAction[]
 }
@@ -185,7 +193,90 @@ export type CaseAction =
   | 'SEND_FOR_ACK'
   | 'EMPLOYEE_ACK_ASSESSMENT'
 
-export type Role = 'SUPERVISOR' | 'EMPLOYEE' | 'HR' | 'ADMIN'
+export type Role = 'SUPERVISOR' | 'EMPLOYEE' | 'HR' | 'ADMIN' | 'DIRECTOR'
+
+export interface HistoryEntry {
+  date: string
+  text: string
+  /** Domain event behind the entry (for notifications). */
+  event?: { type: string; notify: string[] }
+}
+
+export type LegalAction =
+  | 'RECORD_ACK_FICTION'
+  | 'FILE_OBJECTION'
+  | 'DECIDE_OBJECTION'
+  | 'REQUEST_DUE_DATE_CHANGE'
+  | 'DECIDE_DUE_DATE_REQUEST'
+
+export interface ActorRef {
+  name: string
+  role: string
+}
+
+/** "Fikcja zapoznania": the assessment reached the assessed person, who could not or would not confirm it. */
+export interface AckFiction {
+  date: string
+  reason: string
+  recordedOn: string
+  recordedBy: ActorRef
+}
+
+export type ObjectionOutcome = 'DISMISS' | 'CHANGE' | 'REDO'
+
+export interface ObjectionView {
+  id: string
+  round: number
+  filedOn: string
+  text: string
+  decision: { outcome: ObjectionOutcome; decidedOn: string; reason: string; decidedBy: ActorRef } | null
+  decisionDeadline: Deadline
+  courtAppealDeadline: Deadline | null
+}
+
+export interface AssessmentVersion {
+  round: number
+  status: 'CANCELLED' | 'CHANGED'
+  closedOn: string
+  reason: string
+  decisions: Record<string, number>
+  justification: string
+  iprz: string
+  result: 'POSITIVE' | 'NEGATIVE' | null
+  average: number | null
+  signedByEvaluatorOn: string | null
+  acknowledgedOn: string | null
+  ackFiction: AckFiction | null
+}
+
+export interface DueDateRequest {
+  id: string
+  filedOn: string
+  reason: string
+  proposedDate: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  decidedOn: string | null
+  decisionNote: string | null
+  newDate: string | null
+  decidedBy: ActorRef | null
+}
+
+export interface DueDateChange {
+  changedOn: string
+  from: string | null
+  to: string
+  reason: string
+  by: ActorRef
+}
+
+export interface ObjectionListItem {
+  caseId: string
+  person: Person
+  evaluatorName: string
+  sheetId: SheetId | null
+  status: CaseStatus
+  objection: ObjectionView
+}
 
 /** GET /api/me: the signed-in user. */
 export interface Me {
@@ -243,3 +334,17 @@ export const getHrOverview = (signal?: AbortSignal) => apiGet<HrOverview>('/hr/o
 export const sendReminders = (caseIds: string[]) =>
   apiPost<ReminderResponse>('/hr/reminders', { caseIds })
 export const resetDemo = () => apiPost<unknown>('/demo/reset', {})
+
+const casePath = (id: string, rest: string) => `/cases/${encodeURIComponent(id)}/${rest}`
+export const recordAckFiction = (id: string, body: { date: string; reason: string }) =>
+  apiPost<CaseDetail>(casePath(id, 'ack-fiction'), body)
+export const fileObjection = (id: string, text: string) => apiPost<CaseDetail>(casePath(id, 'objection'), { text })
+export const decideObjection = (
+  id: string,
+  body: { outcome: ObjectionOutcome; reason: string; decisions?: Record<string, number>; justification?: string },
+) => apiPost<CaseDetail>(casePath(id, 'objection/decision'), body)
+export const requestDueDateChange = (id: string, body: { reason: string; proposedDate?: string | null }) =>
+  apiPost<CaseDetail>(casePath(id, 'due-date-request'), body)
+export const decideDueDateRequest = (id: string, body: { approve: boolean; newDate?: string | null; note?: string | null }) =>
+  apiPost<CaseDetail>(casePath(id, 'due-date-request/decision'), body)
+export const getObjections = (signal?: AbortSignal) => apiGet<ObjectionListItem[]>('/objections', signal)

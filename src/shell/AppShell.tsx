@@ -6,6 +6,7 @@ import {
   type LucideIcon,
   Menu,
   RotateCcw,
+  Scale,
   Settings,
   TableProperties,
   UserCog,
@@ -172,6 +173,7 @@ function navItems(role: Role): NavItem[] {
     EMPLOYEE: { to: '/moje-oceny', label: 'Moje oceny', Icon: ClipboardCheck, match: ['/moje-oceny'] },
     HR: { to: '/hr', label: 'Monitoring', Icon: TableProperties, match: ['/hr'] },
     ADMIN: { to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin/uzytkownicy'] },
+    DIRECTOR: { to: '/sprzeciwy', label: 'Sprzeciwy', Icon: Scale, match: ['/sprzeciwy'] },
   }
   const own = byRole[role]
   return [

@@ -9,6 +9,7 @@ export const HOME_BY_ROLE: Record<Role, string> = {
   EMPLOYEE: '/moje-oceny',
   HR: '/hr',
   ADMIN: '/admin/uzytkownicy',
+  DIRECTOR: '/sprzeciwy',
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
@@ -16,6 +17,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   EMPLOYEE: 'Oceniany',
   HR: 'Kadry HR',
   ADMIN: 'Administrator',
+  DIRECTOR: 'Dyrektor generalny',
 }
 
 export type AuthState = {

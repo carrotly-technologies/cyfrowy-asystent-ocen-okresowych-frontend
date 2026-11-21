@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
 import { apiDownload, errorMessage } from '../api/client'
 import type { CriteriaCatalogue } from '../api/reference'
+import { EvaluatorLegalPanel } from './LegalPaths'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, StageStepper, StatusBadge } from '../components/ui'
@@ -43,6 +44,7 @@ const STATUS_TONE = {
   W_TOKU: 'info',
   DO_ZAPOZNANIA: 'warning',
   OKRES_SPRZECIWU: 'warning',
+  SPRZECIW_W_ROZPATRZENIU: 'warning',
   ZAKONCZONA: 'success',
 } as const
 
@@ -138,6 +140,7 @@ export function CasePage() {
             steps={steps.map((st) => ({ key: st.key, label: st.label, status: st.status, to: caseUrl(detail.id, stepTarget(st)) }))}
           />
         </div>
+        <EvaluatorLegalPanel detail={detail} />
       </header>
 
       {pdfError && <p className="sheet-bar__error" role="alert">{pdfError}</p>}

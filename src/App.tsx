@@ -6,6 +6,7 @@ import { HrPage } from './pages/HrPage'
 import { KnowledgePage } from './pages/KnowledgePage'
 import { LoginPage } from './pages/LoginPage'
 import { MyAssessmentsPage, MyCasePage } from './pages/MyAssessmentsPage'
+import { ObjectionCasePage, ObjectionsPage } from './pages/ObjectionsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TeamPage } from './pages/TeamPage'
@@ -33,6 +34,10 @@ export default function App() {
           </Route>
           <Route element={<RequireRole roles={['HR']} />}>
             <Route path="/hr" element={<HrPage />} />
+          </Route>
+          <Route element={<RequireRole roles={['DIRECTOR']} />}>
+            <Route path="/sprzeciwy" element={<ObjectionsPage />} />
+            <Route path="/sprzeciwy/:id" element={<ObjectionCasePage />} />
           </Route>
           <Route element={<RequireRole roles={['ADMIN']} />}>
             <Route path="/admin/uzytkownicy" element={<AdminUsersPage />} />
