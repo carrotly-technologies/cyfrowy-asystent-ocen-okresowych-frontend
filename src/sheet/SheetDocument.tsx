@@ -69,7 +69,6 @@ function PeriodicSheet({ detail, model, criteria }: { detail: CaseDetail; model:
       <div className="doc-page">
         <div className="doc-annex">
           <span>{meta.annex}</span>
-          <span className="doc-annex__wzor">WZÓR</span>
         </div>
         <h1 className="doc-title">
           <span className="doc-title__sheet">ARKUSZ {sheet}</span>
@@ -317,7 +316,6 @@ function FirstSheet({ detail, model, criteria }: { detail: CaseDetail; model: Co
       <div className="doc-page">
         <div className="doc-annex">
           <span>Załącznik nr 2</span>
-          <span className="doc-annex__wzor">WZÓR</span>
         </div>
         <h1 className="doc-title">
           <span className="doc-title__main">ARKUSZ PIERWSZEJ OCENY</span>

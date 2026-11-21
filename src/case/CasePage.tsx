@@ -1,5 +1,5 @@
 import { FileText, MessageSquareText, Printer } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
 import { AssistantPanel } from '../assistant/AssistantPanel'
@@ -42,6 +42,10 @@ export function CasePage() {
   const model = useModel()
   const sheets = useSheets()
   const [assistantOpen, setAssistantOpen] = useState(readAssistantPref)
+  const workRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    workRef.current?.scrollTo({ top: 0 })
+  }, [slug])
 
   const toggleAssistant = () => {
     setAssistantOpen((v) => {
@@ -66,6 +70,7 @@ export function CasePage() {
   const props: StageProps = { detail, model: model.data, criteria, stage }
   const name = `${detail.person.firstName} ${detail.person.lastName}`
   const sheetLabel = detail.path === 'FIRST' ? 'Arkusz pierwszej oceny' : detail.sheetId ? `Arkusz ${detail.sheetId}` : 'Arkusz nieustalony'
+  const metaText = `${detail.person.position} · ${detail.path === 'FIRST' ? 'Pierwsza ocena w służbie cywilnej' : detail.cycleLabel} · ${sheetLabel}`
   const statusTone = detail.status === 'OKRES_SPRZECIWU' || detail.status === 'DO_ZAPOZNANIA' ? 'tag--accent' : detail.status === 'ZAKONCZONA' ? 'tag--ok' : ''
 
   return (
@@ -79,8 +84,8 @@ export function CasePage() {
           </nav>
           <div className="case-head__title">
             <h1 className="h-page">{name}</h1>
-            <span className="case-head__meta">
-              {detail.person.position} · {detail.path === 'FIRST' ? 'Pierwsza ocena w służbie cywilnej' : detail.cycleLabel} · {sheetLabel}
+            <span className="case-head__meta" title={metaText}>
+              {metaText}
             </span>
             <span className={`tag ${statusTone}`}>{CASE_STATUS_LABEL[detail.status]}</span>
           </div>
@@ -103,7 +108,7 @@ export function CasePage() {
 
       <div className="case-body">
         <StageRail detail={detail} active={stage} model={model.data} criteria={criteria} />
-        <section className="case-work" aria-label={`Etap: ${STAGE_SHORT[stage]}`}>
+        <section ref={workRef} className="case-work" aria-label={`Etap: ${STAGE_SHORT[stage]}`}>
           {canOpenStage(detail, stage) ? <StageWorkspace {...props} /> : <StageNotOpen detail={detail} stage={stage} />}
         </section>
         {assistantOpen && (

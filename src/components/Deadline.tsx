@@ -16,7 +16,11 @@ export function DeadlineText({ deadline, showLabel = false, showLegal = false }:
           <span className={`deadline__rel deadline__rel--${tone} num`}>{fmtDaysLeft(deadline.daysLeft)}</span>
         </>
       ) : (
-        !showLabel && <span className="faint">{deadline.label}</span>
+        !showLabel && (
+          <span className="faint" title={deadline.label}>
+            {/niezwłocznie/i.test(deadline.label) ? 'niezwłocznie' : deadline.label}
+          </span>
+        )
       )}
       {showLegal && deadline.legalBasis && <span className="legal deadline__legal">{deadline.legalBasis}</span>}
     </span>

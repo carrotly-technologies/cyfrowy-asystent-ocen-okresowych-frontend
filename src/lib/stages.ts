@@ -1,4 +1,4 @@
-import type { CaseDetail, Path, StageId } from '../api/cases'
+import type { CaseAction, CaseDetail, Path, StageId } from '../api/cases'
 
 /** URL slugs for /teczka/:id/:stage. */
 export const STAGE_SLUG: Record<StageId, string> = {
@@ -64,3 +64,8 @@ export function canOpenStage(detail: CaseDetail, stage: StageId): boolean {
   return EVAL_GROUP.some((g) => g.includes(stage) && g.includes(detail.currentStage))
 }
 
+
+/** Uses the backend's `availableActions` when present; otherwise assumes the action may be legal. */
+export function allows(detail: CaseDetail, action: CaseAction): boolean {
+  return detail.availableActions ? detail.availableActions.includes(action) : true
+}

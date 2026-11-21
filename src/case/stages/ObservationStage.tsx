@@ -5,7 +5,7 @@ import type { Observation } from '../../api/cases'
 import { useAddObservation, useCaseAction } from '../../lib/caseQueries'
 import { DEMO_TODAY, fmtDate } from '../../lib/format'
 import { competencyName, findCompetency } from '../../lib/model'
-import { caseUrl } from '../../lib/stages'
+import { allows, caseUrl } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { MutationError, StageHeader } from './common'
 
@@ -184,7 +184,7 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           </ul>
           {thin.length > 0 && (
             <p className="notice notice--warn" style={{ marginTop: 12 }}>
-              Mało dowodów: {thin.map((c) => competencyName(model, c)).join(', ')}. Ocena tych kryteriów będzie się opierać na ogólnym wrażeniu — spróbuj zebrać przykłady przed rozmową.
+              {thin.length > 3 ? `Mniej niż 2 obserwacje w ${thin.length} z ${criteria.all.length} kryteriów.` : `Mało dowodów: ${thin.map((c) => competencyName(model, c)).join(', ')}.`} Bez przykładów ocena opiera się na ogólnym wrażeniu — zbieraj je przed rozmową oceniającą.
             </p>
           )}
 
@@ -192,7 +192,7 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
             <div className="side-cta">
               <h3 className="h-sub">Rozmowa oceniająca</h3>
               <p className="small muted">Przeprowadź ją przed sporządzeniem oceny na piśmie (§10 rozp. 2016). Rubryka otworzy się z obserwacjami przy wskaźnikach.</p>
-              <button type="button" className="btn btn--primary" disabled={act.isPending} onClick={start}>
+              <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'START_ASSESSMENT')} onClick={start}>
                 Rozpocznij rozmowę oceniającą
               </button>
               <MutationError error={act.error} />

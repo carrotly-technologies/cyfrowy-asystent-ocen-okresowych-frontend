@@ -22,18 +22,24 @@ Start the backend first (`npm run start:dev` in `hacknation-backend`, port 3000)
 npm run dev       # http://localhost:5173
 ```
 
-The app is the **Kompas Kompetencji** wizard (UI in Polish): path and sheet →
-criteria → competency assessment via behavioural indicators (with a level
-suggestion from `POST /api/assessments/suggest-level`) → first-assessment
-conditions (FIRST only) → summary (`POST /api/assessments/evaluate`). Model and
-sheets come from `GET /api/competency-model` and `GET /api/sheets`
-(contract: `notatki/api-kontrakt-v1.md`). The header shows the
-`GET /api/health` status. Wizard state is kept in `localStorage` of the browser.
+The app is **Kompas Kompetencji** (UI in Polish), a work tool for civil-service
+supervisors and HR, built around the assessment file ("teczka oceny"):
+
+- `/zespol` — my team: deadline-driven to-do list and team table;
+- `/teczka/:id/:stage` — the case file: stage rail (periodic and first-assessment paths), stage workspaces
+  (OSP analysis, opening talk, observations, rubric assessment with system suggestion and supervisor
+  decision, justification/IPRZ with formal check, document), docked assistant panel;
+- `/teczka/:id/arkusz` — official sheet preview (parts I/II/III); print it to get the PDF;
+- `/hr` — HR monitoring with counters, filters and (simulated) reminders; `/baza-wiedzy` — assistant.
+
+API contract: `notatki/api-kontrakt-v1.md` and `api-kontrakt-v2.md` (+ `availableActions` extension).
+The assistant is a stub: wire `askAssistant()` in `src/api/assistant.ts`. Data fetching uses TanStack
+Query, routing react-router; design tokens live in `src/styles/tokens.css`.
 
 Without a backend you can use a dev-only mock (off by default, never bundled):
 
 ```bash
-MOCK_API=1 npm run dev   # serves /api/* from ../notatki/model-kompetencji.json
+MOCK_API=1 npm run dev   # serves v1 + v2 /api/* (dev-mock-api.ts, dev-mock-v2.ts)
 ```
 
 ## Quality

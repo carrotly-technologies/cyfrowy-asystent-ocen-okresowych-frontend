@@ -4,6 +4,7 @@ import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { competencyName, useSheets } from '../../lib/model'
 import type { StageProps } from '../CasePage'
 import { BlockedReason, MutationError, StageHeader } from './common'
+import { allows } from '../../lib/stages'
 
 type Verdict = 'ACCEPTED' | 'REJECTED'
 
@@ -219,7 +220,7 @@ export function OspAnalysisStage({ detail, model, stage }: StageProps) {
               <p className="notice notice--ok">Analiza zatwierdzona. Arkusz {detail.sheetId}, kryteria dodatkowe: {detail.partI.additionalCriteria.map((c) => competencyName(model, c)).join(', ') || 'brak'}.</p>
             ) : (
               <>
-                <button type="button" className="btn btn--primary" disabled={pending > 0 || patch.isPending || act.isPending} onClick={submit}>
+                <button type="button" className="btn btn--primary" disabled={pending > 0 || patch.isPending || act.isPending || !allows(detail, 'ACCEPT_OSP_ANALYSIS')} onClick={submit}>
                   Zatwierdź analizę i przejdź do rozmowy
                 </button>
                 {pending > 0 && <BlockedReason>Przyjmij lub odrzuć każdą propozycję kryterium dodatkowego ({pending} bez decyzji).</BlockedReason>}

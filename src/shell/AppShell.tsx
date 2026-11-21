@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Compass, RotateCcw, TableProperties, Users } from 'lucide-react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
@@ -10,6 +11,13 @@ export function AppShell() {
   const navigate = useNavigate()
   const location = useLocation()
   const qc = useQueryClient()
+  // Deep links decide the role: /hr is the HR view, team and case files are the supervisor's.
+  useEffect(() => {
+    const p = location.pathname
+    if (p.startsWith('/hr') && role !== 'HR') setRole('HR')
+    else if ((p.startsWith('/zespol') || p.startsWith('/teczka')) && role !== 'SUPERVISOR') setRole('SUPERVISOR')
+  }, [location.pathname, role, setRole])
+
   const me = useQuery({ queryKey: ['me'], queryFn: ({ signal }) => getMe(signal), staleTime: Infinity })
 
   const switchRole = (r: Role) => {
@@ -37,7 +45,7 @@ export function AppShell() {
           <Compass size={18} strokeWidth={1.75} aria-hidden="true" />
           <span className="topbar__product">Kompas Kompetencji</span>
           <span className="topbar__sep" aria-hidden="true" />
-          <span className="topbar__office">{me.data?.officeName ?? 'Ministerstwo Cyfryzacji'} — dane demonstracyjne</span>
+          <span className="topbar__office">{officeLabel(me.data?.officeName)}</span>
         </div>
         <div className="topbar__right">
           <div className="role-switch" role="radiogroup" aria-label="Rola w systemie">
@@ -107,3 +115,8 @@ export function AppShell() {
 }
 
 const navCls = (active: boolean) => `sidenav__link ${active ? 'is-active' : ''}`
+
+function officeLabel(name: string | undefined) {
+  const n = name ?? 'Ministerstwo Cyfryzacji'
+  return /demonstr/i.test(n) ? n.replace(/\s*\((dane demonstracyjne)\)/i, ' — $1') : `${n} — dane demonstracyjne`
+}

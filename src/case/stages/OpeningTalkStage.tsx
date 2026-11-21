@@ -8,6 +8,7 @@ import { competencyName, findCompetency } from '../../lib/model'
 import type { StageProps } from '../CasePage'
 import { BlockedReason, MutationError, StageHeader } from './common'
 import { useDraft } from './useDraft'
+import { allows } from '../../lib/stages'
 
 type TopicKey = keyof PartI['topics']
 
@@ -114,12 +115,12 @@ export function OpeningTalkStage({ detail, model, criteria, stage }: StageProps)
           </ol>
           <div className="btn-row" style={{ marginTop: 12 }}>
             {!confirmed && (
-              <button type="button" className="btn btn--primary" disabled={missing.length > 0 || patch.isPending || act.isPending} onClick={confirm}>
+              <button type="button" className="btn btn--primary" disabled={missing.length > 0 || patch.isPending || act.isPending || !allows(detail, 'CONFIRM_PART_I')} onClick={confirm}>
                 Zatwierdź część I
               </button>
             )}
             {confirmed && !acked && (
-              <button type="button" className="btn btn--primary" disabled={act.isPending} onClick={() => act.mutate('EMPLOYEE_ACK_PART_I')}>
+              <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'EMPLOYEE_ACK_PART_I')} onClick={() => act.mutate('EMPLOYEE_ACK_PART_I')}>
                 Oceniany potwierdził zapoznanie
               </button>
             )}

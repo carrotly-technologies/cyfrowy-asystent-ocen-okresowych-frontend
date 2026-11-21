@@ -198,9 +198,9 @@ function seed(): Rec[] {
     base({
       id: 'anna-nowak',
       person: person('p1', 'Anna', 'Nowak', 'główny specjalista', 'URZEDNIK', '2019-03-01'),
-      path: 'PERIODIC', sheetId: 'C', cycleLabel: 'Ocena okresowa 2024–2026', stage: 'OBSERVATION',
+      path: 'PERIODIC', sheetId: 'C', cycleLabel: 'Ocena okresowa 2024–2026', stage: 'ASSESSMENT',
       cycleStart: '2024-11-04', ospId: 'osp-dc-wzksoic-6',
-      done: { OSP_ANALYSIS: '2024-11-20', OPENING_TALK: '2024-12-03' },
+      done: { OSP_ANALYSIS: '2024-11-20', OPENING_TALK: '2024-12-03', OBSERVATION: '2026-11-20' },
       partI: {
         additionalCriteria: ['myslenie_analityczne'],
         assessmentDue: '2026-12-02',
@@ -523,7 +523,24 @@ export function createV2(model: { competencies: { id: string; name: string; indi
       acknowledgedOn: r.acknowledgedOn,
       objectionDeadline: r.path === 'PERIODIC' && od ? deadline(od, 'Termin na sprzeciw do', `art. 83 ust. 1 ${USC}`) : null,
       history: r.history,
+      availableActions: availableActions(r),
     }
+  }
+
+  function availableActions(r: Rec): string[] {
+    const a: string[] = []
+    if (r.stage === 'OSP_ANALYSIS') a.push('ACCEPT_OSP_ANALYSIS')
+    if (r.stage === 'OPENING_TALK') a.push(r.partI.confirmedByEvaluatorOn ? 'EMPLOYEE_ACK_PART_I' : 'CONFIRM_PART_I')
+    if (r.stage === 'OBSERVATION') a.push('START_ASSESSMENT')
+    if (r.stage === 'INTRO_TALK') a.push('COMPLETE_INTRO_TALK')
+    if (r.stage === 'REPORT') {
+      a.push('REPORT_SUBMITTED')
+      if (r.firstConditions?.reportDue && r.firstConditions.reportDue < TODAY) a.push('START_ASSESSMENT')
+    }
+    if (['ASSESSMENT', 'JUSTIFICATION', 'FIRST_ASSESSMENT', 'FIRST_CONDITIONS'].includes(r.stage) && !r.signedOn) a.push('SIGN_ASSESSMENT')
+    if (r.signedOn && !r.sentForAckOn) a.push('SEND_FOR_ACK')
+    if (r.sentForAckOn && !r.acknowledgedOn) a.push('EMPLOYEE_ACK_ASSESSMENT')
+    return a
   }
 
   function suggestSheet(osp: { subordinates: string }): SheetId {
@@ -574,7 +591,8 @@ export function createV2(model: { competencies: { id: string; name: string; indi
       }
       r.partI = { ...r.partI, ...p, topics: { ...r.partI.topics, ...(p.topics ?? {}) } }
     }
-    if (b.ratings) r.ratings = { ...r.ratings, ...(b.ratings as Rec['ratings']) }
+    if (b.ratings)
+      for (const [c, ind] of Object.entries(b.ratings as Rec['ratings'])) r.ratings[c] = { ...r.ratings[c], ...ind }
     if (b.decisions) {
       const scale = r.path === 'FIRST' ? [3, 5, 7] : [1, 3, 5, 7, 9]
       const d = b.decisions as Record<string, number>
@@ -582,7 +600,10 @@ export function createV2(model: { competencies: { id: string; name: string; indi
       r.decisions = { ...r.decisions, ...d }
       for (const [k, v] of Object.entries(r.decisions)) if (v == null) delete r.decisions[k]
     }
-    if (b.deviationNotes) r.deviationNotes = { ...r.deviationNotes, ...(b.deviationNotes as Record<string, string>) }
+    if (b.deviationNotes) {
+      r.deviationNotes = { ...r.deviationNotes, ...(b.deviationNotes as Record<string, string>) }
+      for (const [k, v] of Object.entries(r.deviationNotes)) if (v == null) delete r.deviationNotes[k]
+    }
     if (typeof b.justification === 'string') r.justification = b.justification
     if (typeof b.iprz === 'string') r.iprz = b.iprz
     if (b.firstConditions && r.firstConditions) r.firstConditions = { ...r.firstConditions, ...(b.firstConditions as Json) } as Rec['firstConditions']
@@ -590,6 +611,8 @@ export function createV2(model: { competencies: { id: string; name: string; indi
     const allDecided = criteriaOf(r).every((c) => r.decisions[c] != null)
     if (allDecided && r.stage === 'ASSESSMENT') { r.done.ASSESSMENT = TODAY; r.stage = 'JUSTIFICATION' }
     if (allDecided && r.stage === 'FIRST_ASSESSMENT') { r.done.FIRST_ASSESSMENT = TODAY; r.stage = 'FIRST_CONDITIONS' }
+    if (!allDecided && r.stage === 'JUSTIFICATION') { delete r.done.ASSESSMENT; r.stage = 'ASSESSMENT' }
+    if (!allDecided && r.stage === 'FIRST_CONDITIONS') { delete r.done.FIRST_ASSESSMENT; r.stage = 'FIRST_ASSESSMENT' }
     return ok(detail(r))
   }
 

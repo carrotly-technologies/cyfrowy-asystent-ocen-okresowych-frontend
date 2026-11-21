@@ -54,10 +54,8 @@ export function TeamPage() {
                     <span className="todo__rel num">{fmtDaysLeft(t.deadline.daysLeft)}</span>
                   </span>
                   <span className="todo__text">
-                    <span className="todo__title">{t.text}</span>
-                    <span className="todo__basis">
-                      {t.deadline.label} {fmtDate(t.deadline.date)} · {t.deadline.legalBasis}
-                    </span>
+                    <span className="todo__title">{todoTitle(t.text)}</span>
+                    <span className="todo__basis">{t.deadline.legalBasis}</span>
                   </span>
                   <ChevronRight className="todo__chev" size={16} aria-hidden="true" />
                 </Link>
@@ -143,4 +141,10 @@ function TeamRow({ c, onOpen }: { c: CaseSummary; onOpen: () => void }) {
       </td>
     </tr>
   )
+}
+
+/** Backend texts repeat date and legal basis (shown in their own columns) — keep the action part. */
+function todoTitle(text: string) {
+  const m = text.match(/^(.*?)\s+(?:do|najpóźniej do)\s+\d{2}\.\d{2}\.\d{4}/)
+  return m ? m[1] : text.split(' · ')[0]
 }

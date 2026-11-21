@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router'
 import {
   addObservation,
   getCase,
@@ -9,6 +10,7 @@ import {
   type CasePatch,
   type Observation,
 } from '../api/cases'
+import { caseUrl } from './stages'
 
 export const caseKey = (id: string) => ['case', id] as const
 
@@ -34,7 +36,11 @@ function applyPatch(prev: CaseDetail, patch: CasePatch): CaseDetail {
     ...prev,
     ...(patch.sheetId ? { sheetId: patch.sheetId } : {}),
     partI: patch.partI ? { ...prev.partI, ...patch.partI, topics: { ...prev.partI.topics, ...(patch.partI.topics ?? {}) } } : prev.partI,
-    ratings: patch.ratings ? { ...prev.ratings, ...patch.ratings } : prev.ratings,
+    ratings: patch.ratings
+      ? Object.fromEntries(
+          Object.keys({ ...prev.ratings, ...patch.ratings }).map((k) => [k, { ...prev.ratings[k], ...patch.ratings?.[k] }]),
+        )
+      : prev.ratings,
     decisions: mergeNullable(prev.decisions, patch.decisions),
     deviationNotes: mergeNullable(prev.deviationNotes, patch.deviationNotes),
     justification: patch.justification ?? prev.justification,
@@ -68,12 +74,16 @@ export function usePatchCase(id: string) {
   })
 }
 
+/** Runs a workflow action; when the case moves to another stage, the view follows it. */
 export function useCaseAction(id: string) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   return useMutation({
     mutationFn: (action: CaseAction) => runCaseAction(id, action),
     onSuccess: (data) => {
+      const prev = qc.getQueryData<CaseDetail>(caseKey(id))
       qc.setQueryData(caseKey(id), data)
+      if (prev && prev.currentStage !== data.currentStage) navigate(caseUrl(id, data.currentStage))
       qc.invalidateQueries({ queryKey: ['team'] })
       qc.invalidateQueries({ queryKey: ['hr'] })
     },

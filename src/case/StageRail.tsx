@@ -139,7 +139,9 @@ function CriteriaNav({ detail, model, criteria }: { detail: CaseDetail; model: C
               {state === 'decided' ? (
                 <ScoreChip points={decided} size="sm" />
               ) : (
-                <span className="crit-nav__state">{state === 'progress' ? 'w toku' : 'nieocenione'}</span>
+                <span className="crit-nav__state" title={state === 'progress' ? 'w toku' : 'nieocenione'}>
+                  <span className="visually-hidden">{state === 'progress' ? 'w toku' : 'nieocenione'}</span>
+                </span>
               )}
             </button>
           </li>

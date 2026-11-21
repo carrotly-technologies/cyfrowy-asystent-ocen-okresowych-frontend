@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { CaseDetail, Observation, Points } from '../../api/cases'
 import { suggestLevel, type Indicator, type LevelKey } from '../../api/kompas'
@@ -27,6 +27,11 @@ export function AssessmentStage({ detail, model, criteria, stage }: StageProps) 
   const isFirst = detail.path === 'FIRST'
   const scale = criteria.scale
 
+  // Pin the selected criterion in the URL so a decision never moves the user to another criterion.
+  useEffect(() => {
+    if (!params.get('k') && selected) setParams((p) => { p.set('k', selected); return p }, { replace: true })
+  }, [params, selected, setParams])
+
   const go = (id: string) => {
     setParams((p) => { p.set('k', id); return p }, { replace: true })
     document.querySelector('.case-work')?.scrollTo({ top: 0 })
@@ -42,11 +47,9 @@ export function AssessmentStage({ detail, model, criteria, stage }: StageProps) 
   }
 
   const ratings = detail.ratings[selected] ?? {}
-  const setRating = (indicatorId: string, points: Points | null | undefined) => {
-    const next = { ...ratings }
-    if (points === undefined) delete next[indicatorId]
-    else next[indicatorId] = points
-    patch.mutate({ ratings: { ...detail.ratings, [selected]: next } })
+  // The API merges ratings per indicator and has no "unset" — a choice can only be replaced.
+  const setRating = (indicatorId: string, points: Points | null) => {
+    patch.mutate({ ratings: { [selected]: { [indicatorId]: points } } })
   }
 
   const generalObs = detail.observations.filter((o) => o.criterionId === selected && !o.indicatorId)
@@ -60,7 +63,7 @@ export function AssessmentStage({ detail, model, criteria, stage }: StageProps) 
         lead={
           isFirst
             ? 'Oceń 5 elementów w skali 3 / 5 / 7 pkt. Przy każdym wskaźniku wybierz zachowanie, które najlepiej opisuje to, co obserwowałeś.'
-            : 'Przy każdym wskaźniku wybierz zachowanie, które najlepiej opisuje to, co obserwowałeś w okresie oceny. Kolumna „na poziomie oczekiwań” to standard dla stanowiska.'
+            : 'Przy każdym wskaźniku wybierz zachowanie najbliższe temu, co obserwowałeś. Kolumna „na poziomie oczekiwań” to standard.'
         }
       />
 
@@ -142,7 +145,7 @@ function Rubric({
   ratings: Record<string, Points | null>
   observations: Observation[]
   disabled: boolean
-  onRate: (indicatorId: string, points: Points | null | undefined) => void
+  onRate: (indicatorId: string, points: Points | null) => void
 }) {
   const [openObs, setOpenObs] = useState<Record<string, boolean>>({})
   return (
@@ -184,16 +187,17 @@ function Rubric({
                     ) : (
                       <span className="rubric__tool rubric__tool--none">Brak obserwacji</span>
                     )}
-                    <label className={`rubric__skip ${skipped ? 'is-on' : ''}`}>
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        checked={skipped}
-                        disabled={disabled}
-                        onChange={(e) => onRate(ind.id, e.target.checked ? null : undefined)}
-                      />
+                    <button
+                      type="button"
+                      className={`rubric__skip ${skipped ? 'is-on' : ''}`}
+                      aria-pressed={skipped}
+                      disabled={disabled}
+                      title="Nie było okazji zaobserwować tego zachowania — wskaźnik nie wejdzie do sugestii"
+                      onClick={() => onRate(ind.id, null)}
+                    >
+                      <span className="rubric__skipbox" aria-hidden="true">{skipped && <Check size={10} strokeWidth={3} />}</span>
                       Brak podstaw do oceny
-                    </label>
+                    </button>
                   </span>
                 </div>
                 {open && obs.length > 0 && (
@@ -214,8 +218,8 @@ function Rubric({
                       className={`rubric__cell ${on ? `is-selected ${scoreClass(p)}` : ''}`}
                       aria-pressed={on}
                       aria-label={`${p} pkt, ${SCALE_LABELS[p]}: ${text}`}
-                      disabled={disabled || skipped}
-                      onClick={() => onRate(ind.id, on ? undefined : (p as Points))}
+                      disabled={disabled}
+                      onClick={() => !on && onRate(ind.id, p as Points)}
                     >
                       {on && (
                         <span className="rubric__check" aria-hidden="true">

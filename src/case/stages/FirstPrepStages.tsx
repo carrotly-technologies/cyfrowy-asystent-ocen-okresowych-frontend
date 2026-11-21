@@ -5,6 +5,7 @@ import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { addDaysIso, fmtDate } from '../../lib/format'
 import type { StageProps } from '../CasePage'
 import { BlockedReason, MutationError, StageHeader } from './common'
+import { allows } from '../../lib/stages'
 
 const INTRO_ITEMS = [
   'Zapoznanie z trybem pierwszej oceny i jej elementami (rzetelność, wykorzystywanie wiedzy, organizacja pracy, komunikacja, współpraca)',
@@ -53,7 +54,7 @@ export function IntroTalkStage({ detail, stage }: StageProps) {
             <p className="notice notice--ok">Rozmowa wstępna odbyła się {fmtDate(info.completedOn)}. Termin sprawozdania: {fmtDate(detail.firstConditions?.reportDue)}.</p>
           ) : (
             <>
-              <button type="button" className="btn btn--primary" disabled={missing > 0 || act.isPending} onClick={complete}>
+              <button type="button" className="btn btn--primary" disabled={missing > 0 || act.isPending || !allows(detail, 'COMPLETE_INTRO_TALK')} onClick={complete}>
                 Zatwierdź rozmowę wstępną
               </button>
               {missing > 0 && <BlockedReason>Zaznacz wszystkie zagadnienia ({missing} pozostało) — każde z nich wymaga §3 rozp. 2015.</BlockedReason>}
@@ -105,10 +106,18 @@ export function ReportStage({ detail, stage }: StageProps) {
             <p className="notice notice--ok">Sprawozdanie złożone {fmtDate(fc?.reportSubmittedOn)}.</p>
           ) : (
             <>
-              <button type="button" className="btn btn--primary" disabled={act.isPending} onClick={() => act.mutate('REPORT_SUBMITTED')}>
-                Pracownik złożył sprawozdanie
-              </button>
-              <BlockedReason>W wersji demonstracyjnej datą złożenia będzie dzisiejsza data. Docelowo sprawozdanie wpłynie przez EZD.</BlockedReason>
+              <div className="btn-row">
+                <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'REPORT_SUBMITTED')} onClick={() => act.mutate('REPORT_SUBMITTED')}>
+                  Pracownik złożył sprawozdanie
+                </button>
+                <button type="button" className="btn" disabled={act.isPending || !allows(detail, 'START_ASSESSMENT')} onClick={() => act.mutate('START_ASSESSMENT')}>
+                  Termin minął — przejdź do oceny
+                </button>
+              </div>
+              <BlockedReason>
+                W wersji demonstracyjnej datą złożenia będzie dzisiejsza data (docelowo sprawozdanie wpłynie przez EZD).
+                {!allows(detail, 'START_ASSESSMENT') && ' Ocenę bez sprawozdania można rozpocząć dopiero po upływie wyznaczonego terminu.'}
+              </BlockedReason>
             </>
           )}
           <MutationError error={act.error} />
