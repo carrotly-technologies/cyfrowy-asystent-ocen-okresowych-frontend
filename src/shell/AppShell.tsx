@@ -2,6 +2,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
   ClipboardCheck,
+  HeartHandshake,
+  HeartPulse,
   LogOut,
   type LucideIcon,
   Menu,
@@ -168,16 +170,21 @@ type NavItem = { to: string; label: string; Icon: LucideIcon; match: string[] }
  * `/ustawienia` is the gear icon next to the user menu (on phones: an item in the "Menu" dropdown).
  */
 function navItems(role: Role): NavItem[] {
-  const byRole: Partial<Record<Role, NavItem>> = {
-    SUPERVISOR: { to: '/zespol', label: 'Mój zespół', Icon: Users, match: ['/zespol', '/teczka'] },
-    EMPLOYEE: { to: '/moje-oceny', label: 'Moje oceny', Icon: ClipboardCheck, match: ['/moje-oceny'] },
-    HR: { to: '/hr', label: 'Monitoring', Icon: TableProperties, match: ['/hr'] },
-    ADMIN: { to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin/uzytkownicy'] },
-    DIRECTOR: { to: '/sprzeciwy', label: 'Sprzeciwy', Icon: Scale, match: ['/sprzeciwy'] },
+  const byRole: Partial<Record<Role, NavItem[]>> = {
+    SUPERVISOR: [
+      { to: '/zespol', label: 'Mój zespół', Icon: Users, match: ['/zespol', '/teczka'] },
+      { to: '/dobrostan', label: 'Dobrostan', Icon: HeartHandshake, match: ['/dobrostan'] },
+    ],
+    EMPLOYEE: [
+      { to: '/moje-oceny', label: 'Moje oceny', Icon: ClipboardCheck, match: ['/moje-oceny'] },
+      { to: '/moj-puls', label: 'Puls', Icon: HeartPulse, match: ['/moj-puls'] },
+    ],
+    HR: [{ to: '/hr', label: 'Monitoring', Icon: TableProperties, match: ['/hr'] }],
+    ADMIN: [{ to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin/uzytkownicy'] }],
+    DIRECTOR: [{ to: '/sprzeciwy', label: 'Sprzeciwy', Icon: Scale, match: ['/sprzeciwy'] }],
   }
-  const own = byRole[role]
   return [
-    ...(own ? [own] : []),
+    ...(byRole[role] ?? []),
     ...(role === 'ADMIN' ? [{ to: '/admin/korekty', label: 'Tryb korekty', Icon: FilePen, match: ['/admin/korekty'] }] : []),
     { to: '/baza-wiedzy', label: 'Baza wiedzy', Icon: BookOpen, match: ['/baza-wiedzy'] },
   ]
