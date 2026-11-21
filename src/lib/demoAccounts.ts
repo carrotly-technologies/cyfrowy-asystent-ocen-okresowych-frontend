@@ -2,7 +2,7 @@ import type { Role } from '../api/cases'
 
 /**
  * Demo accounts of the functional POC, shown as one-click sign-in on /logowanie.
- * They mirror the seed in hacknation-backend (`src/auth/users.seed.ts`, credentials in its README);
+ * They mirror the seed in cyfrowy-asystent-ocen-okresowych-backend (`src/auth/users.seed.ts`, credentials in its README);
  * fictional people, update this list by hand when the seed changes.
  */
 export type DemoAccount = {
@@ -19,11 +19,13 @@ export type DemoAccount = {
 export const DEMO_ACCOUNTS_ENABLED = import.meta.env.VITE_DEMO_ACCOUNTS !== 'false'
 
 /** Shared password of every demo account (POC only, the same as in the backend README). Never displayed. */
-export const DEMO_PASSWORD = DEMO_ACCOUNTS_ENABLED ? 'Kompas2026!' : ''
+export const DEMO_PASSWORD = DEMO_ACCOUNTS_ENABLED ? 'Ocena2026!' : ''
 
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = DEMO_ACCOUNTS_ENABLED
   ? [
-      { login: 'j.kaminska', name: 'Joanna Kamińska', role: 'SUPERVISOR', description: 'Zespół z 6 teczkami ocen' },
+      { login: 'j.kaminska', name: 'Joanna Kamińska', role: 'SUPERVISOR', description: 'Zespół z 8 ocenami w toku (arkusze B i C)' },
+      { login: 'a.nowak', name: 'Anna Nowak', role: 'EMPLOYEE', description: 'Oceniana: 2 oceny (poprzednia i bieżąca)' },
+      { login: 'p.wojcik', name: 'Piotr Wójcik', role: 'EMPLOYEE', description: 'Oceniany: czeka na potwierdzenie części I' },
       { login: 'r.sikora', name: 'Robert Sikora', role: 'SUPERVISOR', description: 'Zespół z 2 teczkami ocen' },
       { login: 'a.pawlak', name: 'Agnieszka Pawlak', role: 'SUPERVISOR', description: 'Zespół z 2 teczkami ocen' },
       { login: 'a.lis', name: 'Agnieszka Lis', role: 'HR', description: 'Monitoring ocen w całym urzędzie' },

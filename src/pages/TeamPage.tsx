@@ -60,7 +60,7 @@ export function TeamPage() {
 function TeamRow({ c, onOpen }: { c: CaseSummary; onOpen: () => void }) {
   const current = c.stages.find((s) => s.id === c.currentStage)
   const idx = c.stages.findIndex((s) => s.id === c.currentStage)
-  const sheet = c.path === 'FIRST' ? 'arkusz pierwszej oceny' : c.sheetId ? `arkusz ${c.sheetId}` : 'arkusz do ustalenia'
+  const sheet = c.sheetId ? `arkusz ${c.sheetId}` : 'arkusz do ustalenia'
   const stageName = current ? STAGE_SHORT[current.id] : '—'
   return (
     <tr className="is-link" onClick={onOpen}>
@@ -74,7 +74,7 @@ function TeamRow({ c, onOpen }: { c: CaseSummary; onOpen: () => void }) {
       </td>
       <td>
         <div className="person">
-          <span>{c.path === 'FIRST' ? 'Pierwsza ocena' : 'Ocena okresowa'}</span>
+          <span>Ocena okresowa</span>
           <span className="person__meta">{sheet}</span>
         </div>
       </td>

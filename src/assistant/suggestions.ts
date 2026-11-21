@@ -6,11 +6,11 @@ type Bank = Partial<Record<StageId | 'GENERAL', string[]>>
 const FORMAL: Bank = {
   GENERAL: [
     'Kiedy przeprowadza się rozmowę rozpoczynającą?',
-    'Czym różni się pierwsza ocena od oceny okresowej?',
+    'Jak często sporządza się ocenę okresową?',
     'Ile dni ma oceniany na sprzeciw i do kogo go składa?',
   ],
-  OSP_ANALYSIS: [
-    'Kiedy stosuje się arkusz B, a kiedy C?',
+  SHEET_SELECTION: [
+    'Kiedy stosuje się arkusz A, B, a kiedy C?',
     'Ile kryteriów dodatkowych mogę wybrać i na jakiej podstawie?',
     'Czy mogę nie wybrać żadnego kryterium dodatkowego?',
   ],
@@ -27,33 +27,21 @@ const FORMAL: Bank = {
   ASSESSMENT: [
     'Czy jedna ocena 1 pkt oznacza ocenę negatywną?',
     'Co jeśli średnia wynosi dokładnie 4,00?',
-    'Jak traktować wskaźnik, którego nie miałem okazji zaobserwować?',
+    'Kiedy uzasadnienie oceny jest obowiązkowe?',
   ],
-  JUSTIFICATION: [
+  SIGNATURE: [
     'Kiedy uzasadnienie oceny jest obowiązkowe?',
     'Co powinny zawierać wnioski do IPRZ?',
     'Kto zatwierdza indywidualny program rozwoju zawodowego?',
   ],
-  DOCUMENT: [
+  ACKNOWLEDGEMENT: [
     'Co się dzieje po złożeniu sprzeciwu?',
     'Kiedy zaczyna się kolejny cykl oceny?',
     'Gdzie trafia oryginał arkusza?',
   ],
-  INTRO_TALK: [
-    'W jakim terminie przeprowadzam rozmowę wstępną?',
-    'Jak wyznaczyć termin sprawozdania?',
-  ],
-  REPORT: [
-    'Co, jeśli pracownik nie złoży sprawozdania w terminie?',
-    'Czy mogę przedłużyć termin sprawozdania?',
-  ],
-  FIRST_ASSESSMENT: [
-    'Jakie warunki musi spełnić pozytywna pierwsza ocena?',
-    'Ile ocen 3 pkt dopuszcza pierwsza ocena?',
-  ],
-  FIRST_CONDITIONS: [
-    'Kiedy egzamin ze służby przygotowawczej „nie dotyczy”?',
-    'Czy przy negatywnej pierwszej ocenie wpisuję wnioski rozwojowe?',
+  PART_I_ACK: [
+    'Co potwierdza oceniany po rozmowie rozpoczynającej?',
+    'Od kiedy liczy się okres podlegania ocenie?',
   ],
 }
 
@@ -62,7 +50,7 @@ const CONVERSATION: Bank = {
     'Jak przygotować się do rozmowy oceniającej?',
     'Jak przekazać trudną informację zwrotną?',
   ],
-  OSP_ANALYSIS: ['Jak wyjaśnić pracownikowi wybór kryteriów dodatkowych?'],
+  SHEET_SELECTION: ['Jak wyjaśnić pracownikowi wybór kryteriów dodatkowych?'],
   OPENING_TALK: [
     'Zaproponuj pytania otwierające rozmowę rozpoczynającą.',
     'Jak sformułować mierzalne oczekiwania dla kryterium Komunikacja?',
@@ -77,13 +65,11 @@ const CONVERSATION: Bank = {
     'Jak omówić obszar do rozwoju bez demotywowania?',
     'Pomóż uporządkować argumenty do tej oceny.',
   ],
-  JUSTIFICATION: [
+  SIGNATURE: [
     'Pomóż napisać szkic uzasadnienia na podstawie moich decyzji.',
     'Zaproponuj działania rozwojowe dla najsłabszego kryterium.',
   ],
-  DOCUMENT: ['Jak rozmawiać z pracownikiem, który nie zgadza się z oceną?'],
-  REPORT: ['O co zapytać pracownika na podstawie sprawozdania?'],
-  FIRST_ASSESSMENT: ['Jak omówić pierwszą ocenę z nowym pracownikiem?'],
+  ACKNOWLEDGEMENT: ['Jak rozmawiać z pracownikiem, który nie zgadza się z oceną?'],
 }
 
 export function suggestedQuestions(mode: AssistantMode, stage: StageId | undefined): string[] {

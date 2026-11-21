@@ -10,7 +10,7 @@ export type Theme = 'system' | 'light' | 'dark'
 export type TextSize = 100 | 125 | 150
 export type Preferences = { theme: Theme; textSize: TextSize; highContrast: boolean }
 
-export const PREFS_KEY = 'kompas.prefs'
+export const PREFS_KEY = 'ocena.prefs'
 export const DEFAULT_PREFS: Preferences = { theme: 'system', textSize: 100, highContrast: false }
 export const TEXT_SIZES: readonly TextSize[] = [100, 125, 150]
 

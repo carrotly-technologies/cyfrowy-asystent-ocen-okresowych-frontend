@@ -1,76 +1,43 @@
-import type { CaseAction, CaseDetail, Path, StageId, StageInfo } from '../api/cases'
+import type { CaseAction, CaseDetail, StageId, StageInfo } from '../api/cases'
 
 /** URL slugs for /teczka/:id/:stage. */
 export const STAGE_SLUG: Record<StageId, string> = {
-  OSP_ANALYSIS: 'analiza-osp',
-  SHEET_PROPOSAL: 'proponowany-formularz',
+  SHEET_SELECTION: 'arkusz-i-kryteria',
   OPENING_TALK: 'rozmowa-rozpoczynajaca',
+  PART_I_ACK: 'potwierdzenie-czesci-i',
   OBSERVATION: 'obserwacje',
-  ASSESSMENT: 'formularz-kompetencji',
-  JUSTIFICATION: 'uzasadnienie',
-  DOCUMENT: 'dokument',
-  INTRO_TALK: 'rozmowa-wstepna',
-  REPORT: 'sprawozdanie',
-  FIRST_ASSESSMENT: 'ocena-pierwsza',
-  FIRST_CONDITIONS: 'warunki',
-  FIRST_DOCUMENT: 'dokument-pierwsza',
-}
-
-/** Old slugs still accepted in links; CasePage redirects them to the current slug. */
-const LEGACY_SLUG: Record<string, StageId> = {
-  'wstepny-formularz': 'SHEET_PROPOSAL',
-  ocena: 'ASSESSMENT',
+  ASSESSMENT: 'ocena',
+  SIGNATURE: 'podpis',
+  ACKNOWLEDGEMENT: 'zapoznanie',
 }
 
 export function stageFromSlug(slug: string | undefined): StageId | null {
   if (!slug) return null
   const hit = (Object.entries(STAGE_SLUG) as [StageId, string][]).find(([, s]) => s === slug)
-  return hit ? hit[0] : (LEGACY_SLUG[slug] ?? null)
+  return hit ? hit[0] : null
 }
 
-export const caseUrl = (id: string, stage?: StageId) =>
-  stage ? `/teczka/${id}/${STAGE_SLUG[stage]}` : `/teczka/${id}`
+export const caseUrl = (id: string, stage?: StageId) => (stage ? `/teczka/${id}/${STAGE_SLUG[stage]}` : `/teczka/${id}`)
 
-/**
- * Stages with no screen of their own, shown in another stage's view. The assessment period runs inside step 3
- * ("Formularz oceny"), which shows only the official sheet: its template is set by law, so no observations there.
- */
-const SHOWN_AS: Partial<Record<StageId, StageId>> = {
-  OBSERVATION: 'OPENING_TALK',
+/** Every stage has its own view. Kept as a function so callers stay simple. */
+export function viewStage(_stages: Pick<StageInfo, 'id'>[], stage: StageId): StageId {
+  return stage
 }
 
-/** The stage whose view opens for `stage`; the stage itself when it has its own view (or the other is missing). */
-export function viewStage(stages: Pick<StageInfo, 'id'>[], stage: StageId): StageId {
-  const other = SHOWN_AS[stage]
-  return other && stages.some((s) => s.id === other) ? other : stage
-}
-
-/** Short names used in compact places (team table, HR table, context chip). */
+/** Short names used in compact places (team table, HR table, stepper, context chip). */
 export const STAGE_SHORT: Record<StageId, string> = {
-  OSP_ANALYSIS: 'Analiza OSP',
-  SHEET_PROPOSAL: 'Proponowany formularz',
+  SHEET_SELECTION: 'Arkusz i kryteria',
   OPENING_TALK: 'Rozmowa rozpoczynająca',
-  OBSERVATION: 'Okres oceny',
-  ASSESSMENT: 'Formularz oceny kompetencji',
-  JUSTIFICATION: 'Uzasadnienie i IPRZ',
-  DOCUMENT: 'Dokument',
-  INTRO_TALK: 'Rozmowa wstępna',
-  REPORT: 'Sprawozdanie',
-  FIRST_ASSESSMENT: 'Ocena',
-  FIRST_CONDITIONS: 'Warunki',
-  FIRST_DOCUMENT: 'Dokument',
+  PART_I_ACK: 'Potwierdzenie ocenianego',
+  OBSERVATION: 'Okres obserwacji',
+  ASSESSMENT: 'Rozmowa oceniająca i ocena',
+  SIGNATURE: 'Podpis i przekazanie',
+  ACKNOWLEDGEMENT: 'Zapoznanie z oceną',
 }
 
-/** Stage headings the UI names differently than the API (the backend label is kept for the legal record). */
-const STAGE_TITLE: Partial<Record<StageId, string>> = {
-  SHEET_PROPOSAL: 'Proponowany formularz',
-  ASSESSMENT: 'Formularz oceny kompetencji',
-}
+export const stageTitle = (info: Pick<StageInfo, 'id' | 'name'>) => info.name
 
-export const stageTitle = (info: Pick<StageInfo, 'id' | 'name'>) => STAGE_TITLE[info.id] ?? info.name
-
-export function pathLabel(path: Path, sheetId: string | null): string {
-  if (path === 'FIRST') return 'Pierwsza ocena'
+export function sheetLabel(sheetId: string | null): string {
   return sheetId ? `Okresowa · arkusz ${sheetId}` : 'Okresowa · arkusz do ustalenia'
 }
 
@@ -81,44 +48,20 @@ export const CASE_STATUS_LABEL = {
   ZAKONCZONA: 'Zakończona',
 } as const
 
-const EVAL_GROUP: StageId[][] = [
-  ['ASSESSMENT', 'JUSTIFICATION'],
-  ['FIRST_ASSESSMENT', 'FIRST_CONDITIONS'],
-]
-
-/** Periodic stages before the assessment talk, at which part II is already filled as a draft. */
-const DRAFT_STAGES: StageId[] = ['SHEET_PROPOSAL', 'OPENING_TALK', 'OBSERVATION']
-
-/**
- * Part II of a periodic sheet is drafted before the assessment talk (Poradnik, etap II: „wypełniony na roboczo
- * arkusz oceny”) and stays editable until the evaluator signs. The backend enforces it (`partIIEditable`);
- * decision log: hacknation-backend/notatki/decyzje.md, 2026-11-21.
- */
-export function isPartIIDraft(detail: CaseDetail): boolean {
-  return detail.path === 'PERIODIC' && !!detail.sheetId && !detail.signedByEvaluatorOn && DRAFT_STAGES.includes(detail.currentStage)
-}
-
-/**
- * A stage can be worked on when done/current, when it shares the evaluation step with the current one, or
- * (the competency form) as a draft before the assessment talk.
- */
+/** A stage can be opened once it is done or current. */
 export function canOpenStage(detail: CaseDetail, stage: StageId): boolean {
   const info = detail.stages.find((s) => s.id === stage)
-  if (!info) return false
-  if (info.status === 'DONE' || info.status === 'CURRENT') return true
-  if (stage === 'ASSESSMENT' && isPartIIDraft(detail)) return true
-  return EVAL_GROUP.some((g) => g.includes(stage) && g.includes(detail.currentStage))
+  return !!info && (info.status === 'DONE' || info.status === 'CURRENT')
 }
 
-
-/** Uses the backend's `availableActions` when present; otherwise assumes the action may be legal. */
+/** Whether the signed-in user may run `action` now (from the backend's `availableActions`). */
 export function allows(detail: CaseDetail, action: CaseAction): boolean {
-  return detail.availableActions ? detail.availableActions.includes(action) : true
+  return detail.availableActions.includes(action)
 }
 
 export type StepStatus = 'done' | 'current' | 'todo'
 
-/** One step of the horizontal stage stepper: a group of backend stages under one name. */
+/** One step of the horizontal stage stepper (one backend stage). */
 export interface CaseStep {
   key: string
   label: string
@@ -126,53 +69,16 @@ export interface CaseStep {
   status: StepStatus
 }
 
-/**
- * The six steps of the periodic assessment as the design names them, each grouping one or more backend
- * stages (the process itself and its legal rules stay in the backend). Stages missing from the case are
- * skipped and stages not listed here get a step of their own, so the stepper follows whatever the API sends.
- */
-const PERIODIC_STEPS: { key: string; label: string; stages: StageId[] }[] = [
-  { key: 'analiza', label: 'Analiza opisu stanowiska', stages: ['OSP_ANALYSIS'] },
-  { key: 'proponowany', label: 'Proponowany formularz', stages: ['SHEET_PROPOSAL'] },
-  { key: 'formularz', label: 'Formularz oceny', stages: ['OPENING_TALK', 'OBSERVATION'] },
-  { key: 'kompetencje', label: 'Formularz oceny kompetencji', stages: ['ASSESSMENT'] },
-  { key: 'weryfikacja', label: 'Weryfikacja formularza', stages: ['JUSTIFICATION'] },
-  { key: 'koncowa', label: 'Ocena końcowa', stages: ['DOCUMENT'] },
-]
-
-function stepStatus(stages: StageInfo[]): StepStatus {
-  if (stages.every((s) => s.status === 'DONE')) return 'done'
-  if (stages.some((s) => s.status === 'CURRENT' || s.status === 'DONE')) return 'current'
+function stepStatus(s: StageInfo): StepStatus {
+  if (s.status === 'DONE') return 'done'
+  if (s.status === 'CURRENT') return 'current'
   return 'todo'
 }
 
-export function caseSteps(detail: Pick<CaseDetail, 'path' | 'stages'>): CaseStep[] {
-  const byId = new Map(detail.stages.map((s) => [s.id, s]))
-  const groups = detail.path === 'PERIODIC' ? PERIODIC_STEPS : []
-  const steps: CaseStep[] = []
-  const used = new Set<StageId>()
-  for (const g of groups) {
-    const stages = g.stages.map((id) => byId.get(id)).filter((s): s is StageInfo => !!s)
-    if (stages.length === 0) continue
-    stages.forEach((s) => used.add(s.id))
-    steps.push({ key: g.key, label: g.label, stages, status: stepStatus(stages) })
-  }
-  // Anything not grouped above (the first-assessment path, a stage added later) keeps its own step, in API order.
-  detail.stages.forEach((s, i) => {
-    if (used.has(s.id)) return
-    const step: CaseStep = { key: s.id, label: STAGE_SHORT[s.id] ?? s.name, stages: [s], status: stepStatus([s]) }
-    const before = detail.stages.slice(0, i).map((x) => x.id)
-    const at = steps.findIndex((st) => st.stages.every((x) => !before.includes(x.id)))
-    if (at === -1) steps.push(step)
-    else steps.splice(at, 0, step)
-  })
-  return steps
+export function caseSteps(detail: Pick<CaseDetail, 'stages'>): CaseStep[] {
+  return detail.stages.map((s) => ({ key: s.id, label: STAGE_SHORT[s.id] ?? s.name, stages: [s], status: stepStatus(s) }))
 }
 
-/** Where a step's link leads: its current stage, else its last finished one, else its first (as `viewStage` shows it). */
 export function stepTarget(step: CaseStep): StageId {
-  const current = step.stages.find((s) => s.status === 'CURRENT')
-  const done = step.stages.filter((s) => s.status === 'DONE')
-  const target = current ?? (step.status === 'done' ? step.stages[0] : done.at(-1) ?? step.stages[0])
-  return viewStage(step.stages, target.id)
+  return step.stages[0].id
 }

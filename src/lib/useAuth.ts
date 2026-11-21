@@ -6,12 +6,14 @@ export const LOGIN_PATH = '/logowanie'
 /** Where each role lands after signing in, and when it opens a route it may not use. */
 export const HOME_BY_ROLE: Record<Role, string> = {
   SUPERVISOR: '/zespol',
+  EMPLOYEE: '/moje-oceny',
   HR: '/hr',
   ADMIN: '/admin/uzytkownicy',
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
   SUPERVISOR: 'Przełożony',
+  EMPLOYEE: 'Oceniany',
   HR: 'Kadry HR',
   ADMIN: 'Administrator',
 }

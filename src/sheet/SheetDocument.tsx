@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import type { CaseDetail } from '../api/cases'
-import type { CompetencyModel } from '../api/kompas'
+import type { CriteriaCatalogue } from '../api/reference'
 import { fmtAvg, fmtDate } from '../lib/format'
-import { competencyName, type CaseCriteria } from '../lib/model'
+import { criterionName, type CaseCriteria } from '../lib/model'
 import { officePlace } from '../lib/office'
 import { BANDS } from '../lib/scale'
 
@@ -25,15 +25,7 @@ function Signatures({ cells }: { cells: { value?: ReactNode; caption: string }[]
 
 const ESIGN = '/podpisano elektronicznie/'
 
-export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail; model: CompetencyModel; criteria: CaseCriteria }) {
-  return detail.path === 'FIRST' ? (
-    <FirstSheet detail={detail} model={model} criteria={criteria} />
-  ) : (
-    <PeriodicSheet detail={detail} model={model} criteria={criteria} />
-  )
-}
-
-function PeriodicSheet({ detail, model, criteria }: { detail: CaseDetail; model: CompetencyModel; criteria: CaseCriteria }) {
+export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail; model: CriteriaCatalogue; criteria: CaseCriteria }) {
   const p = detail.person
   const e = detail.evaluator
   const sheet = detail.sheetId ?? 'C'
@@ -48,13 +40,13 @@ function PeriodicSheet({ detail, model, criteria }: { detail: CaseDetail; model:
   const request = detail.promotionRequest
   const partIII = request.attached === 'YES'
   const ptsWord = (n: number) => (n === 1 ? 'punkt' : n === 3 ? 'punkty' : 'punktów')
-  const conversationDate = detail.stages.find((s) => s.id === 'ASSESSMENT')?.completedOn ?? null
+  const conversationDate = detail.assessmentTalkOn
   const periodTo = detail.signedByEvaluatorOn ?? null
   const urzednik = p.employment === 'URZEDNIK'
 
   const scoreRow = (c: string) => (
     <tr key={c}>
-      <td>{competencyName(model, c)}</td>
+      <td>{criterionName(model, c)}</td>
       {scaleCols.map((s) => (
         <td key={s} className="doc-c">
           <X on={detail.decisions[c] === s} />
@@ -114,9 +106,9 @@ function PeriodicSheet({ detail, model, criteria }: { detail: CaseDetail; model:
           <tbody>
             {criteria.mandatory.map((c, i) => (
               <tr key={c}>
-                <td>{competencyName(model, c)}</td>
+                <td>{criterionName(model, c)}</td>
                 {i < 3 ? (
-                  <td colSpan={2}>{extra[i] ? competencyName(model, extra[i]) : ''}</td>
+                  <td colSpan={2}>{extra[i] ? criterionName(model, extra[i]) : ''}</td>
                 ) : i === 3 ? (
                   <>
                     <td rowSpan={criteria.mandatory.length - 3} className="doc-label">Termin sporządzenia oceny</td>
@@ -330,117 +322,7 @@ function PeriodicSheet({ detail, model, criteria }: { detail: CaseDetail; model:
           {t && <p className="doc-muted doc-center">{t.partIIINotAttached}</p>}
         </div>
       )}
-      <p className="doc-footnote">Wygenerowano w Kompasie Kompetencji na podstawie wzoru z rozporządzenia PRM z 4.04.2016 (Dz.U. poz. 470). Średnia {ev ? fmtAvg(ev.average) : '—'} liczona bez zaokrągleń.</p>
-    </article>
-  )
-}
-
-function FirstSheet({ detail, model, criteria }: { detail: CaseDetail; model: CompetencyModel; criteria: CaseCriteria }) {
-  const p = detail.person
-  const e = detail.evaluator
-  const fc = detail.firstConditions
-  const ev = detail.evaluation
-  const intro = detail.stages.find((s) => s.id === 'INTRO_TALK')?.completedOn ?? null
-  const talk = detail.stages.find((s) => s.id === 'FIRST_ASSESSMENT')?.completedOn ?? null
-  const onTime = fc?.reportSubmittedOn && fc.reportDue ? fc.reportSubmittedOn <= fc.reportDue : null
-  const place = officePlace()
-  return (
-    <article className="doc" lang="pl">
-      <div className="doc-page">
-        <div className="doc-annex">
-          <span>Załącznik nr 2</span>
-        </div>
-        <h1 className="doc-title">
-          <span className="doc-title__main">ARKUSZ PIERWSZEJ OCENY</span>
-        </h1>
-        <table className="doc-table">
-          <tbody>
-            <tr><th className="doc-th-label">NAZWA URZĘDU</th><td colSpan={3}>{detail.officeName}</td></tr>
-            <tr><th colSpan={4} className="doc-th-group">DANE OCENIANEGO</th></tr>
-            <tr><td className="doc-label">Imię i nazwisko</td><td colSpan={3}>{p.firstName} {p.lastName}</td></tr>
-            <tr><td className="doc-label">Komórka organizacyjna</td><td colSpan={3}>{p.unit}</td></tr>
-            <tr><td className="doc-label">Stanowisko</td><td colSpan={3}>{p.position}</td></tr>
-            <tr><td className="doc-label">Data nawiązania stosunku pracy</td><td colSpan={3}>{fmtDate(p.hiredOn)}</td></tr>
-            <tr><th colSpan={4} className="doc-th-group">DANE BEZPOŚREDNIEGO PRZEŁOŻONEGO</th></tr>
-            <tr><td className="doc-label">Imię i nazwisko</td><td colSpan={3}>{e.firstName} {e.lastName}</td></tr>
-            <tr><td className="doc-label">Komórka organizacyjna</td><td colSpan={3}>{e.unit}</td></tr>
-            <tr><td className="doc-label">Stanowisko</td><td colSpan={3}>{e.position}</td></tr>
-            <tr><th colSpan={4} className="doc-th-group">ROZMOWA WSTĘPNA</th></tr>
-            <tr><td className="doc-label">Data przeprowadzenia rozmowy wstępnej</td><td colSpan={3}><Val v={intro ? fmtDate(intro) : ''} hint="dd.mm.rrrr" /></td></tr>
-            <tr><td className="doc-label">Termin wyznaczony na złożenie sprawozdania</td><td colSpan={3}>do: <Val v={fc?.reportDue ? fmtDate(fc.reportDue) : ''} hint="dd.mm.rrrr" /></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="doc-page">
-        <table className="doc-table">
-          <tbody>
-            <tr><th colSpan={4} className="doc-th-group">ROZMOWA OCENIAJĄCA</th></tr>
-            <tr><td className="doc-label">Data przeprowadzenia rozmowy oceniającej</td><td colSpan={3}><Val v={talk ? fmtDate(talk) : ''} hint="dd.mm.rrrr" /></td></tr>
-          </tbody>
-        </table>
-        <table className="doc-table doc-table--scores">
-          <thead>
-            <tr><th rowSpan={2} className="doc-th-left">OCENA POSTAWY I ELEMENTÓW</th><th colSpan={3} className="doc-th-center">OCENA CZĄSTKOWA</th></tr>
-            <tr>
-              <th className="doc-th-small">poniżej oczekiwań<br />3 punkty</th>
-              <th className="doc-th-small">na poziomie oczekiwań<br />5 punktów</th>
-              <th className="doc-th-small">powyżej oczekiwań<br />7 punktów</th>
-            </tr>
-          </thead>
-          <tbody>
-            {criteria.all.map((c) => (
-              <tr key={c}>
-                <td>{competencyName(model, c)}</td>
-                {[3, 5, 7].map((s) => <td key={s} className="doc-c"><X on={detail.decisions[c] === s} /></td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="doc-line">Ocena łączna (średnia arytmetyczna ocen cząstkowych): <strong className="doc-val">{ev ? ev.averageDisplay : ''}</strong></p>
-        <table className="doc-table">
-          <tbody>
-            <tr>
-              <td className="doc-label">Oceniany zaliczył egzamin ze służby przygotowawczej</td>
-              <td>TAK <span className="doc-check"><X on={fc?.examPassed === 'YES'} /></span></td>
-              <td>NIE <span className="doc-check"><X on={fc?.examPassed === 'NO'} /></span></td>
-              <td>NIE DOTYCZY <span className="doc-check"><X on={fc?.examPassed === 'NOT_APPLICABLE'} /></span></td>
-            </tr>
-            <tr>
-              <td className="doc-label">Sprawozdanie złożone w wyznaczonym terminie</td>
-              <td>TAK <span className="doc-check"><X on={onTime === true} /></span></td>
-              <td colSpan={2}>NIE <span className="doc-check"><X on={onTime === false} /></span></td>
-            </tr>
-            <tr>
-              <th className="doc-th-label">PIERWSZA OCENA</th>
-              <td>POZYTYWNA <span className="doc-check"><X on={ev?.result === 'POSITIVE'} /></span></td>
-              <td colSpan={2}>NEGATYWNA <span className="doc-check"><X on={ev?.result === 'NEGATIVE'} /></span></td>
-            </tr>
-          </tbody>
-        </table>
-        <h3 className="doc-h">UZASADNIENIE</h3>
-        <div className="doc-text">{detail.justification || <Blank />}</div>
-        <h3 className="doc-h">WNIOSKI DOTYCZĄCE ROZWOJU ZAWODOWEGO</h3>
-        <div className="doc-text">{detail.iprz || <Blank />}</div>
-        <Signatures
-          cells={[
-            { value: detail.signedByEvaluatorOn ? place : '', caption: 'miejscowość' },
-            { value: fmtDate(detail.signedByEvaluatorOn).replace('—', ''), caption: 'data' },
-            { value: detail.signedByEvaluatorOn ? ESIGN : '', caption: 'podpis bezpośredniego przełożonego' },
-            { value: '', caption: 'podpis kierującego komórką organizacyjną' },
-          ]}
-        />
-        <div className="doc-box">
-          <p><i>Zapoznałam(-łem) się z pierwszą oceną.</i></p>
-          <Signatures
-            cells={[
-              { value: detail.acknowledgedOn ? place : '', caption: 'miejscowość' },
-              { value: fmtDate(detail.acknowledgedOn).replace('—', ''), caption: 'data' },
-              { value: detail.acknowledgedOn ? ESIGN : '', caption: 'podpis ocenianego' },
-            ]}
-          />
-        </div>
-      </div>
-      <p className="doc-footnote">Wygenerowano w Kompasie Kompetencji na podstawie wzoru z rozporządzenia PRM z 23.07.2015 (Dz.U. poz. 1144).</p>
+      <p className="doc-footnote">Wygenerowano w Cyfrowym Asystencie Ocen Okresowych na podstawie wzoru z rozporządzenia PRM z 4.04.2016 (Dz.U. poz. 470). Średnia {ev ? fmtAvg(ev.average) : '—'} liczona bez zaokrągleń.</p>
     </article>
   )
 }

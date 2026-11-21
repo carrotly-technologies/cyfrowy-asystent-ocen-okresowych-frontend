@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { useCase } from '../lib/caseQueries'
-import { caseCriteria, useModel, useSheets } from '../lib/model'
+import { caseCriteria, useCriteria, useSheets } from '../lib/model'
 import { caseUrl } from '../lib/stages'
 import { SheetDocument } from './SheetDocument'
 
@@ -12,7 +12,7 @@ export function SheetPage() {
   const { id = '' } = useParams()
   const [params] = useSearchParams()
   const q = useCase(id)
-  const model = useModel()
+  const model = useCriteria()
   const sheets = useSheets()
   const ready = q.isSuccess && model.isSuccess && sheets.isSuccess
   const autoPrint = params.get('druk') === '1'
@@ -51,7 +51,7 @@ export function SheetPage() {
         <div className="sheet-bar__title">
           <strong>Podgląd arkusza</strong>
           <span className="muted">
-            {name} · {detail.path === 'FIRST' ? 'arkusz pierwszej oceny' : `arkusz ${detail.sheetId ?? '—'}`} · stan na dziś, wypełnia się z decyzji w teczce
+            {name} · {`arkusz ${detail.sheetId ?? '—'}`} · stan na dziś, wypełnia się z decyzji w teczce
           </span>
         </div>
         <button type="button" className="btn btn--primary" onClick={() => window.print()}>

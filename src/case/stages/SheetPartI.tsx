@@ -3,7 +3,7 @@ import type { PartI } from '../../api/cases'
 import { Checkbox, ErrorSummary, Field, Fieldset, InfoList, InfoRow, InlineAlert, TextArea, TextInput, type FormError } from '../../components/ui'
 import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
-import { competencyName } from '../../lib/model'
+import { criterionName } from '../../lib/model'
 import { allows } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { PartHeading, PartSection, WizardActions } from './SheetWizardCommon'
@@ -25,22 +25,20 @@ const topicId = (k: TopicKey) => `topic-${k}`
 const expectId = (c: string) => `expect-${c}`
 const DUE_ID = 'assessment-due'
 const confirmId = (i: number) => `confirm-part-i-${i}`
-const ACK_ID = 'employee-ack-part-i'
-/** The assessed person's statement before "Oceniany potwierdził zapoznanie" (the template has no own sentence for it). */
-const EMPLOYEE_ACK_LABEL = 'Zapoznałem(-łam) się z kryteriami oceny oraz terminem sporządzenia oceny'
 
 /** A template line as a checkbox label: without the list punctuation ("…zagadnień," → "…zagadnień"). */
 const asLabel = (line: string) => line.trim().replace(/[,;.]+$/, '')
 /** First words of a long label, for the error summary. */
 const shorten = (text: string, max = 80) => (text.length <= max ? text : `${text.slice(0, text.lastIndexOf(' ', max))}…`)
 
-/** Part I: office, assessed person and evaluator (read only), the opening talk, expectations and the due date. */
-/** `notice`: why the user was sent back here ("Dalej" in part III while part I is not confirmed), shown in the error summary. */
-export function SheetPartI({ detail, model, criteria, onNext, notice }: StageProps & { onNext: () => void; notice?: string }) {
+/**
+ * Part I: office, assessed person and evaluator (read only), the opening talk, expectations and the due date.
+ * „Zatwierdź” saves it and records the evaluator's confirmation; then the assessed person confirms on their account.
+ */
+export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { onNext?: () => void }) {
   const patch = usePatchCase(detail.id)
   const act = useCaseAction(detail.id)
   const confirmed = !!detail.partI.confirmedByEvaluatorOn
-  const acked = !!detail.partI.acknowledgedByEmployeeOn
   // The backend accepts part I changes only at the opening talk, until the evaluator confirms it.
   const editable = !confirmed && detail.currentStage === 'OPENING_TALK'
   const afterNegative = detail.cycleLabel.toLowerCase().includes('negatyw')
@@ -55,17 +53,10 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
   // "Potwierdzamy: – …; – …" from the sheet template (GET /api/sheets). Ticking is kept only here: the record of the
   // confirmation is the existing action with its date (CONFIRM_PART_I, EMPLOYEE_ACK_PART_I).
   const confirmLines = (criteria.sheet?.template?.partIConfirmation ?? []).map(asLabel)
-  const [errors, setErrors] = useState<FormError[]>(() =>
-    notice ? [{ id: confirmLines.length ? confirmId(0) : ACK_ID, message: notice }] : [],
-  )
+  const [errors, setErrors] = useState<FormError[]>([])
   const errorFor = (id: string) => errors.find((e) => e.id === id)?.message
   const [ticked, setTicked] = useState<boolean[]>(() => confirmLines.map(() => false))
-  const [ackTicked, setAckTicked] = useState(false)
-  // "Dalej" is the acceptance: while part I is open it confirms it and records the assessed person's acknowledgement;
-  // when only the acknowledgement is missing, it records that one. There are no separate confirm buttons.
   const canConfirm = editable && allows(detail, 'CONFIRM_PART_I')
-  const ackLeft = confirmed && !acked && allows(detail, 'EMPLOYEE_ACK_PART_I')
-  const canAck = canConfirm || ackLeft
   const clearError = (id: string) => setErrors((v) => (v.some((e) => e.id === id) ? v.filter((e) => e.id !== id) : v))
   const tick = (i: number, on: boolean) => {
     setTicked((v) => confirmLines.map((_, j) => (j === i ? on : !!v[j])))
@@ -73,7 +64,6 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
   }
   const confirmErrors = (): FormError[] =>
     confirmLines.flatMap((l, i) => (ticked[i] ? [] : [{ id: confirmId(i), message: `Zaznacz potwierdzenie „${shorten(l)}”` }]))
-  const ackError = (): FormError[] => (ackTicked ? [] : [{ id: ACK_ID, message: `Zaznacz potwierdzenie ocenianego „${EMPLOYEE_ACK_LABEL}”` }])
   const confirmGroupError = confirmLines.some((_, i) => errorFor(confirmId(i)))
     ? 'Zaznacz wszystkie potwierdzenia oceniającego, zanim przejdziesz dalej'
     : undefined
@@ -84,7 +74,7 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
       message: `Wpisz notatkę do zagadnienia „${t.title}”`,
     }))
     for (const c of criteria.all) {
-      if (!expect[c]?.trim()) e.push({ id: expectId(c), message: `Wpisz oczekiwania do kryterium „${competencyName(model, c)}”` })
+      if (!expect[c]?.trim()) e.push({ id: expectId(c), message: `Wpisz oczekiwania do kryterium „${criterionName(model, c)}”` })
     }
     if (!due) e.push({ id: DUE_ID, message: 'Wpisz termin sporządzenia oceny' })
     return e
@@ -95,19 +85,13 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
     // Errors of a mutation are shown by StageError under the form, and the user stays in part I.
     try {
       if (editable) {
-        const e = [...validate(), ...(canConfirm ? [...confirmErrors(), ...ackError()] : [])]
+        const e = [...validate(), ...(canConfirm ? confirmErrors() : [])]
         setErrors(e)
         if (e.length) return
         await patch.mutateAsync({ partI: { topics, expectations: expect, assessmentDue: due } })
-        if (canConfirm) {
-          const after = await act.mutateAsync('CONFIRM_PART_I')
-          if (allows(after, 'EMPLOYEE_ACK_PART_I')) await act.mutateAsync('EMPLOYEE_ACK_PART_I')
-        }
-      } else if (ackLeft && ackTicked) {
-        setErrors([])
-        await act.mutateAsync('EMPLOYEE_ACK_PART_I')
+        if (canConfirm) await act.mutateAsync('CONFIRM_PART_I')
       }
-      onNext()
+      onNext?.()
     } catch {
       // shown by StageError
     }
@@ -136,19 +120,19 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
         </div>
       </PartSection>
 
-      <PartSection title="Kryteria oceny i termin sporządzenia oceny" hint="Kryteria ustalono w kroku „Proponowany formularz”.">
+      <PartSection title="Kryteria oceny i termin sporządzenia oceny" hint="Kryteria ustalono w kroku „Arkusz i kryteria”.">
         <div className={s.criteria}>
           <div>
             <p className={s.listLabel}>Kryteria obowiązkowe</p>
             <ul className={layout.bullets}>
-              {criteria.mandatory.map((c) => <li key={c}>{competencyName(model, c)}</li>)}
+              {criteria.mandatory.map((c) => <li key={c}>{criterionName(model, c)}</li>)}
             </ul>
           </div>
           <div>
             <p className={s.listLabel}>Kryteria dodatkowe wybrane przez oceniającego (nie więcej niż 3)</p>
             {criteria.additional.length ? (
               <ul className={layout.bullets}>
-                {criteria.additional.map((c) => <li key={c}>{competencyName(model, c)}</li>)}
+                {criteria.additional.map((c) => <li key={c}>{criterionName(model, c)}</li>)}
               </ul>
             ) : (
               <p className={layout.muted}>Brak</p>
@@ -192,7 +176,7 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
             <Field
               key={c}
               id={expectId(c)}
-              label={competencyName(model, c)}
+              label={criterionName(model, c)}
               error={errorFor(expectId(c))}
             >
               {(p) => (
@@ -204,12 +188,12 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
       </PartSection>
 
       {/* Each confirmation is a checkbox ticked before "Dalej"; once recorded it stays ticked, locked, with the date. */}
-      <PartSection title="Potwierdzenie części I" hint="Oceniający i oceniany potwierdzają rozmowę oraz zapoznanie z kryteriami i terminem oceny.">
+      <PartSection title="Potwierdzenie części I" hint="Oceniający potwierdza rozmowę tutaj; oceniany potwierdza zapoznanie z kryteriami i terminem oceny na swoim koncie.">
         {confirmLines.length > 0 && (
           <Fieldset
             id="confirm-part-i"
             legend="Potwierdzenie oceniającego"
-            hint={canConfirm ? 'Zaznacz wszystkie potwierdzenia. „Dalej” zapisze i zatwierdzi część I, a kryteria i termin oceny zostaną zablokowane.' : undefined}
+            hint={canConfirm ? 'Zaznacz wszystkie potwierdzenia. „Zatwierdź część I” zapisze ją, a kryteria i termin oceny zostaną zablokowane.' : undefined}
             error={confirmGroupError}
           >
             {confirmLines.map((l, i) => (
@@ -227,30 +211,16 @@ export function SheetPartI({ detail, model, criteria, onNext, notice }: StagePro
             ))}
           </Fieldset>
         )}
-        <Fieldset
-          id="employee-ack"
-          legend="Potwierdzenie ocenianego"
-          hint={canAck ? 'W wersji demonstracyjnej zaznaczasz w imieniu ocenianego; „Dalej” zapisze potwierdzenie z dzisiejszą datą.' : undefined}
-          error={errorFor(ACK_ID) ? 'Zaznacz potwierdzenie ocenianego, zanim przejdziesz dalej' : undefined}
-        >
-          <Checkbox
-            id={ACK_ID}
-            label={EMPLOYEE_ACK_LABEL}
-            hint={acked ? `Potwierdzono ${fmtDate(detail.partI.acknowledgedByEmployeeOn)}` : undefined}
-            checked={acked || ackTicked}
-            disabled={!canAck}
-            required={canConfirm}
-            invalid={!!errorFor(ACK_ID)}
-            onChange={(e) => {
-              setAckTicked(e.target.checked)
-              if (e.target.checked) clearError(ACK_ID)
-            }}
+        <InfoList>
+          <InfoRow
+            label="Potwierdzenie ocenianego (od tej daty biegnie okres oceny)"
+            value={detail.partI.acknowledgedByEmployeeOn ? fmtDate(detail.partI.acknowledgedByEmployeeOn) : 'Jeszcze nie: oceniany potwierdza na swoim koncie'}
           />
-        </Fieldset>
+        </InfoList>
       </PartSection>
 
       <StageError error={patch.error ?? act.error} />
-      <WizardActions loading={patch.isPending || act.isPending} />
+      {editable && <WizardActions loading={patch.isPending || act.isPending} nextLabel={canConfirm ? 'Zatwierdź część I' : 'Zapisz'} />}
     </form>
   )
 }

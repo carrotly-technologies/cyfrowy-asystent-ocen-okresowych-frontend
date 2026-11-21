@@ -1,10 +1,10 @@
 # AGENTS.md
 
-React + TypeScript + Vite frontend of **Kompas Kompetencji**; the API lives in [hacknation-backend](https://github.com/carrotly-technologies/hacknation-backend). App structure, routes and env vars: `README.md`. API routes: the table in the backend `README.md`. Design tokens: `src/styles/tokens.css`.
+React + TypeScript + Vite frontend of **Cyfrowy Asystent Ocen Okresowych**; the API lives in [cyfrowy-asystent-ocen-okresowych-backend](https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend). App structure, routes and env vars: `README.md`. API routes: the table in the backend `README.md`. Design tokens: `src/styles/tokens.css`.
 
-## Wymagania wdrożeniowe (zadanie „Kompas Kompetencji”)
+## Wymagania wdrożeniowe
 
-Pełna lista sześciu wymagań z opisu zadania wraz z regułami dla backendu jest w `AGENTS.md` w hacknation-backend (`docs/zadanie/opis-zadania-kompas-kompetencji.pdf`, rozdz. 5). Obowiązują przy każdej zmianie. Zmiana, która łamie którąś z poniższych reguł, wymaga uzasadnienia w opisie PR.
+Pełna lista sześciu wymagań wraz z regułami dla backendu jest w `AGENTS.md` w repo backendu. Obowiązują przy każdej zmianie. Zmiana, która łamie którąś z poniższych reguł, wymaga uzasadnienia w opisie PR.
 
 Rozwiązanie powinno być:
 
@@ -26,8 +26,8 @@ Rozwiązanie powinno być:
    - Komunikacja z API tylko przez `src/api/*`; zmiana kontraktu = zmiana w jednym miejscu.
    - `npm run build` i `npm run lint` muszą przechodzić przed merge.
 5. **Zgodne z przepisami**: ustawa o służbie cywilnej i ochrona danych osobowych.
-   - Minimalizacja danych: w `localStorage` trzymamy tylko preferencje UI (dziś `kompas.assistant` i `kompas.prefs`: motyw, rozmiar tekstu, kontrast), nigdy danych osobowych ani treści ocen; token logowania tylko w `sessionStorage` (`kompas.token`). Bez narzędzi analitycznych i trackerów zewnętrznych.
-   - Dane pracowników pokazujemy tylko roli, która ma do nich prawo (przełożony: własny zespół, HR: monitoring).
+   - Minimalizacja danych: w `localStorage` trzymamy tylko preferencje UI (dziś `ocena.assistant` i `ocena.prefs`: motyw, rozmiar tekstu, kontrast), nigdy danych osobowych ani treści ocen; token logowania tylko w `sessionStorage` (`ocena.token`). Bez narzędzi analitycznych i trackerów zewnętrznych.
+   - Dane pracowników pokazujemy tylko roli, która ma do nich prawo (przełożony: własny zespół, oceniany: tylko własne oceny, HR: monitoring).
    - AI jest doradcze: sugestia systemu jest wyraźnie oznaczona jako sugestia, a ostateczny poziom zawsze wybiera przełożony. UI nigdy nie zatwierdza oceny automatycznie.
    - Odpowiedzi asystenta pokazują źródło. Brak odpowiedzi w bazie wiedzy jest komunikowany wprost.
 6. **Elastyczne na zmiany przepisów**: aktualizacja modułów opartych na regulacjach bez przebudowy systemu.

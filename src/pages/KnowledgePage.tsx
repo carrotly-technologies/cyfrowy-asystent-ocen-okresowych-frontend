@@ -9,7 +9,7 @@ export function KnowledgePage() {
   const { assistant } = useFeatures()
   const meta = assistant
     ? 'Asystent formalny i asystent rozmowy — bez kontekstu konkretnej teczki'
-    : 'Akty prawne, model kompetencji i poradniki, na których opiera się Kompas'
+    : 'Akty prawne i poradniki, na których opiera się Cyfrowy Asystent Ocen Okresowych'
   return (
     <div className="page page--knowledge">
       <header className="page-head">

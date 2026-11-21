@@ -37,11 +37,6 @@ function applyPatch(prev: CaseDetail, patch: CasePatch): CaseDetail {
     ...prev,
     ...(patch.sheetId ? { sheetId: patch.sheetId } : {}),
     partI: patch.partI ? { ...prev.partI, ...patch.partI, topics: { ...prev.partI.topics, ...(patch.partI.topics ?? {}) } } : prev.partI,
-    ratings: patch.ratings
-      ? Object.fromEntries(
-          Object.keys({ ...prev.ratings, ...patch.ratings }).map((k) => [k, { ...prev.ratings[k], ...patch.ratings?.[k] }]),
-        )
-      : prev.ratings,
     decisions: mergeNullable(prev.decisions, patch.decisions),
     deviationNotes: mergeNullable(prev.deviationNotes, patch.deviationNotes),
     justification: patch.justification ?? prev.justification,
@@ -53,10 +48,6 @@ function applyPatch(prev: CaseDetail, patch: CasePatch): CaseDetail {
           ? null
           : { result: null, level: null, date: null, ...prev.previousAssessment, ...patch.previousAssessment },
     promotionRequest: patch.promotionRequest ? { ...prev.promotionRequest, ...patch.promotionRequest } : prev.promotionRequest,
-    firstConditions:
-      patch.firstConditions && prev.firstConditions
-        ? { ...prev.firstConditions, ...patch.firstConditions }
-        : prev.firstConditions,
   }
 }
 
@@ -78,6 +69,7 @@ export function usePatchCase(id: string) {
       qc.setQueryData(caseKey(id), data)
       qc.invalidateQueries({ queryKey: ['team'] })
       qc.invalidateQueries({ queryKey: ['hr'] })
+      qc.invalidateQueries({ queryKey: ['my-cases'] })
     },
   })
 }
@@ -100,6 +92,7 @@ export function useCaseAction(id: string, { follow = true }: { follow?: boolean 
       }
       qc.invalidateQueries({ queryKey: ['team'] })
       qc.invalidateQueries({ queryKey: ['hr'] })
+      qc.invalidateQueries({ queryKey: ['my-cases'] })
     },
   })
 }

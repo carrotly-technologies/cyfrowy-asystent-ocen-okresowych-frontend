@@ -1,9 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { PreviousAssessment, PromotionAttached } from '../../api/cases'
 import {
-  Button,
   Checkbox,
-  Dialog,
   ErrorSummary,
   Field,
   InfoList,
@@ -17,12 +15,11 @@ import {
   type FormError,
   type RadioMatrixGroup,
 } from '../../components/ui'
-import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
+import { usePatchCase } from '../../lib/caseQueries'
 import { fmtAvg, fmtDate, plPoints } from '../../lib/format'
-import { competencyName } from '../../lib/model'
+import { criterionName } from '../../lib/model'
 import { officePlace } from '../../lib/office'
 import { liveResult } from '../../lib/result'
-import { allows } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { PartHeading, PartSection, WizardActions } from './SheetWizardCommon'
 import { StageError } from './StageLayout'
@@ -38,7 +35,6 @@ const PREV_RESULT_ID = 'previous-result'
 const PREV_LEVEL_ID = 'previous-level'
 const PREV_DATE_ID = 'previous-date'
 const ATTACHED_ID = 'promotion-attached'
-const SIGN_HINT_ID = 'evaluator-signature-hint'
 
 const EMPTY_PREVIOUS: PreviousAssessment = { result: null, level: null, date: null }
 
@@ -55,11 +51,8 @@ const samePrevious = (a: PreviousAssessment, b: PreviousAssessment) => a.result 
  * arkusz oceny” before the assessment talk), corrected after the talk and locked by the evaluator's signature.
  * The backend decides (`partIIEditable` in patch.rules.ts); decision log: hacknation-backend/notatki/decyzje.md.
  */
-export function SheetPartII({ detail, model, criteria, onBack, onNext }: StageProps & { onBack: () => void; onNext: () => void }) {
+export function SheetPartII({ detail, model, criteria, onBack, onNext }: StageProps & { onBack?: () => void; onNext: () => void }) {
   const patch = usePatchCase(detail.id)
-  // follow: false: after signing the user stays here and sees the signature; the case itself moves on to "Ocena końcowa".
-  const sign = useCaseAction(detail.id, { follow: false })
-  const [confirmSign, setConfirmSign] = useState(false)
   const signed = detail.signedByEvaluatorOn
   // A draft until the evaluator signs (hacknation-backend/notatki/decyzje.md, 2026-11-21).
   const editable = !signed
@@ -74,12 +67,12 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
 
   const r = liveResult(detail, criteria.all, model)
   const negative = r.result === 'NEGATIVE'
-  const conversationDate = detail.stages.find((x) => x.id === 'ASSESSMENT')?.completedOn ?? null
+  const conversationDate = detail.assessmentTalkOn
   const periodFrom = detail.partI.acknowledgedByEmployeeOn
   const periodTo = signed ?? detail.partI.assessmentDue
   // Points come from the sheet and their labels from the competency model (both from the API), as in the template.
   const columns = criteria.scale.map((p) => ({ value: String(p), label: model.scale.find((x) => x.points === p)?.label ?? '', sublabel: plPoints(p) }))
-  const row = (c: string) => ({ id: c, label: competencyName(model, c), error: errorFor(decisionId(c)) })
+  const row = (c: string) => ({ id: c, label: criterionName(model, c), error: errorFor(decisionId(c)) })
   const groups: RadioMatrixGroup[] = [
     { heading: 'Kryteria obowiązkowe', rows: criteria.mandatory.map(row) },
     ...(criteria.additional.length ? [{ heading: 'Kryteria dodatkowe wybrane przez oceniającego', rows: criteria.additional.map(row) }] : []),
@@ -91,7 +84,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   const validate = (): FormError[] => {
     const e: FormError[] = criteria.all
       .filter((c) => detail.decisions[c] == null)
-      .map((c) => ({ id: decisionId(c), message: `Wybierz ocenę cząstkową kryterium „${competencyName(model, c)}”` }))
+      .map((c) => ({ id: decisionId(c), message: `Wybierz ocenę cząstkową kryterium „${criterionName(model, c)}”` }))
     if (negative && !justification.trim()) e.push({ id: JUST_ID, message: 'Wpisz uzasadnienie: przy ocenie negatywnej jest obowiązkowe' })
     if (!iprz.trim()) e.push({ id: IPRZ_ID, message: 'Wpisz wnioski dotyczące indywidualnego programu rozwoju zawodowego' })
     if (urzednik && attached === null) {
@@ -105,10 +98,12 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   const changes = () => ({ justification, iprz, ...(previousDirty ? { previousAssessment: previous } : {}) })
 
   // "Wstecz" keeps what was typed: unsaved text goes to the server without the checks of "Dalej".
-  const back = () => {
-    if (editable && dirty) patch.mutate(changes())
-    onBack()
-  }
+  const back = onBack
+    ? () => {
+        if (editable && dirty) patch.mutate(changes())
+        onBack()
+      }
+    : undefined
 
   // The answer decides whether part III is attached, so it is saved at once (like the partial scores).
   // NIE DOTYCZY is never chosen by hand: the backend sets it for a pracownik służby cywilnej, and then it is locked.
@@ -120,19 +115,6 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   ]
   const levelOptions = model.scale.map((x) => ({ value: x.label.toLowerCase(), label: x.label.toLowerCase() }))
   const evaluator = detail.evaluator
-
-  // The backend decides whether signing is open (step 4 opened); the formal check runs on the action itself.
-  const canSign = allows(detail, 'SIGN_ASSESSMENT')
-  // Unsaved text of part II is saved first, so the signature covers what is on screen.
-  const signNow = async () => {
-    setConfirmSign(false)
-    try {
-      if (dirty) await patch.mutateAsync(changes())
-      await sign.mutateAsync('SIGN_ASSESSMENT')
-    } catch {
-      // the error is shown under the form
-    }
-  }
 
   const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault()
@@ -291,43 +273,11 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
           <InfoRow label="Komórka organizacyjna" value={evaluator.unit} />
           <InfoRow label="Stanowisko pracy" value={evaluator.position} />
         </InfoList>
-        {/* The same action as "Zatwierdź ocenę i podpisz" in "Weryfikacja formularza": a signature here shows there too. */}
-        {signed ? (
-          <InlineAlert tone="success" live title="Data i podpis oceniającego">
+        {signed && (
+          <InlineAlert tone="success" title="Data i podpis oceniającego">
             Podpisano elektronicznie: {evaluator.firstName} {evaluator.lastName}, {officePlace()}, {fmtDate(signed)}
           </InlineAlert>
-        ) : (
-          <div>
-            <Button
-              disabled={!canSign}
-              loading={sign.isPending}
-              aria-describedby={canSign ? undefined : SIGN_HINT_ID}
-              onClick={() => setConfirmSign(true)}
-            >
-              Podpisz ocenę
-            </Button>
-            {!canSign && (
-              <p id={SIGN_HINT_ID} className="blocked-reason">
-                Dostępne po ocenie wszystkich kryteriów
-              </p>
-            )}
-          </div>
         )}
-        <Dialog
-          open={confirmSign}
-          onClose={() => setConfirmSign(false)}
-          title="Podpisać ocenę?"
-          actions={
-            <>
-              <Button variant="text" onClick={() => setConfirmSign(false)}>
-                Anuluj
-              </Button>
-              <Button onClick={() => void signNow()}>Podpisz</Button>
-            </>
-          }
-        >
-          Po podpisaniu oceny nie można jej zmienić. Podpisać?
-        </Dialog>
       </PartSection>
 
       <PartSection title="Zapoznanie ocenianego z oceną">
@@ -338,7 +288,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
           hint={
             detail.acknowledgedOn
               ? `Potwierdzono ${fmtDate(detail.acknowledgedOn)}, ${detail.person.firstName} ${detail.person.lastName}`
-              : 'Jeszcze nie: po zatwierdzeniu oceny'
+              : 'Jeszcze nie: oceniany potwierdza na swoim koncie po przekazaniu oceny'
           }
           checked={!!detail.acknowledgedOn}
           disabled
@@ -346,7 +296,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
         />
       </PartSection>
 
-      <StageError error={patch.error ?? sign.error} />
+      <StageError error={patch.error} />
       <WizardActions onBack={back} loading={patch.isPending} />
     </form>
   )
