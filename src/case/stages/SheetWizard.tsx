@@ -10,6 +10,7 @@ import type { StageProps } from '../CasePage'
 import { SheetPartII } from './SheetPartII'
 import { SheetPartIII } from './SheetPartIII'
 import { StageLayout } from './StageLayout'
+import { scrollToCaseWork } from '../scroll'
 
 /** Parts of the sheet filled at the assessment stage (part I is the opening talk). */
 const SHEET_PARTS = [{ name: 'Ocena okresowa' }, { name: 'Wniosek o kolejny stopień służbowy' }] as const
@@ -58,7 +59,7 @@ export function SheetWizard(props: StageProps) {
 
   const goTo = (n: number) => {
     setParams((p) => { p.set('czesc', String(n)); return p })
-    document.querySelector('.case-work')?.scrollTo({ top: 0 })
+    requestAnimationFrame(scrollToCaseWork)
   }
 
   const finish = async () => {
