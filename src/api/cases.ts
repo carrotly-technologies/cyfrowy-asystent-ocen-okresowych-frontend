@@ -145,6 +145,9 @@ export interface CaseDetail extends CaseSummary {
   dueDateRequests: DueDateRequest[]
   dueDateChanges: DueDateChange[]
   dueDateRequestRule: { eligible: boolean; reason: string; legalBasis: string }
+  /** null when the evaluator may change the due date now (art. 81 ust. 8), else why not. */
+  dueDateChangeBlocker?: string | null
+  talkInvitations?: TalkInvitation[]
   /** Post-assessment actions the signed-in user may take now (backend appeals.rules.ts). */
   legalActions?: LegalAction[]
   /** Actions the signed-in user may do right now (the assessed person sees only their confirmations). */
@@ -261,12 +264,29 @@ export interface DueDateRequest {
   decidedBy: ActorRef | null
 }
 
+/** Invitation to the opening / assessment talk (backend src/deadlines). */
+export interface TalkInvitation {
+  id: string
+  kind: 'OPENING' | 'ASSESSMENT'
+  date: string
+  time: string
+  place: string
+  note: string
+  createdOn: string
+}
+
 export interface DueDateChange {
   changedOn: string
   from: string | null
   to: string
   reason: string
   by: ActorRef
+  id?: string
+  reasonCode?: string
+  legalBasis?: string
+  note?: string
+  /** The written notice to the assessed person (§8 rozp. 2016). */
+  notice?: { sentOn: string; text: string }
 }
 
 export interface ObjectionListItem {

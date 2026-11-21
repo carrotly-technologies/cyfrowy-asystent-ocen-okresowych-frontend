@@ -11,6 +11,7 @@ import { allows, caseSteps, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages
 import { useMe } from '../lib/useAuth'
 import { AckFictionInfo, AssessmentVersions, CaseHistoryList, DueDateRequestSection, ObjectionSection } from '../case/LegalPaths'
 import { legalErrorText } from '../lib/legalQueries'
+import { EmployeeDeadlinesSection } from '../case/DeadlinesPanel'
 import { SheetDocument } from '../sheet/SheetDocument'
 
 const STATUS_TONE = {
@@ -130,6 +131,7 @@ export function MyCasePage() {
       <AckFictionInfo detail={detail} />
       <ObjectionSection detail={detail} notice={notice} />
       <DueDateRequestSection detail={detail} />
+      <EmployeeDeadlinesSection detail={detail} />
 
       {detail.sheetId && (
         <section className="section" aria-labelledby="crit-h">
