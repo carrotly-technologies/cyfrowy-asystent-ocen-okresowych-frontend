@@ -3,22 +3,27 @@ import { Bell } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { getHrOverview, sendReminders, type HrCase, type HrOverview, type ReminderResponse } from '../api/cases'
+import { listEmployees } from '../api/employees'
 import { AckFictionButton } from '../case/LegalPaths'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
 import { countLabel, DEMO_TODAY, fmtDate } from '../lib/format'
 import { CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
+import { evaluatorLabel } from '../lib/evaluator'
 import { MutationError } from '../case/stages/common'
+import { InlineAlert } from '../components/ui'
+import './hr.css'
 
 type CounterKey = keyof HrOverview['counters'] | 'all'
 
-const COUNTERS: { key: CounterKey; label: string; tone?: string }[] = [
-  { key: 'inProgress', label: 'W toku' },
-  { key: 'dueSoon', label: 'Termin ≤ 14 dni', tone: 'warn' },
-  { key: 'overdue', label: 'Po terminie', tone: 'danger' },
-  { key: 'awaitingAck', label: 'Oczekuje na zapoznanie' },
-  { key: 'objectionPeriod', label: 'W okresie sprzeciwu' },
+/** One definition per counter, shown as its description (the same words as in Statystyki). */
+const COUNTERS: { key: CounterKey; label: string; hint: string; tone?: string }[] = [
+  { key: 'inProgress', label: 'W toku', hint: 'Oceny przed przekazaniem do zapoznania (bez oczekujących na zapoznanie i sprzeciwów).' },
+  { key: 'dueSoon', label: 'Termin ≤ 14 dni', hint: 'Najbliższy termin za 0–14 dni; przeterminowane liczy kafelek „Po terminie”.', tone: 'warn' },
+  { key: 'overdue', label: 'Po terminie', hint: 'Najbliższy termin już minął.', tone: 'danger' },
+  { key: 'awaitingAck', label: 'Oczekuje na zapoznanie', hint: 'Ocena podpisana, oceniany jeszcze się z nią nie zapoznał.' },
+  { key: 'objectionPeriod', label: 'W okresie sprzeciwu', hint: 'Biegnie 7 dni na sprzeciw od zapoznania z oceną.' },
 ]
 
 function matches(c: HrCase, k: CounterKey) {
@@ -37,6 +42,8 @@ const deptOf = (unit: string) => unit.split(',')[0]
 export function HrPage() {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['hr'], queryFn: ({ signal }) => getHrOverview(signal) })
+  // The register adds substitutions (who assesses now) and the obligatory next grade.
+  const people = useQuery({ queryKey: ['employees'], queryFn: ({ signal }) => listEmployees(signal), retry: false })
   const [counter, setCounter] = useState<CounterKey>('all')
   const [search, setSearch] = useState('')
   const [dept, setDept] = useState('')
@@ -61,9 +68,17 @@ export function HrPage() {
     .filter((c) => matches(c, counter))
     .filter((c) => !dept || deptOf(c.person.unit) === dept)
     .filter((c) => !path || c.sheetId === path)
-    .filter((c) => !search || `${c.person.firstName} ${c.person.lastName} ${c.evaluatorName}`.toLowerCase().includes(search.toLowerCase()))
+    .filter((c) => !search || `${c.person.firstName} ${c.person.lastName} ${evaluatorOf(c)}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (a.nextDeadline?.date ?? '9999').localeCompare(b.nextDeadline?.date ?? '9999'))
-  const soonIds = q.data.cases.filter((c) => c.nextDeadline && (c.nextDeadline.state === 'SOON' || c.nextDeadline.state === 'OVERDUE')).map((c) => c.id)
+  const soonIds = q.data.cases
+    .filter((c) => c.remindable && c.nextDeadline && (c.nextDeadline.state === 'SOON' || c.nextDeadline.state === 'OVERDUE'))
+    .map((c) => c.id)
+  const byPerson = new Map((people.data ?? []).map((e) => [e.id, e]))
+  const evaluatorOf = (c: HrCase) => {
+    const e = byPerson.get(c.person.id)
+    return e && e.evaluatorId ? evaluatorLabel(c.evaluatorName, e.effectiveEvaluatorName) : c.evaluatorName
+  }
+  const obligatory = (people.data ?? []).filter((e) => e.obligatoryPromotion.due)
 
   return (
     <div className="page page--wide">
@@ -73,9 +88,26 @@ export function HrPage() {
           <p className="page-head__meta" title={`Wszystkie procesy ocen w urzędzie · stan na ${fmtDate(DEMO_TODAY)}`}>Wszystkie procesy ocen w urzędzie · stan na {fmtDate(DEMO_TODAY)}</p>
         </div>
         <button type="button" className="btn btn--primary" disabled={soonIds.length === 0 || remind.isPending} onClick={() => remind.mutate(soonIds)}>
-          <Bell size={15} aria-hidden="true" /> Przypomnij wszystkim z terminem ≤ 14 dni ({soonIds.length})
+          <Bell size={15} aria-hidden="true" /> Przypomnij: termin ≤ 14 dni lub po terminie ({soonIds.length})
         </button>
       </header>
+
+      {obligatory.length > 0 && (
+        <InlineAlert tone="warning" title="Obowiązkowy kolejny stopień służbowy">
+          <ul className="hr-obligatory">
+            {obligatory.map((e) => (
+              <li key={e.id}>
+                <Link to={`/kartoteka/${e.id}`}>{e.firstName} {e.lastName}</Link>
+                {e.obligatoryPromotion.deadline && (
+                  <> · termin: <strong className="num">{fmtDate(e.obligatoryPromotion.deadline)}</strong></>
+                )}
+                {e.obligatoryPromotion.nextStep && <span className="block small">{e.obligatoryPromotion.nextStep}</span>}
+              </li>
+            ))}
+          </ul>
+          <span className="legal">{obligatory[0].obligatoryPromotion.legalBasis}</span>
+        </InlineAlert>
+      )}
 
       <div className="counters" role="group" aria-label="Filtr według stanu">
         {COUNTERS.map((c) => (
@@ -84,10 +116,12 @@ export function HrPage() {
             type="button"
             className={`counter ${counter === c.key ? 'is-on' : ''} ${c.tone ? `counter--${c.tone}` : ''}`}
             aria-pressed={counter === c.key}
+            title={c.hint}
             onClick={() => setCounter(counter === c.key ? 'all' : c.key)}
           >
             <span className="counter__n num">{counters[c.key as keyof HrOverview['counters']]}</span>
-            <span className="counter__l" title={c.label}>{c.label}</span>
+            <span className="counter__l">{c.label}</span>
+            <span className="visually-hidden">. {c.hint}</span>
           </button>
         ))}
       </div>
@@ -112,7 +146,7 @@ export function HrPage() {
         )}
       </div>
 
-      <div className="panel">
+      <div className="panel hr-scroll">
         <table className="table hr-table">
           <thead>
             <tr>
@@ -141,7 +175,7 @@ export function HrPage() {
                     </div>
                   </td>
                   <td className="cell-unit" title={c.person.unit}>{deptOf(c.person.unit)}</td>
-                  <td title={c.evaluatorName}>{c.evaluatorName}</td>
+                  <td className="cell-evaluator">{evaluatorOf(c)}</td>
                   <td>
                     {c.sheetId ? (
                       <Link to={`/teczka/${c.id}/arkusz`} title="Podgląd arkusza i PDF">{`Okresowa · arkusz ${c.sheetId}`}</Link>
@@ -157,10 +191,14 @@ export function HrPage() {
                   </td>
                   <td>{c.nextDeadline ? <DeadlineText deadline={c.nextDeadline} /> : <span className="faint">—</span>}</td>
                   <td><span title={CASE_STATUS_LABEL[c.status]} className={`tag ${c.status === 'OKRES_SPRZECIWU' || c.status === 'SPRZECIW_W_ROZPATRZENIU' || c.status === 'DO_ZAPOZNANIA' ? 'tag--accent' : ''}`}>{CASE_STATUS_LABEL[c.status]}</span></td>
-                  <td className="cell-action">
-                    <button type="button" className="btn btn--sm" disabled={sentToday || remind.isPending} onClick={() => remind.mutate([c.id])}>
-                      {sentToday ? 'Wysłano dziś' : 'Wyślij przypomnienie'}
-                    </button>
+                  <td className="hr-actions">
+                    {c.remindable ? (
+                      <button type="button" className="btn btn--sm" disabled={sentToday || remind.isPending} onClick={() => remind.mutate([c.id])}>
+                        {sentToday ? 'Wysłano dziś' : 'Wyślij przypomnienie'}
+                      </button>
+                    ) : (
+                      <span className="faint small">{c.status === 'ZAKONCZONA' ? 'nie dotyczy (zakończona)' : 'nie dotyczy (sprzeciw u DG)'}</span>
+                    )}
                     {c.lastReminderOn && !sentToday && <span className="cell-sub num">ostatnio {fmtDate(c.lastReminderOn)}</span>}
                     {c.status === 'DO_ZAPOZNANIA' && <AckFictionButton caseId={c.id} name={`${c.person.firstName} ${c.person.lastName}`} />}
                   </td>

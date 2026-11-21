@@ -8,6 +8,9 @@ import { InlineAlert, Select, Snackbar, StatusBadge } from '../components/ui'
 import { ROLE_LABEL, useMe } from '../lib/useAuth'
 import { countLabel } from '../lib/format'
 
+/** Drafts without the given user. */
+const without = (d: Record<string, Role>, id: string) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)) as Record<string, Role>
+
 const ROLE_OPTIONS = (Object.keys(ROLE_LABEL) as Role[]).map((r) => ({ value: r, label: ROLE_LABEL[r] }))
 
 /** ADMIN: accounts and their roles. A new role applies when that user signs in again. */
@@ -15,12 +18,20 @@ export function AdminUsersPage() {
   const me = useMe()
   const qc = useQueryClient()
   const users = useQuery({ queryKey: ['admin', 'users'], queryFn: ({ signal }) => getUsers(signal) })
-  const [saved, setSaved] = useState<string | null>(null)
+  // A role is chosen in the row and applied only with „Zapisz”; the toast offers „Cofnij”.
+  const [drafts, setDrafts] = useState<Record<string, Role>>({})
+  const [saved, setSaved] = useState<{ text: string; undo?: { id: string; role: Role } } | null>(null)
   const change = useMutation({
-    mutationFn: ({ id, role }: { id: string; role: Role }) => updateUserRole(id, role),
-    onSuccess: (u) => {
+    mutationFn: ({ id, role }: { id: string; role: Role; previous?: Role }) => updateUserRole(id, role),
+    onSuccess: (u, vars) => {
       qc.setQueryData<UserView[]>(['admin', 'users'], (list) => list?.map((x) => (x.id === u.id ? u : x)))
-      setSaved(`Zapisano: ${u.name} ma teraz rolę „${ROLE_LABEL[u.role]}”. Zmiana obowiązuje od jej następnego logowania.`)
+      setDrafts((d) => without(d, u.id))
+      setSaved({
+        text: vars.previous
+          ? `Zapisano: ${u.name} ma teraz rolę „${ROLE_LABEL[u.role]}”. Zmiana obowiązuje od następnego logowania tej osoby.`
+          : `Cofnięto: ${u.name} ma znowu rolę „${ROLE_LABEL[u.role]}”.`,
+        undo: vars.previous ? { id: u.id, role: vars.previous } : undefined,
+      })
     },
   })
 
@@ -52,12 +63,14 @@ export function AdminUsersPage() {
                 <th>Login</th>
                 <th>Stanowisko i komórka</th>
                 <th>Rola</th>
+                <th><span className="visually-hidden">Zapis zmiany roli</span></th>
               </tr>
             </thead>
             <tbody>
               {users.data.map((u) => {
                 const self = u.id === me.id
                 const pending = change.isPending && change.variables?.id === u.id
+                const draft = drafts[u.id]
                 return (
                   <tr key={u.id}>
                     <td>
@@ -73,10 +86,31 @@ export function AdminUsersPage() {
                       <Select
                         aria-label={`Rola: ${u.name}`}
                         options={ROLE_OPTIONS.map((o) => ({ ...o, disabled: self && o.value !== 'ADMIN' }))}
-                        value={u.role}
+                        value={draft ?? u.role}
                         disabled={pending}
-                        onChange={(e) => change.mutate({ id: u.id, role: e.target.value as Role })}
+                        onChange={(e) => {
+                          const role = e.target.value as Role
+                          setDrafts((d) => (role === u.role ? without(d, u.id) : { ...d, [u.id]: role }))
+                        }}
                       />
+                    </td>
+                    <td className="cell-action">
+                      {draft && (
+                        <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
+                          <button type="button" className="btn btn--sm btn--ghost" disabled={pending} onClick={() => setDrafts((d) => without(d, u.id))}>
+                            Anuluj
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--sm btn--primary"
+                            disabled={pending}
+                            aria-label={`Zapisz rolę „${ROLE_LABEL[draft]}” dla: ${u.name}`}
+                            onClick={() => change.mutate({ id: u.id, role: draft, previous: u.role })}
+                          >
+                            {pending ? 'Zapisywanie…' : 'Zapisz'}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )
@@ -85,11 +119,29 @@ export function AdminUsersPage() {
           </table>
         </div>
         <p className="faint small" style={{ marginTop: 12 }}>
-          Nie możesz odebrać sobie roli administratora. Przełożony widzi tylko teczki, w których jest oceniającym.
+          Wybierz rolę i kliknij „Zapisz”. Nie możesz odebrać sobie roli administratora. Przełożony widzi tylko teczki, w
+          których jest oceniającym. Administrator to rola techniczna: konta i tryb korekty, kartoteka tylko do odczytu.
         </p>
       </section>
 
-      <Snackbar open={saved !== null} message={saved ?? ''} onClose={() => setSaved(null)} />
+      <Snackbar
+        open={saved !== null}
+        message={saved?.text ?? ''}
+        duration={saved?.undo ? 10000 : 6000}
+        onClose={() => setSaved(null)}
+        action={
+          saved?.undo
+            ? {
+                label: 'Cofnij',
+                onClick: () => {
+                  const undo = saved.undo!
+                  setSaved(null)
+                  change.mutate({ id: undo.id, role: undo.role })
+                },
+              }
+            : undefined
+        }
+      />
     </div>
   )
 }

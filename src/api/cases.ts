@@ -326,7 +326,12 @@ export interface TeamResponse {
   todo: TodoItem[]
 }
 
-export type HrCase = CaseSummary & { evaluatorName: string; lastReminderOn: string | null }
+export type HrCase = CaseSummary & {
+  evaluatorName: string
+  lastReminderOn: string | null
+  /** False for a finished case or an objection under review (no reminder). */
+  remindable: boolean
+}
 
 export interface HrOverview {
   counters: {

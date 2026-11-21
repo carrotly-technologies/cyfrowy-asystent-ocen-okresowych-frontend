@@ -10,6 +10,8 @@ import {
   getAbsences,
   getEmployee,
   getHistory,
+  getUnits,
+  listEmployees,
   startCycle,
   updateEmployee,
   type EmployeeFields,
@@ -17,9 +19,11 @@ import {
 } from '../../api/employees'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
-import { BackLink, DateInput, Dialog, InlineAlert } from '../../components/ui'
+import { BackLink, ConfirmDialog, DateInput, Dialog, InlineAlert } from '../../components/ui'
+import { errorMessage } from '../../api/client'
 import { MutationError } from '../../case/stages/common'
-import { days, fmtDate } from '../../lib/format'
+import { days, fmtDate, fmtDaysLeft } from '../../lib/format'
+import { evaluatorLabel } from '../../lib/evaluator'
 import { CASE_STATUS_LABEL } from '../../lib/stages'
 import { useMe } from '../../lib/useAuth'
 import { EmployeeForm } from './EmployeeForm'
@@ -47,12 +51,16 @@ function fieldsOf(e: EmployeeView): EmployeeFields {
 export function EmployeePage() {
   const { id = '' } = useParams()
   const me = useMe()
-  const canEdit = me.role === 'HR' || me.role === 'ADMIN'
+  // ADMIN is a technical role: read only here, case data errors go through „Tryb korekty”.
+  const canEdit = me.role === 'HR'
   const qc = useQueryClient()
   const navigate = useNavigate()
   const q = useQuery({ queryKey: ['employee', id], queryFn: ({ signal }) => getEmployee(id, signal) })
+  const people = useQuery({ queryKey: ['employees'], queryFn: ({ signal }) => listEmployees(signal), enabled: canEdit })
+  const knownUnits = useQuery({ queryKey: ['employee-units'], queryFn: ({ signal }) => getUnits(signal), enabled: canEdit })
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmLateCycle, setConfirmLateCycle] = useState(false)
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['employee', id] })
@@ -80,6 +88,12 @@ export function EmployeePage() {
   if (q.isError) return <div className="page"><ErrorState error={q.error} what="dane pracownika" onRetry={() => q.refetch()} /></div>
   const e = q.data
   const open = e.currentCase && e.currentCase.status !== 'ZAKONCZONA' && e.currentCase.status !== 'OKRES_SPRZECIWU'
+  const units = [...new Set([...(knownUnits.data ?? []), ...(people.data ?? []).map((p) => p.unit)])].sort((a, b) => a.localeCompare(b, 'pl'))
+  const preview = e.nextCycle
+  const lateOpening = preview?.openingTalk?.state === 'OVERDUE' ? preview.openingTalk : null
+  const onStartCycle = () => (lateOpening ? setConfirmLateCycle(true) : cycle.mutate())
+  const due = e.currentCase?.assessmentDue ?? null
+  const beforeOpeningTalk = !!e.currentCase && ['SHEET_SELECTION', 'OPENING_TALK', 'PART_I_ACK'].includes(e.currentCase.stage)
 
   return (
     <div className="page page--wide">
@@ -102,6 +116,7 @@ export function EmployeePage() {
       {e.obligatoryPromotion.due && (
         <InlineAlert tone="warning" title="Obowiązkowy kolejny stopień służbowy">
           {e.obligatoryPromotion.reason} <span className="legal">({e.obligatoryPromotion.legalBasis})</span>
+          {e.obligatoryPromotion.nextStep && <strong className="block">Następny krok: {e.obligatoryPromotion.nextStep}</strong>}
         </InlineAlert>
       )}
 
@@ -110,7 +125,7 @@ export function EmployeePage() {
           <h2 id="data-h" className="h-section">Dane w kartotece</h2>
           {editing ? (
             <>
-              <EmployeeForm initial={fieldsOf(e)} units={[e.unit]} submitLabel="Zapisz zmiany" pending={save.isPending} onSubmit={(f) => save.mutate(f)} onCancel={() => setEditing(false)} />
+              <EmployeeForm initial={fieldsOf(e)} units={units.length ? units : [e.unit]} submitLabel="Zapisz zmiany" pending={save.isPending} onSubmit={(f) => save.mutate(f)} onCancel={() => setEditing(false)} />
               <p className="small faint">Zmiana oceniającego przenosi ocenę w toku do nowego oceniającego (wpis w historii teczki).</p>
               <MutationError error={save.error} />
             </>
@@ -126,11 +141,11 @@ export function EmployeePage() {
               <dt>Zatrudnienie na czas nieokreślony od</dt><dd>{e.indefiniteSince ? fmtDate(e.indefiniteSince) : '—'}</dd>
               <dt>Oceniający</dt>
               <dd>
-                {e.evaluatorName ?? 'nie przypisano'}
-                {e.substitution && <> · w zastępstwie: {e.effectiveEvaluatorName} (do {fmtDate(e.substitution.to)})</>}
+                {e.evaluatorName ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : 'nie przypisano'}
+                {e.substitution && <span className="small faint block">zastępstwo do {fmtDate(e.substitution.to)}</span>}
               </dd>
               <dt>Arkusz</dt>
-              <dd>
+              <dd className="emp-dl-text">
                 {e.sheetId} {!e.currentCase?.sheetId && <span className="faint">— sugestia: {e.sheetSuggestion.reason} ({e.sheetSuggestion.legalBasis}); decyduje oceniający</span>}
               </dd>
             </dl>
@@ -143,7 +158,39 @@ export function EmployeePage() {
             <dl className="dl">
               <dt>Etap</dt><dd>{e.currentCase.stageName}</dd>
               <dt>Status</dt><dd>{CASE_STATUS_LABEL[e.currentCase.status]}</dd>
-              {e.currentCase.nextDeadline && (<><dt>Termin</dt><dd><DeadlineText deadline={e.currentCase.nextDeadline} /><span className="small faint block">{e.currentCase.nextDeadline.legalBasis}</span></dd></>)}
+              {e.currentCase.nextDeadline && (
+                <>
+                  <dt>{due && due.date !== e.currentCase.nextDeadline.date ? 'Najbliższy termin' : 'Termin'}</dt>
+                  <dd className="emp-dl-text">
+                    <span className="block small">{e.currentCase.nextDeadline.label}</span>
+                    <DeadlineText deadline={e.currentCase.nextDeadline} />
+                    <span className="small faint block">{e.currentCase.nextDeadline.legalBasis}</span>
+                    {due?.extended && beforeOpeningTalk && (
+                      <span className="small block emp-due-note">
+                        Termin rozmowy rozpoczynającej nie jest przedłużany o nieobecność; przedłuża się tylko termin sporządzenia oceny
+                        (art. 81 ust. 7 ustawy o służbie cywilnej).
+                      </span>
+                    )}
+                  </dd>
+                </>
+              )}
+              {due && due.date !== e.currentCase.nextDeadline?.date && (
+                <>
+                  <dt>Termin oceny</dt>
+                  <dd className="emp-dl-text">
+                    <DeadlineText deadline={due} />
+                    {due.extended && due.baseDate && (
+                      <span className="small block">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc</span>
+                    )}
+                  </dd>
+                </>
+              )}
+              {due?.extended && due.date === e.currentCase.nextDeadline?.date && due.baseDate && (
+                <>
+                  <dt>Przedłużenie</dt>
+                  <dd className="emp-dl-text small">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc (art. 81 ust. 7)</dd>
+                </>
+              )}
               {e.currentCase.sheetId && (<><dt>Arkusz</dt><dd><Link to={`/teczka/${e.currentCase.id}/arkusz`}>Podgląd arkusza {e.currentCase.sheetId}</Link></dd></>)}
             </dl>
           ) : (
@@ -151,10 +198,20 @@ export function EmployeePage() {
           )}
           {canEdit && !open && (
             <>
-              <button type="button" className="btn btn--primary" disabled={cycle.isPending} onClick={() => cycle.mutate()}>
+              <button type="button" className="btn btn--primary" disabled={cycle.isPending || preview?.ok === false} onClick={onStartCycle}>
                 <PlayCircle size={15} aria-hidden="true" /> Rozpocznij nowy cykl oceny
               </button>
-              <p className="small faint">Teczka trafi do oceniającego na etap wyboru arkusza; termin rozmowy rozpoczynającej liczy system.</p>
+              {preview?.ok === false ? (
+                <p className="small" role="note">{preview.reason}</p>
+              ) : preview?.openingTalk ? (
+                <p className="small faint">
+                  Teczka trafi do oceniającego na etap wyboru arkusza. Rozmowa rozpoczynająca do{' '}
+                  <span className="num">{fmtDate(preview.openingTalk.date)}</span>
+                  {lateOpening && <strong> (termin już minął)</strong>}.
+                </p>
+              ) : (
+                <p className="small faint">Teczka trafi do oceniającego na etap wyboru arkusza; termin rozmowy rozpoczynającej liczy system.</p>
+              )}
             </>
           )}
           {cycle.isSuccess && <p className="notice notice--ok" role="status">Rozpoczęto cykl oceny. {cycle.data.reason}</p>}
@@ -164,6 +221,26 @@ export function EmployeePage() {
 
       <Absences employeeId={id} canEdit={canEdit} onChange={refresh} />
       <History employeeId={id} />
+
+      {canEdit && (
+        <ConfirmDialog
+          open={confirmLateCycle}
+          title="Termin rozmowy rozpoczynającej już minął"
+          confirmLabel="Rozpocznij mimo to"
+          onCancel={() => setConfirmLateCycle(false)}
+          onConfirm={() => cycle.mutateAsync().then(() => undefined)}
+          errorText={errorMessage}
+        >
+          {lateOpening && (
+            <p>
+              Dla tego cyklu rozmowa rozpoczynająca powinna odbyć się do <strong className="num">{fmtDate(lateOpening.date)}</strong>{' '}
+              ({fmtDaysLeft(lateOpening.daysLeft)}). Po rozpoczęciu teczka od razu pokaże przekroczony termin. Rozpocznij cykl i
+              poproś oceniającego o jak najszybsze przeprowadzenie rozmowy.
+            </p>
+          )}
+          {preview && <p className="small faint">{preview.reason}</p>}
+        </ConfirmDialog>
+      )}
 
       {canEdit && (
         <Dialog
@@ -218,8 +295,9 @@ function Absences({ employeeId, canEdit, onChange }: { employeeId: string; canEd
         <InlineAlert tone="info" title="Nieobecność ciągła dłuższa niż miesiąc">
           {q.data.continuous.filter((p) => p.longerThanMonth).map((p) => (
             <span key={p.from} className="block">
-              {fmtDate(p.from)} – {fmtDate(p.to)} ({days(p.days)}): termin oceny przedłuża się o czas tej nieobecności (dni wolne
-              między nieobecnościami nie przerywają ciągłości).
+              {fmtDate(p.from)} – {fmtDate(p.to)} ({days(p.days)}): termin sporządzenia oceny przedłuża się o czas tej
+              nieobecności (dni wolne między nieobecnościami nie przerywają ciągłości). Termin rozmowy rozpoczynającej się nie
+              zmienia. Nowy termin oceny widać w karcie „Bieżąca ocena”.
             </span>
           ))}
         </InlineAlert>

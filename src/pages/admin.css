@@ -1,0 +1,18 @@
+/* Tryb korekty (/admin/korekty). Colours only from tokens.css. */
+
+.corr-lead {
+  max-width: 48rem;
+  margin-top: 6px;
+  white-space: normal;
+}
+
+.corr-count--short {
+  color: var(--text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+.corr-page .select,
+.corr-page select {
+  width: 100%;
+  max-width: 100%;
+}

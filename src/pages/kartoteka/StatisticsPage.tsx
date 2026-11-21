@@ -72,15 +72,16 @@ export function StatisticsPage() {
 
       <div className="counters" role="list" aria-label="Najważniejsze wskaźniki">
         {[
-          ['Pracownicy', s.employees],
-          ['Oceny w toku', s.cases.open],
-          ['Oceny negatywne', `${s.results.negativePercent.toLocaleString('pl-PL')}%`],
-          ['W toku po terminie', s.timeliness.openOverdue],
-          ['Obowiązkowy kolejny stopień', s.promotions.obligatory],
-        ].map(([label, value]) => (
-          <div key={label} className="counter" role="listitem">
+          ['Pracownicy', s.employees, 'Osoby w kartotece (wybranej komórki).'],
+          ['Oceny niezakończone', s.cases.open, 'Wszystkie oceny przed końcem: w toku, oczekujące na zapoznanie, w okresie sprzeciwu i sprzeciwy u dyrektora generalnego. Monitoring „W toku” liczy tylko oceny przed przekazaniem do zapoznania.'],
+          ['Oceny negatywne', `${s.results.negativePercent.toLocaleString('pl-PL')}%`, 'Udział ocen negatywnych wśród podpisanych i zaimportowanych.'],
+          ['Po terminie', s.timeliness.openOverdue, 'Oceny niezakończone, których najbliższy termin już minął (jak „Po terminie” w Monitoringu).'],
+          ['Obowiązkowy kolejny stopień', s.promotions.obligatory, 'Urzędnicy z dwiema kolejnymi ocenami na jednym z dwóch najwyższych poziomów (art. 89 ust. 2).'],
+        ].map(([label, value, hint]) => (
+          <div key={label} className="counter" role="listitem" title={String(hint)}>
             <span className="counter__n num">{value}</span>
             <span className="counter__l">{label}</span>
+            <span className="visually-hidden">. {hint}</span>
           </div>
         ))}
       </div>
@@ -94,10 +95,10 @@ export function StatisticsPage() {
         <Bars title="Terminowość" bars={[
           { label: 'Podpisane w terminie', value: s.timeliness.signedOnTime, tone: 'ok' },
           { label: 'Podpisane po terminie', value: s.timeliness.signedLate, tone: 'danger' },
-          { label: 'W toku, w terminie', value: s.timeliness.openOnTrack },
-          { label: 'W toku, po terminie', value: s.timeliness.openOverdue, tone: 'warn' },
+          { label: 'Niezakończone, w terminie', value: s.timeliness.openOnTrack },
+          { label: 'Niezakończone, po terminie', value: s.timeliness.openOverdue, tone: 'warn' },
         ]} />
-        <Bars title="Oceny w toku według etapu" bars={s.stages.map((st) => ({ label: st.name, value: st.count }))} />
+        <Bars title="Oceny niezakończone według etapu" bars={s.stages.map((st) => ({ label: st.name, value: st.count }))} />
         <Bars title="Kolejny stopień służbowy" bars={[
           { label: 'Wnioski oceniających', value: s.promotions.requested },
           { label: 'Obowiązkowy (art. 89 ust. 2)', value: s.promotions.obligatory, tone: 'warn' },
@@ -109,7 +110,7 @@ export function StatisticsPage() {
         <div className="panel table-scroll">
           <table className="table">
             <thead>
-              <tr><th>Komórka</th><th className="num">Pracownicy</th><th className="num">Oceny w toku</th><th className="num">Pozytywne</th><th className="num">Negatywne</th><th className="num">Po terminie</th></tr>
+              <tr><th>Komórka</th><th className="num">Pracownicy</th><th className="num" title="Oceny niezakończone">Niezakończone</th><th className="num">Pozytywne</th><th className="num">Negatywne</th><th className="num">Po terminie</th></tr>
             </thead>
             <tbody>
               {s.units.map((u) => (
