@@ -137,7 +137,13 @@ export interface CaseDetail extends CaseSummary {
   /** "Co dalej?" under the pouczenie: the objection path in plain words, with legal basis. */
   objectionNextSteps?: { text: string; legalBasis: string }[]
   /** To whom the sprzeciw goes (genitive in `to`), when the API provides it. */
-  objectionAddressee?: { to: string; who: string; legalBasis: string }
+  objectionAddressee?: { decider?: 'EVALUATOR' | 'DIRECTOR'; to: string; who: string; legalBasis: string }
+  /** Notatki robocze oceniającego (bez skutków prawnych, nie trafiają do arkusza). */
+  workingNotes?: string
+  /** Etap, od którego część II/III jest edytowalna (schemat pól arkuszy A/B/C). */
+  partIIEditableFrom?: StageId
+  /** „Okres, w którym oceniany podlegał ocenie” (zapisany albo domyślny). */
+  assessmentPeriod?: { from: string | null; to: string | null }
   /** Korekty administratora (tryb korekty błędów): kto, kiedy, stara → nowa wartość, powód. */
   corrections?: Correction[]
   /** Dlaczego część I / części II–III są zablokowane (null = edytowalne). */
@@ -163,6 +169,7 @@ export interface OfficeConfig {
   city: string
   logoUrl: string | null
   objectionRecipient: string | null
+  hasDirectorGeneral?: boolean
 }
 
 export interface Correction {
@@ -188,6 +195,10 @@ export interface CasePatch {
   /** null clears it */
   previousAssessment?: Partial<PreviousAssessment> | null
   promotionRequest?: Partial<PromotionRequest>
+  assessmentTalkOn?: string
+  /** null: back to the default */
+  assessmentPeriod?: { from?: string | null; to?: string | null }
+  workingNotes?: string
 }
 
 export type CaseAction =
@@ -237,7 +248,7 @@ export interface ObjectionView {
   round: number
   filedOn: string
   text: string
-  decision: { outcome: ObjectionOutcome; decidedOn: string; reason: string; decidedBy: ActorRef } | null
+  decision: { outcome: ObjectionOutcome; decidedOn: string; deliveredOn?: string; reason: string; decidedBy: ActorRef } | null
   decisionDeadline: Deadline
   courtAppealDeadline: Deadline | null
 }
@@ -372,7 +383,7 @@ export const recordAckFiction = (id: string, body: { date: string; reason: strin
 export const fileObjection = (id: string, text: string) => apiPost<CaseDetail>(casePath(id, 'objection'), { text })
 export const decideObjection = (
   id: string,
-  body: { outcome: ObjectionOutcome; reason: string; decisions?: Record<string, number>; justification?: string },
+  body: { outcome: ObjectionOutcome; reason: string; decisions?: Record<string, number>; justification?: string; deliveredOn?: string },
 ) => apiPost<CaseDetail>(casePath(id, 'objection/decision'), body)
 export const requestDueDateChange = (id: string, body: { reason: string; proposedDate?: string | null }) =>
   apiPost<CaseDetail>(casePath(id, 'due-date-request'), body)

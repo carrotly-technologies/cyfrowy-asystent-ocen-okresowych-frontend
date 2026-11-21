@@ -3,6 +3,7 @@ import type { PromotionRequest } from '../../api/cases'
 import { ErrorSummary, Field, InfoList, InfoRow, InlineAlert, Select, TextArea, TextInput, type FormError } from '../../components/ui'
 import { usePatchCase } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
+import { partIIOpen } from '../../lib/stages'
 import { useCivilServiceGrades } from '../../lib/model'
 import type { StageProps } from '../CasePage'
 import { PartHeading, PartSection, WizardActions } from './SheetWizardCommon'
@@ -49,8 +50,8 @@ export function SheetPartIII({
   const template = criteria.sheet?.template
   const request = detail.promotionRequest
   const signed = detail.signedByEvaluatorOn
-  // The same window as part II: a draft until the evaluator signs (hacknation-backend/notatki/decyzje.md, 2026-11-21).
-  const editable = !signed
+  // The same window as part II: from the assessment talk stage until the signature (field schema A/B/C).
+  const editable = partIIOpen(detail)
   const attached = request.attached === 'YES'
   const name = `${detail.person.firstName} ${detail.person.lastName}`
 

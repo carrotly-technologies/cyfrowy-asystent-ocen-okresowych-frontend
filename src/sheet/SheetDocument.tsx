@@ -277,7 +277,7 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
           <p>
             {t?.objectionNotice}
             {/* Sheet A leaves the addressee blank („sprzeciw do: …”); a preset comes from OBJECTION_RECIPIENT_A. */}
-            {isA && <> <span className="doc-val">{detail.office?.objectionRecipient ?? '……………………………………………'}</span></>}
+            {isA && <> <span className="doc-val">{detail.office?.objectionRecipient ?? detail.objectionAddressee?.to ?? '……………………………………………'}</span></>}
           </p>
           {t?.objectionNoticeNote && <p className="doc-muted">{t.objectionNoticeNote}</p>}
         </div>

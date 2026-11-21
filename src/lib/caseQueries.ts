@@ -48,6 +48,8 @@ function applyPatch(prev: CaseDetail, patch: CasePatch): CaseDetail {
           ? null
           : { result: null, level: null, date: null, ...prev.previousAssessment, ...patch.previousAssessment },
     promotionRequest: patch.promotionRequest ? { ...prev.promotionRequest, ...patch.promotionRequest } : prev.promotionRequest,
+    assessmentTalkOn: patch.assessmentTalkOn ?? prev.assessmentTalkOn,
+    workingNotes: patch.workingNotes ?? prev.workingNotes,
   }
 }
 

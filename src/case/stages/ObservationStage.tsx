@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { Observation } from '../../api/cases'
-import { useAddObservation, useCaseAction } from '../../lib/caseQueries'
+import { useAddObservation, useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { DEMO_TODAY, fmtDate } from '../../lib/format'
 import { criterionName } from '../../lib/model'
 import { allows, caseUrl } from '../../lib/stages'
@@ -169,6 +169,8 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
             </p>
           )}
 
+          {!detail.signedByEvaluatorOn && <WorkingNotes caseId={detail.id} initial={detail.workingNotes ?? ''} />}
+
           {!done && (
             <div className="side-cta">
               <h3 className="h-sub">Ocena</h3>
@@ -181,6 +183,34 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           )}
         </aside>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Notatki robocze: the evaluator's free text without legal effect (never on the sheet, not visible to the assessed
+ * person). Part II of the sheet itself opens only at the assessment talk stage (field schema of sheets A/B/C).
+ */
+function WorkingNotes({ caseId, initial }: { caseId: string; initial: string }) {
+  const patch = usePatchCase(caseId)
+  const [text, setText] = useState(initial)
+  return (
+    <div className="side-cta">
+      <h3 className="h-sub">Notatki robocze</h3>
+      <p className="small muted">
+        Tylko dla Ciebie, bez skutków prawnych: nie trafiają do arkusza ani do ocenianego. Oceny cząstkowe, uzasadnienie i
+        IPRZ wpiszesz na etapie rozmowy oceniającej.
+      </p>
+      <textarea
+        className="textarea"
+        rows={5}
+        aria-label="Notatki robocze"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => text !== initial && patch.mutate({ workingNotes: text })}
+      />
+      {patch.isSuccess && <p className="small muted" aria-live="polite">Zapisano.</p>}
+      <MutationError error={patch.error} />
     </div>
   )
 }

@@ -142,7 +142,7 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
         <Field
           id={DUE_ID}
           label="Termin sporządzenia oceny"
-          hint={`Wpisz datę (dd.mm.rrrr). Ocenę sporządza się ${afterNegative ? 'po 6 miesiącach (art. 81 ust. 9 ustawy)' : 'co 24 miesiące (art. 81 ust. 1 ustawy)'}. Po zatwierdzeniu części I zmiana tylko w trybie zmiany terminu.`}
+          hint={`Wpisz datę (dd.mm.rrrr). Ocenę sporządza się ${afterNegative ? 'po 6 miesiącach (art. 81 ust. 9 ustawy)' : 'co 24 miesiące od zatrudnienia albo poprzedniej oceny (art. 81 ust. 4 ustawy)'}. Po zatwierdzeniu części I zmiana tylko w trybie zmiany terminu.`}
           error={errorFor(DUE_ID)}
         >
           {(p) => <TextInput {...p} type="date" width={20} placeholder="dd.mm.rrrr" readOnly={!editable} value={due} onChange={(e) => setDue(e.target.value)} />}

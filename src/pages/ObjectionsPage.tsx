@@ -7,11 +7,11 @@ import { AssessmentVersions, CaseHistoryList, ObjectionStatus } from '../case/Le
 import { legalErrorText, OUTCOME_SHORT, useLegalMutation } from '../lib/legalQueries'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { BackLink, Button, ConfirmDialog, Field, InlineAlert, RadioGroup, Select, StatusBadge, TextArea } from '../components/ui'
+import { BackLink, Button, ConfirmDialog, Field, InlineAlert, RadioGroup, Select, StatusBadge, TextArea, TextInput } from '../components/ui'
 import { useCase } from '../lib/caseQueries'
-import { fmtAvg, fmtDate } from '../lib/format'
+import { DEMO_TODAY, fmtAvg, fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, useCriteria, useSheets, type CaseCriteria } from '../lib/model'
-import { CASE_STATUS_LABEL } from '../lib/stages'
+import { CASE_STATUS_LABEL, caseUrl } from '../lib/stages'
 import { useMe } from '../lib/useAuth'
 import { SheetDocument } from '../sheet/SheetDocument'
 
@@ -89,6 +89,7 @@ function ObjectionTable({ id, title, rows, empty }: { id: string; title: string;
 /** One objection: the assessment sheet, the objection and the decision form. */
 export function ObjectionCasePage() {
   const { id = '' } = useParams()
+  const me = useMe()
   const q = useCase(id)
   const model = useCriteria()
   const sheets = useSheets()
@@ -100,7 +101,8 @@ export function ObjectionCasePage() {
   const scale = sheets.data?.find((sh) => sh.id === detail.sheetId)?.scale ?? []
   return (
     <div className="page">
-      <BackLink to="/sprzeciwy" />
+      {/* Sheet A: the evaluator decides (art. 83 ust. 2) and comes back to the case, not to the DG list. */}
+      <BackLink to={me.role === 'SUPERVISOR' ? caseUrl(detail.id) : '/sprzeciwy'} />
       <header className="page-head">
         <div>
           <h1 className="h-page">Sprzeciw: {detail.person.firstName} {detail.person.lastName}</h1>
@@ -111,7 +113,7 @@ export function ObjectionCasePage() {
         <StatusBadge tone="warning">{CASE_STATUS_LABEL[detail.status]}</StatusBadge>
       </header>
       <section className="section legal-panel" aria-label="Sprzeciwy">
-        {detail.objections.map((o) => <ObjectionStatus key={o.id} objection={o} />)}
+        {detail.objections.map((o) => <ObjectionStatus key={o.id} objection={o} who={detail.objectionAddressee?.who} />)}
       </section>
       <div className="objection-layout">
         {detail.sentForAckOn && (
@@ -157,6 +159,8 @@ function DecisionForm({
 }) {
   const [outcome, setOutcome] = useState<ObjectionOutcome | ''>('')
   const [reason, setReason] = useState('')
+  // art. 83 ust. 5: the 14 days to the labour court run from the delivery of the decision.
+  const [deliveredOn, setDeliveredOn] = useState(DEMO_TODAY)
   const [scores, setScores] = useState<Record<string, number>>(detail.decisions)
   const [error, setError] = useState<string>()
   const [confirming, setConfirming] = useState(false)
@@ -205,6 +209,11 @@ function DecisionForm({
             <ChangePreview detail={detail} criteria={criteria.all} scores={scores} />
           </fieldset>
         )}
+        {outcome === 'DISMISS' && (
+          <Field label="Data doręczenia rozstrzygnięcia ocenianemu" hint="Od tej daty biegnie 14 dni na odwołanie do sądu pracy (art. 83 ust. 5 ustawy o służbie cywilnej). Domyślnie dziś.">
+            {(c) => <TextInput {...c} type="date" min={DEMO_TODAY} value={deliveredOn} onChange={(e) => setDeliveredOn(e.target.value || DEMO_TODAY)} />}
+          </Field>
+        )}
         <Field label="Uzasadnienie rozstrzygnięcia" error={error}>
           {(c) => <TextArea {...c} rows={4} value={reason} onChange={(e) => setReason(e.target.value)} />}
         </Field>
@@ -215,7 +224,7 @@ function DecisionForm({
         title="Zatwierdzić rozstrzygnięcie sprzeciwu?"
         confirmLabel="Tak, zatwierdzam"
         onCancel={() => setConfirming(false)}
-        onConfirm={() => m.mutateAsync({ outcome: outcome as ObjectionOutcome, reason: reason.trim(), ...(outcome === 'CHANGE' ? { decisions: changed } : {}) })}
+        onConfirm={() => m.mutateAsync({ outcome: outcome as ObjectionOutcome, reason: reason.trim(), ...(outcome === 'CHANGE' ? { decisions: changed } : {}), ...(outcome === 'DISMISS' ? { deliveredOn } : {}) })}
         errorText={legalErrorText}
       >
         <p>

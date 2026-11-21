@@ -149,7 +149,9 @@ export const listEmployees = (signal?: AbortSignal) => apiGet<EmployeeView[]>('/
 export const getEmployee = (id: string, signal?: AbortSignal) => apiGet<EmployeeDetail>(`/employees/${encodeURIComponent(id)}`, signal)
 export const createEmployee = (body: EmployeeFields) => apiPost<EmployeeView>('/employees', body)
 export const updateEmployee = (id: string, body: Partial<EmployeeFields>) => apiPatch<EmployeeView>(`/employees/${encodeURIComponent(id)}`, body)
-export const deleteEmployee = (id: string) => apiDelete(`/employees/${encodeURIComponent(id)}`)
+/** Archiving / anonymisation; before the retention of akta osobowe ends only ADMIN with a reason. */
+export const deleteEmployee = (id: string, reason?: string) =>
+  apiDelete(`/employees/${encodeURIComponent(id)}${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`)
 export const startCycle = (id: string) =>
   apiPost<{ caseId: string; case: CaseSummary; reason: string }>(`/employees/${encodeURIComponent(id)}/cycles`, undefined)
 export const getEvaluators = (signal?: AbortSignal) => apiGet<Evaluator[]>('/employees/evaluators', signal)
