@@ -1,12 +1,15 @@
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { errorMessage } from '../../api/client'
 import { DeadlineText } from '../../components/Deadline'
-import { InlineAlert } from '../../components/ui'
+import { ConfirmDialog, InlineAlert } from '../../components/ui'
 import { useCaseAction } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { SheetDocument } from '../../sheet/SheetDocument'
 import type { StageProps } from '../CasePage'
 import { BlockedReason, MutationError, StageHeader } from './common'
 import { FormalCheck } from './FormalCheck'
+import { RemindButton } from '../RemindButton'
 import { allows, caseUrl } from '../../lib/stages'
 
 /**
@@ -16,6 +19,14 @@ import { allows, caseUrl } from '../../lib/stages'
 export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
   const info = detail.stages.find((s) => s.id === stage)!
   const act = useCaseAction(detail.id)
+  const [confirmSend, setConfirmSend] = useState(false)
+  const flowRef = useRef<HTMLDivElement>(null)
+  // After signing the check disappears: keep the user at the steps (not the sheet preview) and focus the next action.
+  const afterSign = () =>
+    requestAnimationFrame(() => {
+      flowRef.current?.scrollIntoView({ block: 'nearest' })
+      flowRef.current?.querySelector<HTMLButtonElement>('.doc-flow__actions .btn--primary')?.focus()
+    })
   const signed = !!detail.signedByEvaluatorOn
   const sent = !!detail.sentForAckOn
   const acked = !!detail.acknowledgedOn
@@ -48,7 +59,7 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
     <div className="stage">
       <StageHeader title={info.name} status={status} />
       <div className="stage-pad">
-        <div className="doc-flow">
+        <div className="doc-flow" ref={flowRef}>
           <ol className="steps">
             {steps.map((s, i) => (
               <li key={s.label} className={`steps__item ${s.date ? 'is-done' : ''}`}>
@@ -60,7 +71,7 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
           </ol>
           {!signed && stage === 'SIGNATURE' && (
             <>
-              <FormalCheck detail={detail} label="Podpisz ocenę" />
+              <FormalCheck detail={detail} label="Podpisz ocenę" onDone={afterSign} />
               <p className="small">
                 <Link to={caseUrl(detail.id, 'ASSESSMENT')}>Wróć do oceny, aby poprawić część II lub III</Link>
               </p>
@@ -68,10 +79,36 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
           )}
           <div className="doc-flow__actions">
             {signed && !sent && (
-              <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'SEND_FOR_ACK')} onClick={() => act.mutate('SEND_FOR_ACK')}>
+              <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'SEND_FOR_ACK')} onClick={() => setConfirmSend(true)}>
                 Przekaż ocenianemu do zapoznania
               </button>
             )}
+            <ConfirmDialog
+              open={confirmSend}
+              title="Przekazać ocenę ocenianemu?"
+              confirmLabel="Przekaż do zapoznania"
+              cancelLabel="Wróć"
+              onConfirm={() => act.mutateAsync('SEND_FOR_ACK')}
+              onCancel={() => setConfirmSend(false)}
+              errorText={errorMessage}
+            >
+              <dl className="confirm-summary">
+                <dt>Oceniany</dt>
+                <dd>{detail.person.firstName} {detail.person.lastName}</dd>
+                <dt>Wynik</dt>
+                <dd>
+                  {detail.evaluation ? (detail.evaluation.result === 'POSITIVE' ? 'ocena pozytywna' : 'ocena negatywna') : '—'}
+                  {detail.evaluation?.level && `, ${detail.evaluation.level.label.toLowerCase()}`}
+                </dd>
+                <dt>Podpisana</dt>
+                <dd>{fmtDate(detail.signedByEvaluatorOn)}</dd>
+              </dl>
+              <p>
+                Oceniany dostanie powiadomienie i potwierdzi zapoznanie na swoim koncie. Od dnia zapoznania biegnie termin na
+                sprzeciw. Tej czynności nie można cofnąć.
+              </p>
+            </ConfirmDialog>
+            {sent && !acked && <RemindButton detail={detail} />}
             {sent && !acked && <BlockedReason>Potwierdzenie zapoznania należy do ocenianego; data zapoznania zapisze się przy jego potwierdzeniu.</BlockedReason>}
             <MutationError error={act.error} />
           </div>

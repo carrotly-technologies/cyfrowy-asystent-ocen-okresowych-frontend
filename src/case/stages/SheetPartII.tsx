@@ -109,7 +109,12 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   // NIE DOTYCZY is never chosen by hand: the backend sets it for a pracownik służby cywilnej, and then it is locked.
   const answer = (v: string) => patch.mutate({ promotionRequest: { attached: v as PromotionAttached } })
   const attachedOptions = [
-    { value: 'YES', label: 'TAK', disabled: !editable || !urzednik },
+    {
+      value: 'YES',
+      label: 'TAK',
+      disabled: !editable || !urzednik || negative,
+      hint: negative && urzednik ? 'Niedostępne: wniosek o kolejny stopień można dołączyć tylko do oceny pozytywnej, a obecny wynik jest negatywny.' : undefined,
+    },
     { value: 'NO', label: 'NIE', disabled: !editable || !urzednik },
     { value: 'NOT_APPLICABLE', label: 'NIE DOTYCZY (oceniany jest pracownikiem służby cywilnej)', disabled: true },
   ]

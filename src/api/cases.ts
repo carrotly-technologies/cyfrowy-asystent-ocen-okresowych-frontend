@@ -262,7 +262,8 @@ export interface DueDateRequest {
   filedOn: string
   reason: string
   proposedDate: string | null
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN'
+  /** MOOT: closed without a decision once the assessment was drawn up. */
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'WITHDRAWN' | 'MOOT'
   decidedOn: string | null
   decisionNote: string | null
   newDate: string | null
@@ -378,4 +379,6 @@ export const requestDueDateChange = (id: string, body: { reason: string; propose
 export const withdrawDueDateRequest = (id: string) => apiPost<CaseDetail>(casePath(id, 'due-date-request/withdraw'), {})
 export const decideDueDateRequest = (id: string, body: { approve: boolean; newDate?: string | null; note?: string | null }) =>
   apiPost<CaseDetail>(casePath(id, 'due-date-request/decision'), body)
+/** The evaluator reminds the assessed person to confirm part I or acknowledge the assessment (one notice a day). */
+export const remindEmployee = (id: string) => apiPost<CaseDetail>(casePath(id, 'remind'), undefined)
 export const getObjections = (signal?: AbortSignal) => apiGet<ObjectionListItem[]>('/objections', signal)

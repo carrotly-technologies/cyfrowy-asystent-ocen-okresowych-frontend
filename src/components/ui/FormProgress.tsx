@@ -13,6 +13,8 @@ export type FormProgressStep = {
   state: FormProgressState
   /** Link target; without it the step is plain text. */
   to?: string
+  /** Text of the circle instead of the step number, e.g. "II" for part II of a sheet. */
+  mark?: string
 }
 
 type Props = {
@@ -44,10 +46,10 @@ export function FormProgress({ steps, unit, label }: Props) {
           const content = (
             <>
               <span className={s.mark} aria-hidden="true">
-                {st.state === 'done' ? <Check size={14} strokeWidth={3} /> : n}
+                {st.state === 'done' ? <Check size={14} strokeWidth={3} /> : (st.mark ?? n)}
               </span>
               <span className={s.name}>
-                <span className="visually-hidden">{unit} {n}: </span>
+                {!st.mark && <span className="visually-hidden">{unit} {n}: </span>}
                 {st.label}
                 {st.state === 'done' && <span className="visually-hidden"> (za Tobą)</span>}
               </span>

@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react'
 import type { CaseDetail } from '../api/cases'
 import { EvaluatorDeadlinesPanel } from './DeadlinesPanel'
+import { invitationState } from './invitations'
 import { EvaluatorLegalPanel } from './LegalPaths'
 import s from './CasePage.module.css'
 
@@ -13,7 +14,7 @@ export function CasePanels({ detail, supervisor }: { detail: CaseDetail; supervi
   const decide = actions.includes('DECIDE_DUE_DATE_REQUEST')
   const fiction = actions.includes('RECORD_ACK_FICTION')
   const pendingObjections = detail.objections.filter((o) => !o.decision).length
-  const invitations = detail.talkInvitations?.length ?? 0
+  const invitations = (detail.talkInvitations ?? []).filter((i) => !invitationState(detail, i).stale).length
   const hasLegal = decide || fiction || !!detail.ackFiction || detail.objections.length > 0
   if (!supervisor && !hasLegal) return null
 
@@ -21,7 +22,7 @@ export function CasePanels({ detail, supervisor }: { detail: CaseDetail; supervi
   if (decide) chips.push({ text: 'wniosek ocenianego czeka na decyzję', warn: true })
   if (pendingObjections > 0) chips.push({ text: 'sprzeciw w rozpatrzeniu', warn: true })
   if (fiction) chips.push({ text: 'oczekuje na zapoznanie' })
-  if (supervisor && invitations > 0) chips.push({ text: `zaproszenia: ${invitations}` })
+  if (supervisor && invitations > 0) chips.push({ text: `aktualne zaproszenia: ${invitations}` })
 
   return (
     <details className={s.panelBox} open={decide || undefined}>

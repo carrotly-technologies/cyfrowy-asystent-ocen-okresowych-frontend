@@ -41,7 +41,7 @@ export function liveResult(detail: CaseDetail, criteria: string[], model: Criter
     }
   }
   if (average === null) {
-    return { decided, total, complete, average, band: null, result: null, provisional: true, reason: 'Wynik pojawi się po pierwszej decyzji.', legal: `§11 ust. 1 ${R16}` }
+    return { decided, total, complete, average, band: null, result: null, provisional: true, reason: 'Wynik i średnia pojawią się, gdy wybierzesz ocenę cząstkową przynajmniej jednego kryterium.', legal: `§11 ust. 1 ${R16}` }
   }
   const avg = ev?.average ?? average
   const positive = ev ? ev.result === 'POSITIVE' : avg > 4

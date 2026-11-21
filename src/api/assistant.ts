@@ -22,6 +22,10 @@ export interface AssistantSource {
 
 export interface AssistantAnswer {
   answer: string
+  /** One or two sentences answering directly; shown first, before the excerpts. */
+  summary?: string
+  /** The rest of the answer after the summary (quoted excerpts). */
+  details?: string
   sources: AssistantSource[]
   /** True when the knowledge base had no sufficient information (the assistant must say so). */
   noAnswer: boolean
@@ -37,6 +41,7 @@ export interface AskAssistantRequest {
 
 interface AskResponse {
   answer: string
+  summary?: string
   grounded: boolean
   mode: 'LLM' | 'EXTRACTIVE'
   sources: { n: number; title: string; ref: string; quote: string; url: string | null }[]
@@ -71,8 +76,13 @@ export async function askAssistant(req: AskAssistantRequest): Promise<AssistantA
     ...(req.context.caseId ? { caseId: req.context.caseId } : {}),
     ...(req.context.stageId ? { stageId: req.context.stageId } : {}),
   })
+  // The disclaimer is shown once under the chat, not under every answer.
+  const summary = res.summary?.trim() || undefined
+  const details = summary && res.answer.startsWith(summary) ? res.answer.slice(summary.length).trim() : undefined
   return {
-    answer: res.disclaimer ? `${res.answer}\n\n${res.disclaimer}` : res.answer,
+    answer: res.answer,
+    summary: details !== undefined ? summary : undefined,
+    details: details || undefined,
     sources: res.sources.map((s) => ({
       title: s.ref,
       locator: s.title,

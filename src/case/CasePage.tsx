@@ -127,7 +127,6 @@ export function CasePage() {
             <button
               type="button"
               className="btn"
-              title={pdfError ?? 'PDF arkusza generowany na serwerze'}
               onClick={() =>
                 void apiDownload(`/cases/${encodeURIComponent(detail.id)}/sheet.pdf`, `ocena-${detail.id}.pdf`).then(
                   () => setPdfError(null),

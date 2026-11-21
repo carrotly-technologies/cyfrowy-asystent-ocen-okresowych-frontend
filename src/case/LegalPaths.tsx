@@ -273,11 +273,13 @@ function DueDateRequestStatus({ request: r }: { request: CaseDetail['dueDateRequ
         ? `Wniosek z ${fmtDate(r.filedOn)} uwzględniony: nowy termin ${fmtDate(r.newDate!)}`
         : r.status === 'WITHDRAWN'
           ? `Wniosek z ${fmtDate(r.filedOn)} wycofany${r.decidedOn ? ` ${fmtDate(r.decidedOn)}` : ''}`
-          : `Wniosek z ${fmtDate(r.filedOn)} nieuwzględniony`
+          : r.status === 'MOOT'
+            ? `Wniosek z ${fmtDate(r.filedOn)} bezprzedmiotowy: ocena została już sporządzona`
+            : `Wniosek z ${fmtDate(r.filedOn)} nieuwzględniony`
   return (
     <InlineAlert tone={r.status === 'APPROVED' ? 'success' : 'info'} title={title}>
       <p className="small">Uzasadnienie wniosku: {r.reason}{r.proposedDate ? ` · proponowany termin: ${fmtDate(r.proposedDate)}` : ''}</p>
-      {r.decisionNote && <p className="small">Odpowiedź oceniającego: {r.decisionNote}</p>}
+      {r.decisionNote && r.status !== 'MOOT' && <p className="small">Odpowiedź oceniającego: {r.decisionNote}</p>}
     </InlineAlert>
   )
 }

@@ -13,7 +13,10 @@ import { StageLayout } from './StageLayout'
 import { scrollToCaseWork } from '../scroll'
 
 /** Parts of the sheet filled at the assessment stage (part I is the opening talk). */
-const SHEET_PARTS = [{ name: 'Ocena okresowa' }, { name: 'Wniosek o kolejny stopień służbowy' }] as const
+const SHEET_PARTS = [
+  { mark: 'II', name: 'Część II – ocena okresowa' },
+  { mark: 'III', name: 'Część III – wniosek o kolejny stopień' },
+] as const
 
 function readPart(raw: string | null): number | null {
   const n = Number(raw)
@@ -77,11 +80,11 @@ export function SheetWizard(props: StageProps) {
   return (
     <StageLayout info={info} title={title} status={status(detail)}>
       <FormProgress
-        unit="Część"
+        unit="Krok"
         label="Części arkusza"
         steps={SHEET_PARTS.map((p, i) => {
           const n = i + 2
-          return { key: String(n), label: p.name, state: n < part ? 'done' : n === part ? 'current' : 'todo' }
+          return { key: String(n), mark: p.mark, label: p.name, state: n < part ? 'done' : n === part ? 'current' : 'todo' }
         })}
       />
       <CaseHintsPanel caseId={detail.id} />

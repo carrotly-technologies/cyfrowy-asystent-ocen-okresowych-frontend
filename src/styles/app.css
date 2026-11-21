@@ -816,7 +816,7 @@
 
 .formal__item {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: start;
   gap: 8px;
   padding: 8px var(--s-4);
@@ -846,6 +846,24 @@
 .formal__item.is-err .formal__msg {
   color: var(--danger);
   font-weight: var(--weight-medium);
+}
+
+/* Legal basis under the message, not squeezed beside it. */
+.formal__item .legal {
+  grid-column: 2;
+  white-space: normal;
+}
+
+/* Summary list in confirmation dialogs (sign, hand over). */
+.confirm-summary {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--s-1) var(--s-4);
+  margin-bottom: var(--s-3);
+}
+
+.confirm-summary dt {
+  color: var(--text-secondary);
 }
 
 .formal__foot {
@@ -1432,6 +1450,25 @@
   white-space: pre-wrap;
 }
 
+.msg__summary {
+  font-weight: var(--weight-medium);
+}
+
+.msg__details {
+  margin-top: var(--s-2);
+  font-size: var(--text-sm);
+}
+
+.msg__details summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.msg__details .msg__text {
+  margin-top: var(--s-1);
+  color: var(--text-secondary);
+}
+
 .msg__text--pending {
   color: var(--text-muted);
 }
@@ -1583,9 +1620,16 @@
 .sources__t {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
+  overflow-wrap: break-word;
 }
 
+/* Long descriptions wrap to at most two lines (never cut mid-word on one line). */
 .sources__d {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   color: var(--text-secondary);
   font-size: var(--text-xs);
 }
@@ -1853,8 +1897,6 @@
 .steps__date,
 .mini-table__name,
 .ctx-chip,
-.sources__t,
-.sources__d,
 .log li,
 .log__text,
 .counter__l,
@@ -2272,4 +2314,65 @@
   min-width: 11rem;
   white-space: normal;
   overflow-wrap: break-word;
+}
+
+/* Mój zespół below ~900px (also 150% zoom): each person is a card, the whole card opens the case; nothing scrolls sideways. */
+@media (max-width: 899px) {
+  .panel:has(> .team-table) {
+    overflow: visible;
+  }
+
+  .team-table,
+  .team-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .team-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .team-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--s-2) var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .team-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .team-table tbody td {
+    display: block;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+
+  .team-table td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .team-table td.cell-action {
+    grid-column: 2;
+    grid-row: 2 / span 3;
+    align-self: center;
+  }
+
+  .team-table .person,
+  .team-table td .person:has(.deadline) {
+    max-width: none;
+  }
+}
+
+.remind {
+  margin-top: var(--s-2);
 }

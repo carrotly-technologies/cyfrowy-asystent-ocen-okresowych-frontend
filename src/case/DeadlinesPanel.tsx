@@ -7,6 +7,7 @@ import { changeDueDate, getDeadlineRules, invitationIcsPath, inviteToTalk } from
 import { Button, Dialog, Field, InlineAlert, Select, TextArea, TextInput } from '../components/ui'
 import { legalErrorText, useLegalMutation } from '../lib/legalQueries'
 import { DEMO_TODAY, fmtDate } from '../lib/format'
+import { invitationState } from './invitations'
 
 /**
  * Terms of the case: the evaluator changes the due date (art. 81 ust. 8 ustawy, written notice §8 rozp. 2016) and
@@ -44,20 +45,26 @@ function IcsButton({ caseId, invitation }: { caseId: string; invitation: TalkInv
 export function InvitationList({ detail }: { detail: CaseDetail }) {
   const list = detail.talkInvitations ?? []
   if (list.length === 0) return null
+  const rows = list.map((i) => ({ i, ...invitationState(detail, i) }))
+  const current = rows.filter((r) => !r.stale)
+  const stale = rows.filter((r) => r.stale)
+  const row = ({ i, note }: (typeof rows)[number]) => (
+    <li key={i.id} className={note ? 'muted' : undefined}>
+      <strong>{TALK_LABEL[i.kind]}</strong>: {fmtDate(i.date)}, godz. {i.time}, {i.place}
+      {i.note ? <span className="small muted"> · {i.note}</span> : null}{' '}
+      {note ? <span className="faint">({note})</span> : <IcsButton caseId={detail.id} invitation={i} />}
+    </li>
+  )
   return (
-    <ul className="bullets">
-      {list.map((i) => {
-        const past = i.date < DEMO_TODAY
-        const held = i.kind === 'OPENING' ? !!detail.partI.confirmedByEvaluatorOn : !!detail.assessmentTalkOn
-        return (
-          <li key={i.id}>
-            <strong>{TALK_LABEL[i.kind]}</strong>: {fmtDate(i.date)}, godz. {i.time}, {i.place}
-            {i.note ? <span className="small muted"> · {i.note}</span> : null}{' '}
-            {past ? <span className="faint">({held ? 'odbyła się' : 'termin minął'})</span> : <IcsButton caseId={detail.id} invitation={i} />}
-          </li>
-        )
-      })}
-    </ul>
+    <>
+      {current.length > 0 ? <ul className="bullets">{current.map(row)}</ul> : <p className="small muted">Brak aktualnych zaproszeń.</p>}
+      {stale.length > 0 && (
+        <details className="small">
+          <summary>Wcześniejsze zaproszenia ({stale.length})</summary>
+          <ul className="bullets">{stale.map(row)}</ul>
+        </details>
+      )}
+    </>
   )
 }
 
@@ -85,14 +92,22 @@ function DueDateChangeDialog({ detail, onClose }: { detail: CaseDetail; onClose:
   const [date, setDate] = useState('')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
-  const [error, setError] = useState<string>()
+  const [errors, setErrors] = useState<{ reason?: string; date?: string }>({})
   const m = useLegalMutation(detail.id, (b: { date: string; reason: string; note?: string }) => changeDueDate(detail.id, b))
   const reasons = (rules.data?.reasons ?? []).filter((r) => r.selectable)
   const chosen = reasons.find((r) => r.id === reason)
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!date || !reason) return setError('Wybierz nowy termin i przyczynę zmiany.')
-    setError(undefined)
+    const next = {
+      reason: reason ? undefined : 'Wybierz przyczynę zmiany terminu.',
+      date: !date
+        ? 'Podaj nowy termin sporządzenia oceny (dd.mm.rrrr).'
+        : date <= DEMO_TODAY
+          ? 'Nowy termin musi przypadać po dniu dzisiejszym.'
+          : undefined,
+    }
+    setErrors(next)
+    if (next.reason || next.date) return
     m.mutate({ date, reason, note: note.trim() || undefined }, { onSuccess: onClose })
   }
   return (
@@ -101,7 +116,7 @@ function DueDateChangeDialog({ detail, onClose }: { detail: CaseDetail; onClose:
         Obecny termin sporządzenia oceny: <strong className="num">{fmtDate(detail.partI.assessmentDue)}</strong>. Termin można zmienić tylko z
         jednej z przyczyn ustawowych, a oceniany zostanie pisemnie zawiadomiony (kopia pisma trafi do arkusza).
       </p>
-      <Field label="Przyczyna zmiany (art. 81 ust. 8 ustawy o służbie cywilnej)" error={error && !reason ? error : undefined}>
+      <Field label="Przyczyna zmiany (art. 81 ust. 8 ustawy o służbie cywilnej)" error={errors.reason}>
         {(c) => (
           <Select
             {...c}
@@ -113,7 +128,15 @@ function DueDateChangeDialog({ detail, onClose }: { detail: CaseDetail; onClose:
         )}
       </Field>
       {chosen && <p className="small legal">{chosen.legalBasis}</p>}
-      <Field label="Nowy termin sporządzenia oceny" hint="Dzień wolny od pracy zostanie przesunięty na najbliższy dzień roboczy." error={error && !date ? error : undefined}>
+      <Field
+        label="Nowy termin sporządzenia oceny"
+        hint={
+          /ABSENCE/.test(reason)
+            ? 'Przy dłuższej nieobecności wyznacz termin po przewidywanym powrocie, np. przesuń go o długość nieobecności. Dzień wolny od pracy zostanie przesunięty na najbliższy dzień roboczy.'
+            : 'Dzień wolny od pracy zostanie przesunięty na najbliższy dzień roboczy.'
+        }
+        error={errors.date}
+      >
         {(c) => <TextInput {...c} type="date" min={DEMO_TODAY} value={date} onChange={(e) => setDate(e.target.value)} />}
       </Field>
       <Field label="Uzasadnienie (do zawiadomienia)" optional>
@@ -166,7 +189,7 @@ function InvitationDialog({ detail, onClose }: { detail: CaseDetail; onClose: ()
         {(c) => <TextInput {...c} type="time" value={time} onChange={(e) => setTime(e.target.value)} />}
       </Field>
       <Field label="Miejsce" error={error && !place.trim() ? error : undefined}>
-        {(c) => <TextInput {...c} value={place} placeholder="np. pokój 204 albo spotkanie online" onChange={(e) => setPlace(e.target.value)} />}
+        {(c) => <TextInput {...c} value={place} placeholder="np. pokój 204 lub online" onChange={(e) => setPlace(e.target.value)} />}
       </Field>
       <Field label="Informacja dla ocenianego" optional>
         {(c) => <TextArea {...c} rows={2} value={note} onChange={(e) => setNote(e.target.value)} />}
