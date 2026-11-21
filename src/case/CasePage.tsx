@@ -2,37 +2,34 @@ import { FileText, MessageSquareText, Printer } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
-import type { CompetencyModel } from '../api/kompas'
+import type { CriteriaCatalogue } from '../api/reference'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, StageStepper, StatusBadge } from '../components/ui'
 import { useCase } from '../lib/caseQueries'
 import { useFeatures } from '../lib/features'
-import { caseCriteria, useModel, useSheets, type CaseCriteria } from '../lib/model'
+import { caseCriteria, useCriteria, useSheets, type CaseCriteria } from '../lib/model'
 import { canOpenStage, caseSteps, caseUrl, CASE_STATUS_LABEL, stageFromSlug, stepTarget, STAGE_SHORT, STAGE_SLUG, viewStage } from '../lib/stages'
 import { HOME_BY_ROLE, useMe } from '../lib/useAuth'
 import s from './CasePage.module.css'
-import { AssessmentStage } from './stages/AssessmentStage'
 import { DocumentStage } from './stages/DocumentStage'
-import { FirstConditionsStage } from './stages/FirstConditionsStage'
-import { IntroTalkStage, ReportStage } from './stages/FirstPrepStages'
-import { JustificationStage } from './stages/JustificationStage'
 import { ObservationStage } from './stages/ObservationStage'
-import { OspAnalysisStage } from './stages/OspAnalysisStage'
-import { SheetProposalStage } from './stages/SheetProposalStage'
+import { OpeningTalkStage } from './stages/OpeningTalkStage'
+import { PartIAckStage } from './stages/PartIAckStage'
+import { SheetSelectionStage } from './stages/SheetSelectionStage'
 import { SheetWizard } from './stages/SheetWizard'
 import { StageNotOpen } from './stages/StageNotOpen'
 
 export interface StageProps {
   detail: CaseDetail
-  model: CompetencyModel
+  model: CriteriaCatalogue
   criteria: CaseCriteria
   stage: StageId
 }
 
 function readAssistantPref(): boolean {
   try {
-    const v = localStorage.getItem('kompas.assistant')
+    const v = localStorage.getItem('ocena.assistant')
     if (v !== null) return v === '1'
   } catch {
     // ignore
@@ -51,7 +48,7 @@ export function CasePage() {
   const { id = '', stage: slug } = useParams()
   const me = useMe()
   const q = useCase(id)
-  const model = useModel()
+  const model = useCriteria()
   const sheets = useSheets()
   const features = useFeatures()
   const [assistantPref, setAssistantOpen] = useState(readAssistantPref)
@@ -64,7 +61,7 @@ export function CasePage() {
   const toggleAssistant = () => {
     setAssistantOpen((v) => {
       try {
-        localStorage.setItem('kompas.assistant', v ? '0' : '1')
+        localStorage.setItem('ocena.assistant', v ? '0' : '1')
       } catch {
         // ignore
       }
@@ -74,7 +71,7 @@ export function CasePage() {
 
   if (q.isPending || model.isPending || sheets.isPending) return <div className="page"><LoadingState /></div>
   if (q.isError) return <div className="page"><ErrorState error={q.error} what="teczka oceny" onRetry={() => q.refetch()} /></div>
-  if (model.isError) return <div className="page"><ErrorState error={model.error} what="model kompetencji" /></div>
+  if (model.isError) return <div className="page"><ErrorState error={model.error} what="wykaz kryteriów oceny" /></div>
 
   const detail = q.data
   const stage = stageFromSlug(slug)
@@ -87,7 +84,7 @@ export function CasePage() {
   const criteria = caseCriteria(detail, sheets.data)
   const props: StageProps = { detail, model: model.data, criteria, stage }
   const name = `${detail.person.firstName} ${detail.person.lastName}`
-  const sheetLabel = detail.path === 'FIRST' ? 'Arkusz pierwszej oceny' : detail.sheetId ? `Arkusz ${detail.sheetId}` : 'Arkusz nieustalony'
+  const sheetLabel = detail.sheetId ? `Arkusz ${detail.sheetId}` : 'Arkusz nieustalony'
   const steps = caseSteps(detail)
   const activeStep = steps.find((st) => st.stages.some((x) => x.id === stage))
 
@@ -119,11 +116,11 @@ export function CasePage() {
         </div>
         <p className={s.position}>
           {detail.person.position}
-          <span className={s.cycle}> · {detail.path === 'FIRST' ? 'Pierwsza ocena w służbie cywilnej' : detail.cycleLabel} · {sheetLabel}</span>
+          <span className={s.cycle}> · {detail.cycleLabel} · {sheetLabel}</span>
         </p>
         <div className={s.stepper}>
           <StageStepper
-            label={detail.path === 'FIRST' ? 'Etapy pierwszej oceny' : 'Etapy oceny okresowej'}
+            label="Etapy oceny okresowej"
             activeKey={activeStep?.key}
             steps={steps.map((st) => ({ key: st.key, label: st.label, status: st.status, to: caseUrl(detail.id, stepTarget(st)) }))}
           />
@@ -151,27 +148,18 @@ export function CasePage() {
 
 function StageWorkspace(p: StageProps) {
   switch (p.stage) {
-    case 'OSP_ANALYSIS':
-      return <OspAnalysisStage {...p} />
-    case 'SHEET_PROPOSAL':
-      return <SheetProposalStage {...p} />
+    case 'SHEET_SELECTION':
+      return <SheetSelectionStage {...p} />
     case 'OPENING_TALK':
-      return <SheetWizard {...p} />
+      return <OpeningTalkStage {...p} />
+    case 'PART_I_ACK':
+      return <PartIAckStage {...p} />
     case 'OBSERVATION':
       return <ObservationStage {...p} />
     case 'ASSESSMENT':
-    case 'FIRST_ASSESSMENT':
-      return <AssessmentStage {...p} />
-    case 'JUSTIFICATION':
-      return <JustificationStage {...p} />
-    case 'FIRST_CONDITIONS':
-      return <FirstConditionsStage {...p} />
-    case 'DOCUMENT':
-    case 'FIRST_DOCUMENT':
+      return <SheetWizard {...p} />
+    case 'SIGNATURE':
+    case 'ACKNOWLEDGEMENT':
       return <DocumentStage {...p} />
-    case 'INTRO_TALK':
-      return <IntroTalkStage {...p} />
-    case 'REPORT':
-      return <ReportStage {...p} />
   }
 }

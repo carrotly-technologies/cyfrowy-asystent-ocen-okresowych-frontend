@@ -1,4 +1,4 @@
-import { Compass, LogIn } from 'lucide-react'
+import { ClipboardCheck, LogIn } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { ApiError, errorMessage } from '../api/client'
@@ -73,8 +73,8 @@ export function LoginPage() {
     <main className={s.root} id="main">
       <div className={s.card}>
         <div className={s.brand}>
-          <Compass size={24} strokeWidth={1.75} aria-hidden="true" />
-          <span>Kompas Kompetencji</span>
+          <ClipboardCheck size={24} strokeWidth={1.75} aria-hidden="true" />
+          <span>Cyfrowy Asystent Ocen Okresowych</span>
         </div>
         <h1 className={s.h1}>Zaloguj się</h1>
         <p className={s.lead}>Użyj loginu i hasła swojego konta. Uprawnienia wynikają z roli przypisanej do konta.</p>

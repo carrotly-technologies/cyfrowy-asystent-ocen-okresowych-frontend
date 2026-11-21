@@ -46,7 +46,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T
   const type = res.headers.get('content-type') ?? ''
   if (!type.includes('application/json')) {
-    throw new ApiError('Serwer zwrócił nieoczekiwaną odpowiedź (to nie jest API Kompasu).', res.status)
+    throw new ApiError('Serwer zwrócił nieoczekiwaną odpowiedź (to nie jest API Cyfrowego Asystenta Ocen Okresowych).', res.status)
   }
   return (await res.json()) as T
 }

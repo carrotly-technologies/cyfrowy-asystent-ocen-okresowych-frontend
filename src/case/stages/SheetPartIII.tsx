@@ -34,7 +34,7 @@ const same = (a: Part3, b: Part3) => (Object.keys(a) as (keyof Part3)[]).every((
  * Part III: the request for the next civil-service grade (art. 89 ust. 1 ustawy o służbie cywilnej). It is a form
  * only when part II answers TAK; otherwise the part is not attached, as the template's footnote says.
  */
-/** `nextPending` / `nextError`: what "Dalej" does after saving (SheetWizard moves the case on to step 4). */
+/** `nextPending` / `nextError`: what "Dalej" does after saving (SheetWizard records the assessment talk). */
 export function SheetPartIII({
   detail,
   criteria,
@@ -42,7 +42,8 @@ export function SheetPartIII({
   onNext,
   nextPending = false,
   nextError,
-}: StageProps & { onBack: () => void; onNext: () => void; nextPending?: boolean; nextError?: unknown }) {
+  nextLabel,
+}: StageProps & { onBack: () => void; onNext: () => void; nextPending?: boolean; nextError?: unknown; nextLabel?: string }) {
   const patch = usePatchCase(detail.id)
   const grades = useCivilServiceGrades()
   const template = criteria.sheet?.template
@@ -203,7 +204,7 @@ export function SheetPartIII({
       )}
 
       <StageError error={patch.error ?? nextError} />
-      <WizardActions onBack={back} loading={patch.isPending || nextPending} />
+      <WizardActions onBack={back} loading={patch.isPending || nextPending} nextLabel={nextLabel} />
     </form>
   )
 }

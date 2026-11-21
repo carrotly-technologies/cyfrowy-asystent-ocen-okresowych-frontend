@@ -67,7 +67,7 @@ export function FormalCheck({ detail, action = 'SIGN_ASSESSMENT', label }: { det
  * computed level (examples E5, E7 in the official samples get this wrong).
  */
 function localChecks(detail: CaseDetail): FormalCheckItem[] {
-  if (detail.path !== 'PERIODIC' || detail.formalCheck.some((i) => /LEVEL_TEXT|level_text/.test(i.id))) return []
+  if (detail.formalCheck.some((i) => /LEVEL_TEXT|level_text/.test(i.id))) return []
   const computed = detail.evaluation?.level?.label.toLowerCase()
   const text = detail.justification.toLowerCase()
   if (!computed || !text.trim()) return []

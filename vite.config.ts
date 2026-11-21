@@ -1,11 +1,9 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { devMockApi } from './dev-mock-api.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // devMockApi does nothing unless the dev server is started with MOCK_API=1.
-  plugins: [react(), devMockApi()],
+  plugins: [react()],
   server: {
     port: 5173,
     proxy: {

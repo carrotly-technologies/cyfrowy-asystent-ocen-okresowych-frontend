@@ -26,7 +26,7 @@ emblems or product names**.
 
 **Dark mode** follows the system (`prefers-color-scheme`) by default; in `/ustawienia` the user can force
 "Jasny" or "Ciemny", which puts `data-theme="light" | "dark"` on `<html>` (`src/lib/preferences.ts`, stored in
-`localStorage` as `kompas.prefs`; an inline script in `index.html` applies it before the first paint). The
+`localStorage` as `ocena.prefs`; an inline script in `index.html` applies it before the first paint). The
 primitives (`--gray-*`, `--blue-*`) and status colours are redefined, so anything built on tokens follows.
 `.theme-light` / `.theme-dark` force a theme on a subtree (used by `/ui`). Text contrast is ≥ 4.5:1 in both modes.
 

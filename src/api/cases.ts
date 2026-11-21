@@ -1,22 +1,17 @@
 import { apiGet, apiPatch, apiPost } from './client'
-import type { EvaluateResponse, SheetId } from './kompas'
+import type { EvaluateResponse, SheetId } from './reference'
 
-// Types follow notatki/api-kontrakt-v2.md.
+// Types follow the backend README (cyfrowy-asystent-ocen-okresowych-backend).
 
-export type Path = 'PERIODIC' | 'FIRST'
+/** The seven stages of a periodic assessment, in order (backend `STAGES`). */
 export type StageId =
-  | 'OSP_ANALYSIS'
-  | 'SHEET_PROPOSAL'
+  | 'SHEET_SELECTION'
   | 'OPENING_TALK'
+  | 'PART_I_ACK'
   | 'OBSERVATION'
   | 'ASSESSMENT'
-  | 'JUSTIFICATION'
-  | 'DOCUMENT'
-  | 'INTRO_TALK'
-  | 'REPORT'
-  | 'FIRST_ASSESSMENT'
-  | 'FIRST_CONDITIONS'
-  | 'FIRST_DOCUMENT'
+  | 'SIGNATURE'
+  | 'ACKNOWLEDGEMENT'
 export type StageStatus = 'DONE' | 'CURRENT' | 'UPCOMING' | 'LOCKED'
 export type DeadlineState = 'OK' | 'SOON' | 'OVERDUE' | 'NONE'
 export type CaseStatus = 'W_TOKU' | 'DO_ZAPOZNANIA' | 'OKRES_SPRZECIWU' | 'ZAKONCZONA'
@@ -30,6 +25,10 @@ export interface Person {
   unit: string
   employment: 'URZEDNIK' | 'PRACOWNIK'
   hiredOn: string
+  /** Kierownik urzędu (sheet A). */
+  officeHead: boolean
+  /** Directly manages employees (sheet B). */
+  managesPeople: boolean
 }
 
 export interface Deadline {
@@ -52,7 +51,6 @@ export interface StageInfo {
 export interface CaseSummary {
   id: string
   person: Person
-  path: Path
   sheetId: SheetId | null
   cycleLabel: string
   currentStage: StageId
@@ -65,22 +63,18 @@ export interface Observation {
   id: string
   date: string
   criterionId: string
-  indicatorId: string | null
   kind: 'STRENGTH' | 'DEVELOPMENT'
   situation: string
   action: string
   result: string
 }
 
-export interface OspDoc {
-  id: string
-  title: string
-  purpose: string
-  subordinates: string
-  mainTasks: string[]
-  softCompetencies: string[]
-  otherRequirements: string[]
-  source: string
+/** Rule-based proposal of the sheet (§3 ust. 2–4); the evaluator confirms or changes it. */
+export interface SheetSuggestion {
+  sheetId: SheetId
+  reason: string
+  legalBasis: string
+  isSuggestionOnly: true
 }
 
 export interface PartI {
@@ -90,14 +84,6 @@ export interface PartI {
   expectations: Record<string, string>
   confirmedByEvaluatorOn: string | null
   acknowledgedByEmployeeOn: string | null
-}
-
-export type ExamPassed = 'YES' | 'NO' | 'NOT_APPLICABLE'
-
-export interface FirstConditions {
-  examPassed: ExamPassed | null
-  reportSubmittedOn: string | null
-  reportDue: string | null
 }
 
 /** "Dane dotyczące poprzedniej oceny okresowej urzędnika służby cywilnej"; `level` as the sheet writes it. */
@@ -130,35 +116,30 @@ export interface FormalCheckItem {
 export interface CaseDetail extends CaseSummary {
   evaluator: { firstName: string; lastName: string; position: string; unit: string }
   officeName: string
-  osp: OspDoc | null
-  ospAnalysis: {
-    suggestedSheet: { sheetId: SheetId; reason: string; legalBasis: string } | null
-    additionalCandidates: { criterionId: string; reason: string; ospQuote: string }[]
-  } | null
+  sheetSuggestion: SheetSuggestion
   partI: PartI
   observations: Observation[]
-  ratings: Record<string, Record<string, Points | null>>
   decisions: Record<string, number>
   deviationNotes: Record<string, string>
   justification: string
   iprz: string
   previousAssessment: PreviousAssessment | null
   promotionRequest: PromotionRequest
-  firstConditions: FirstConditions | null
   evaluation: EvaluateResponse | null
   formalCheck: FormalCheckItem[]
+  assessmentTalkOn: string | null
   signedByEvaluatorOn: string | null
+  sentForAckOn: string | null
   acknowledgedOn: string | null
   objectionDeadline: Deadline | null
   history: { date: string; text: string }[]
-  /** Legal actions right now (backend extension of the v2 contract). */
-  availableActions?: CaseAction[]
+  /** Actions the signed-in user may do right now (the assessed person sees only their confirmations). */
+  availableActions: CaseAction[]
 }
 
 export interface CasePatch {
   sheetId?: SheetId
   partI?: Partial<PartI>
-  ratings?: CaseDetail['ratings']
   decisions?: Record<string, number | null>
   deviationNotes?: Record<string, string | null>
   justification?: string
@@ -166,22 +147,19 @@ export interface CasePatch {
   /** null clears it */
   previousAssessment?: Partial<PreviousAssessment> | null
   promotionRequest?: Partial<PromotionRequest>
-  firstConditions?: Partial<FirstConditions>
 }
 
 export type CaseAction =
-  | 'ACCEPT_OSP_ANALYSIS'
   | 'ACCEPT_SHEET'
   | 'CONFIRM_PART_I'
   | 'EMPLOYEE_ACK_PART_I'
   | 'START_ASSESSMENT'
+  | 'COMPLETE_ASSESSMENT_TALK'
   | 'SIGN_ASSESSMENT'
   | 'SEND_FOR_ACK'
   | 'EMPLOYEE_ACK_ASSESSMENT'
-  | 'REPORT_SUBMITTED'
-  | 'COMPLETE_INTRO_TALK'
 
-export type Role = 'SUPERVISOR' | 'HR' | 'ADMIN'
+export type Role = 'SUPERVISOR' | 'EMPLOYEE' | 'HR' | 'ADMIN'
 
 /** GET /api/me: the signed-in user. */
 export interface Me {
@@ -234,7 +212,7 @@ export const addObservation = (id: string, body: Omit<Observation, 'id'>) =>
   apiPost<CaseDetail>(`/cases/${encodeURIComponent(id)}/observations`, body)
 export const runCaseAction = (id: string, action: CaseAction) =>
   apiPost<CaseDetail>(`/cases/${encodeURIComponent(id)}/actions`, { action })
-export const getOspList = (signal?: AbortSignal) => apiGet<OspDoc[]>('/osp', signal)
+export const getCases = (signal?: AbortSignal) => apiGet<CaseSummary[]>('/cases', signal)
 export const getHrOverview = (signal?: AbortSignal) => apiGet<HrOverview>('/hr/overview', signal)
 export const sendReminders = (caseIds: string[]) =>
   apiPost<ReminderResponse>('/hr/reminders', { caseIds })

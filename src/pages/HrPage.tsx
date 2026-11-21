@@ -58,7 +58,7 @@ export function HrPage() {
   const rows = q.data.cases
     .filter((c) => matches(c, counter))
     .filter((c) => !dept || deptOf(c.person.unit) === dept)
-    .filter((c) => !path || c.path === path)
+    .filter((c) => !path || c.sheetId === path)
     .filter((c) => !search || `${c.person.firstName} ${c.person.lastName} ${c.evaluatorName}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (a.nextDeadline?.date ?? '9999').localeCompare(b.nextDeadline?.date ?? '9999'))
   const soonIds = q.data.cases.filter((c) => c.nextDeadline && (c.nextDeadline.state === 'SOON' || c.nextDeadline.state === 'OVERDUE')).map((c) => c.id)
@@ -96,10 +96,11 @@ export function HrPage() {
           <option value="">Wszystkie komórki</option>
           {depts.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select className="select" style={{ width: 180 }} value={path} onChange={(e) => setPath(e.target.value)} aria-label="Rodzaj oceny">
-          <option value="">Każdy rodzaj oceny</option>
-          <option value="PERIODIC">Ocena okresowa</option>
-          <option value="FIRST">Pierwsza ocena</option>
+        <select className="select" style={{ width: 180 }} value={path} onChange={(e) => setPath(e.target.value)} aria-label="Arkusz oceny">
+          <option value="">Każdy arkusz</option>
+          <option value="A">Arkusz A</option>
+          <option value="B">Arkusz B</option>
+          <option value="C">Arkusz C</option>
         </select>
         <span className="faint small">{countLabel(rows.length, 'proces', 'procesy', 'procesów')}</span>
         {(counter !== 'all' || dept || path || search) && (
@@ -139,7 +140,7 @@ export function HrPage() {
                   </td>
                   <td className="cell-unit" title={c.person.unit}>{deptOf(c.person.unit)}</td>
                   <td title={c.evaluatorName}>{c.evaluatorName}</td>
-                  <td>{c.path === 'FIRST' ? 'Pierwsza' : `Okresowa · ${c.sheetId ?? '—'}`}</td>
+                  <td>{`Okresowa · ${c.sheetId ?? '—'}`}</td>
                   <td>
                     <div className="stage-cell">
                       <StageDots stages={c.stages} />

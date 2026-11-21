@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import type { CaseDetail } from '../api/cases'
-import { getCivilServiceGrades, getCompetencyModel, getSheets, type Competency, type CompetencyModel, type Sheet } from '../api/kompas'
-import { sentenceCase } from './format'
+import { getCivilServiceGrades, getCriteria, getSheets, type CriteriaCatalogue, type Criterion, type Sheet } from '../api/reference'
 
-export function useModel() {
+export function useCriteria() {
   return useQuery({
-    queryKey: ['competency-model'],
-    queryFn: ({ signal }) => getCompetencyModel(signal),
+    queryKey: ['criteria'],
+    queryFn: ({ signal }) => getCriteria(signal),
     staleTime: Infinity,
   })
 }
@@ -27,13 +26,12 @@ export function useCivilServiceGrades() {
   })
 }
 
-export function competencyName(model: CompetencyModel | undefined, id: string): string {
-  const c = model?.competencies.find((x) => x.id === id)
-  return c ? sentenceCase(c.name) : id
+export function criterionName(catalogue: CriteriaCatalogue | undefined, id: string): string {
+  return catalogue?.criteria.find((x) => x.id === id)?.name ?? id
 }
 
-export function findCompetency(model: CompetencyModel | undefined, id: string): Competency | undefined {
-  return model?.competencies.find((x) => x.id === id)
+export function findCriterion(catalogue: CriteriaCatalogue | undefined, id: string): Criterion | undefined {
+  return catalogue?.criteria.find((x) => x.id === id)
 }
 
 export interface CaseCriteria {
@@ -45,16 +43,15 @@ export interface CaseCriteria {
 }
 
 /** Criteria assessed in this case: mandatory for the sheet + additional from part I. */
-export function caseCriteria(detail: CaseDetail, sheets: Sheet[] | undefined): CaseCriteria {
-  const sheetId = detail.path === 'FIRST' ? 'FIRST' : detail.sheetId
-  const sheet = sheets?.find((s) => s.id === sheetId)
+export function caseCriteria(detail: Pick<CaseDetail, 'sheetId' | 'partI'>, sheets: Sheet[] | undefined): CaseCriteria {
+  const sheet = sheets?.find((s) => s.id === detail.sheetId)
   const mandatory = sheet?.mandatoryCriteria ?? []
-  const additional = detail.path === 'FIRST' ? [] : detail.partI.additionalCriteria
+  const additional = detail.partI.additionalCriteria
   return {
     sheet,
     mandatory,
     additional,
     all: [...mandatory, ...additional],
-    scale: sheet?.scale ?? (detail.path === 'FIRST' ? [3, 5, 7] : [1, 3, 5, 7, 9]),
+    scale: sheet?.scale ?? [],
   }
 }

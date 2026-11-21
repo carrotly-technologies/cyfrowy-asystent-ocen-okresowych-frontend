@@ -5,16 +5,12 @@ import { caseUrl, stageTitle } from '../../lib/stages'
 import { StageHeader } from './common'
 
 const WHAT: Partial<Record<StageId, string>> = {
-  SHEET_PROPOSAL: 'Przejrzysz formularz zaproponowany na podstawie opisu stanowiska i zaakceptujesz go albo wprowadzisz zmiany (arkusz, kryteria dodatkowe).',
-  OPENING_TALK: 'Omówisz z ocenianym obowiązki z opisu stanowiska, kryteria, oczekiwania i ewentualne cele. Zatwierdzenie części I blokuje kryteria i ustala termin oceny.',
-  OBSERVATION: 'Przez cały okres oceny zapisujesz obserwacje: sytuacja, działanie, rezultat. Pojawią się one w rubryce przy właściwych wskaźnikach.',
-  ASSESSMENT: 'W formularzu oceny kompetencji ocenisz wskaźniki behawioralne każdego kryterium. System zaproponuje poziom, a decyzję o ocenie cząstkowej podejmiesz Ty.',
-  JUSTIFICATION: 'Wpiszesz uzasadnienie (obowiązkowe przy ocenie negatywnej) i wnioski do IPRZ, a system sprawdzi kompletność formalną.',
-  DOCUMENT: 'Arkusz wypełni się automatycznie. Przekażesz go do zapoznania; od dnia zapoznania biegnie 7 dni na sprzeciw.',
-  REPORT: 'Pracownik składa sprawozdanie z wykonywanych zadań w wyznaczonym terminie.',
-  FIRST_ASSESSMENT: 'Ocenisz 5 elementów w skali 3/5/7 pkt na podstawie wskaźników z modelu kompetencji.',
-  FIRST_CONDITIONS: 'Uzupełnisz wynik egzaminu ze służby przygotowawczej i informację o sprawozdaniu.',
-  FIRST_DOCUMENT: 'Arkusz pierwszej oceny wypełni się automatycznie i przekażesz go do zapoznania.',
+  OPENING_TALK: 'Omówisz z ocenianym obowiązki z opisu stanowiska, kryteria, oczekiwania i ewentualne cele, a potem potwierdzisz rozmowę (część I).',
+  PART_I_ACK: 'Oceniany potwierdza na swoim koncie zapoznanie z kryteriami i terminem oceny. Od tej daty biegnie okres oceny.',
+  OBSERVATION: 'Przez cały okres oceny zapisujesz obserwacje: sytuacja, działanie, rezultat.',
+  ASSESSMENT: 'Przeprowadzisz rozmowę oceniającą, wybierzesz oceny cząstkowe (1/3/5/7/9) i wpiszesz uzasadnienie oraz wnioski do IPRZ.',
+  SIGNATURE: 'System sprawdzi kompletność formalną; podpiszesz ocenę i przekażesz ją ocenianemu.',
+  ACKNOWLEDGEMENT: 'Oceniany zapoznaje się z oceną na swoim koncie; od tego dnia biegnie 7 dni na sprzeciw.',
 }
 
 export function StageNotOpen({ detail, stage }: { detail: CaseDetail; stage: StageId }) {

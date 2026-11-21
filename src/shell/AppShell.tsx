@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
-  Compass,
+  ClipboardCheck,
   LogOut,
   type LucideIcon,
   Menu,
@@ -69,8 +69,8 @@ export function AppShell() {
       </a>
       <header className="topbar">
         <div className="topbar__brand">
-          <Compass className="topbar__logo" size={22} strokeWidth={1.75} aria-hidden="true" />
-          <span className="topbar__product">Kompas kompetencji</span>
+          <ClipboardCheck className="topbar__logo" size={22} strokeWidth={1.75} aria-hidden="true" />
+          <span className="topbar__product">Cyfrowy Asystent Ocen Okresowych</span>
         </div>
 
         <button
@@ -163,12 +163,12 @@ type NavItem = { to: string; label: string; Icon: LucideIcon; match: string[] }
 
 /**
  * Main links for a role; `match` lists the paths that highlight the link (a case file belongs to "Mój zespół").
- * The helper pages (`/wiecej`, `/uslugi`, `/wniosek-demo`, `/ui`) keep their routes but are not linked here;
  * `/ustawienia` is the gear icon next to the user menu (on phones: an item in the "Menu" dropdown).
  */
 function navItems(role: Role): NavItem[] {
   const byRole: Partial<Record<Role, NavItem>> = {
     SUPERVISOR: { to: '/zespol', label: 'Mój zespół', Icon: Users, match: ['/zespol', '/teczka'] },
+    EMPLOYEE: { to: '/moje-oceny', label: 'Moje oceny', Icon: ClipboardCheck, match: ['/moje-oceny'] },
     HR: { to: '/hr', label: 'Monitoring', Icon: TableProperties, match: ['/hr'] },
     ADMIN: { to: '/admin/uzytkownicy', label: 'Użytkownicy', Icon: UserCog, match: ['/admin'] },
   }
@@ -183,6 +183,6 @@ function navItems(role: Role): NavItem[] {
 const isUnder = (path: string, base: string) => path === base || path.startsWith(`${base}/`)
 
 function officeLabel(name: string | undefined) {
-  const n = name ?? 'Ministerstwo Cyfryzacji'
+  const n = name ?? 'Urząd'
   return /demonstr/i.test(n) ? n.replace(/\s*\((dane demonstracyjne)\)/i, ' — $1') : `${n} — dane demonstracyjne`
 }

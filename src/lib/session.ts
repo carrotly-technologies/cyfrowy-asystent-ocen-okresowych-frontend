@@ -1,5 +1,5 @@
 // Bearer token of the signed-in user. sessionStorage: it ends with the tab, never shared across tabs.
-const KEY = 'kompas.token'
+const KEY = 'ocena.token'
 
 let memoryToken: string | null = null
 

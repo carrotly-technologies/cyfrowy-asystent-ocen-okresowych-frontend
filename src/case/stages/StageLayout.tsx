@@ -5,7 +5,7 @@ import { InlineAlert } from '../../components/ui'
 import { stageTitle } from '../../lib/stages'
 import s from './StageLayout.module.css'
 
-/** Frame of the stages redrawn after the "Kompas kompetencji" design: title, status, content, actions. */
+/** Frame of a stage: title, status, content, actions. */
 export function StageLayout({
   info,
   title,
