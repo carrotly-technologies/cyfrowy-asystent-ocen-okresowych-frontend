@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
 import { apiDownload, errorMessage } from '../api/client'
 import type { CriteriaCatalogue } from '../api/reference'
+import { EvaluatorDeadlinesPanel } from './DeadlinesPanel'
 import { EvaluatorLegalPanel } from './LegalPaths'
 import { AssistantPanel } from '../assistant/AssistantPanel'
 import { ErrorState, LoadingState } from '../components/QueryState'
@@ -141,6 +142,7 @@ export function CasePage() {
           />
         </div>
         <EvaluatorLegalPanel detail={detail} />
+        {me.role === 'SUPERVISOR' && <EvaluatorDeadlinesPanel detail={detail} />}
       </header>
 
       {pdfError && <p className="sheet-bar__error" role="alert">{pdfError}</p>}

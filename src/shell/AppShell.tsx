@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
 import { resetDemo, type Role } from '../api/cases'
 import { ApiStatus } from '../components/ApiStatus'
+import { NotificationBell } from '../notifications/NotificationBell'
 import { UserMenu } from '../components/ui'
 import { ROLE_LABEL, useAuth, useMe } from '../lib/useAuth'
 
@@ -140,6 +141,7 @@ export function AppShell() {
         </div>
 
         <div className="topbar__right">
+          <NotificationBell role={me.role} />
           <Link
             to="/ustawienia"
             className={`topbar__icon-btn ${settingsActive ? 'is-active' : ''}`}
