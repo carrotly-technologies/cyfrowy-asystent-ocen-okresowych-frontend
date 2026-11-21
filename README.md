@@ -106,3 +106,15 @@ docker build --build-arg VITE_API_URL=http://localhost:3000 -t cyfrowy-asystent-
 # add --build-arg VITE_DEMO_ACCOUNTS=false to build without the demo accounts
 docker run --rm -p 8080:80 cyfrowy-asystent-frontend   # http://localhost:8080
 ```
+
+## Wdrożenie w urzędzie
+
+Cały system (PostgreSQL + backend + ten frontend, opcjonalnie lokalny model językowy) uruchamia jedno polecenie
+`docker compose up -d --build` z repozytorium backendu; instrukcja (wymagania, 3 kroki instalacji, konfiguracja urzędu,
+aktualizacja, kopie zapasowe, RODO, architektura) jest w README backendu, sekcja „Wdrożenie w urzędzie”.
+Compose buduje ten obraz z katalogu obok repozytorium backendu; adres API (`PUBLIC_API_URL`) trafia do budowy jako
+`VITE_API_URL`.
+
+## Licencja
+
+EUPL-1.2 (European Union Public Licence), plik [`LICENSE`](LICENSE).
