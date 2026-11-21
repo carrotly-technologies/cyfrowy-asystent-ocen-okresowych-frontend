@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router'
 import { getPersonCard } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, InlineAlert } from '../components/ui'
-import { fmtDate } from '../lib/format'
+import { fmtDate, fmtNumber } from '../lib/format'
 import { caseUrl } from '../lib/stages'
 import { AskPartner } from './AskPartner'
 import { PrivacyNote, SignalCard, Sparkline, TrendBadge } from './common'
@@ -74,7 +74,7 @@ export function PersonWellbeingPage() {
                       {c.questions.map((qq) => (
                         <td key={qq.id} className="num">{p.answers[qq.id]}</td>
                       ))}
-                      <td className="num"><strong>{p.index}</strong></td>
+                      <td className="num"><strong>{fmtNumber(p.index)}</strong></td>
                     </tr>
                   ))}
                 </tbody>

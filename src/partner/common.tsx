@@ -1,7 +1,7 @@
 import type { ReasonSource, Signal, SignalKind, SignalLevel, TrendKind } from '../api/partner'
 import { LEVEL_LABEL, LEVEL_TONE, SIGNAL_SHORT, TREND_LABEL, TREND_TONE } from './labels'
 import { StatusBadge } from '../components/ui'
-import { fmtDate } from '../lib/format'
+import { fmtDate, fmtNumber } from '../lib/format'
 import s from './Partner.module.css'
 
 const SOURCE_LABEL: Record<ReasonSource, string> = {
@@ -68,7 +68,7 @@ export function Sparkline({
   const x = (i: number) => (points.length === 1 ? width / 2 : pad + (i * (width - 2 * pad)) / (points.length - 1))
   const y = (v: number) => pad + ((5 - v) * (height - 2 * pad)) / 4
   const d = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.index).toFixed(1)}`).join(' ')
-  const desc = points.map((p) => `${fmtDate(p.date)}: ${p.index}`).join(', ')
+  const desc = points.map((p) => `${fmtDate(p.date)}: ${fmtNumber(p.index)}`).join(', ')
   return (
     <svg className={s.chart} viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: width }} role="img" aria-label={`${label}: ${desc}`}>
       <line className={s.chartGrid} x1={0} x2={width} y1={y(3)} y2={y(3)} />

@@ -3,6 +3,7 @@ import { useId, useState, type FormEvent } from 'react'
 import type { EmployeeFields } from '../../api/employees'
 import { getEvaluators } from '../../api/employees'
 import { getCivilServiceGrades } from '../../api/reference'
+import { DateInput } from '../../components/ui'
 
 type Props = {
   initial: EmployeeFields
@@ -54,7 +55,7 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
         </div>
         <div className="field">
           <label className="field__label" htmlFor={`${id}-since`}>Zatrudnienie na czas nieokreślony / mianowanie od</label>
-          <input id={`${id}-since`} type="date" className="input" value={f.indefiniteSince ?? ''} onChange={(e) => set('indefiniteSince', e.target.value || null)} />
+          <DateInput id={`${id}-since`} width="full" value={f.indefiniteSince ?? ''} onChange={(e) => set('indefiniteSince', e.target.value || null)} />
           <span className="field__hint">Od tej daty liczy się termin pierwszej oceny.</span>
         </div>
       </div>
@@ -84,7 +85,7 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
           </div>
           <div className="field">
             <label className="field__label" htmlFor={`${id}-gdate`}>Data przyznania stopnia</label>
-            <input id={`${id}-gdate`} type="date" className="input" value={f.gradeGrantedOn ?? ''} onChange={(e) => set('gradeGrantedOn', e.target.value || null)} />
+            <DateInput id={`${id}-gdate`} width="full" value={f.gradeGrantedOn ?? ''} onChange={(e) => set('gradeGrantedOn', e.target.value || null)} />
           </div>
         </div>
       )}

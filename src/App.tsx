@@ -18,10 +18,13 @@ import { PersonWellbeingPage } from './partner/PersonWellbeingPage'
 import { TeamWellbeingPage } from './partner/TeamWellbeingPage'
 import { SheetPage } from './sheet/SheetPage'
 import { AppShell } from './shell/AppShell'
+import { RouteTitle } from './shell/RouteTitle'
 import { HomeRedirect, RequireAuth, RequireRole } from './shell/RequireAuth'
 
 export default function App() {
   return (
+    <>
+    <RouteTitle />
     <Routes>
       <Route path="/logowanie" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
@@ -66,5 +69,6 @@ export default function App() {
         </Route>
       </Route>
     </Routes>
+    </>
   )
 }

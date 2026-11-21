@@ -8,6 +8,7 @@ import { criterionName } from '../../lib/model'
 import { allows, caseUrl } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { MutationError, StageHeader } from './common'
+import { DateInput } from '../../components/ui'
 
 const empty = (crit: string): Omit<Observation, 'id'> => ({
   date: DEMO_TODAY,
@@ -65,7 +66,7 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
               <div className="obs-form__row">
                 <label className="field">
                   <span className="field__label">Data</span>
-                  <input type="date" className="input" value={form.date} max={DEMO_TODAY} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+                  <DateInput width="full" value={form.date} max={DEMO_TODAY} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
                 </label>
                 <label className="field" style={{ flex: 1 }}>
                   <span className="field__label">Kryterium</span>

@@ -15,7 +15,7 @@ import {
 } from '../../api/employees'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
-import { Dialog } from '../../components/ui'
+import { DateInput, Dialog, FileInput } from '../../components/ui'
 import { MutationError } from '../../case/stages/common'
 import { countLabel, fmtDate } from '../../lib/format'
 import { useMe } from '../../lib/useAuth'
@@ -219,7 +219,6 @@ export function KartotekaPage() {
 function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient()
   const [csv, setCsv] = useState('')
-  const [fileName, setFileName] = useState('')
   const run = useMutation({
     mutationFn: importHistory,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
@@ -227,13 +226,11 @@ function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void })
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setFileName(file.name)
     setCsv(await file.text())
     run.reset()
   }
   const close = () => {
     setCsv('')
-    setFileName('')
     run.reset()
     onClose()
   }
@@ -262,8 +259,7 @@ function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void })
       </p>
       <div className="field">
         <label className="field__label" htmlFor="csv-file">Plik CSV</label>
-        <input id="csv-file" type="file" accept=".csv,text/csv" onChange={(e) => void onFile(e)} />
-        {fileName && <span className="field__hint">{fileName}</span>}
+        <FileInput id="csv-file" accept=".csv,text/csv" onChange={(e) => void onFile(e)} />
       </div>
       {run.isSuccess && (
         <p className="notice notice--ok" role="status">
@@ -345,11 +341,11 @@ function Substitutions({ canEdit }: { canEdit: boolean }) {
           </div>
           <div className="field">
             <label className="field__label" htmlFor="sub-from">Od</label>
-            <input id="sub-from" type="date" className="input" required value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+            <DateInput id="sub-from" width="full" required value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
           </div>
           <div className="field">
             <label className="field__label" htmlFor="sub-to">Do</label>
-            <input id="sub-to" type="date" className="input" required value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+            <DateInput id="sub-to" width="full" required value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
           </div>
           <div className="field">
             <label className="field__label" htmlFor="sub-note">Uwagi <span className="field__optional">(opcjonalnie)</span></label>

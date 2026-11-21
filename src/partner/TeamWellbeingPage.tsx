@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { getPartnerTeam, type PartnerTeam, type SignalKind } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { InlineAlert } from '../components/ui'
-import { fmtDate } from '../lib/format'
+import { fmtDate, fmtNumber } from '../lib/format'
 import { PrivacyNote, SignalBadge, Sparkline, TrendBadge } from './common'
 import { SIGNAL_SHORT } from './labels'
 import s from './Partner.module.css'
@@ -125,7 +125,7 @@ function TeamChart({ team }: { team: PartnerTeam }) {
             <g key={p.from}>
               <rect className={p.index == null ? s.barHidden : s.bar} x={x} width={bw - 16} y={y(value)} height={y(1) - y(value)} rx={3} />
               <text className={s.chartLabel} x={x} y={h - 14}>{fmtDate(p.to).slice(0, 5)}</text>
-              <text className={s.chartLabel} x={x} y={h - 2}>{p.index == null ? 'ukryte' : `${p.index} (${p.respondents} os.)`}</text>
+              <text className={s.chartLabel} x={x} y={h - 2}>{p.index == null ? 'ukryte' : `${fmtNumber(p.index)} (${p.respondents} os.)`}</text>
             </g>
           )
         })}
@@ -133,7 +133,7 @@ function TeamChart({ team }: { team: PartnerTeam }) {
       <ul className="visually-hidden">
         {periods.map((p) => (
           <li key={p.from}>
-            {fmtDate(p.from)}–{fmtDate(p.to)}: {p.index == null ? p.hiddenReason : `indeks ${p.index}, odpowiedzi: ${p.respondents}`}
+            {fmtDate(p.from)}–{fmtDate(p.to)}: {p.index == null ? p.hiddenReason : `indeks ${fmtNumber(p.index)}, odpowiedzi: ${p.respondents}`}
           </li>
         ))}
       </ul>

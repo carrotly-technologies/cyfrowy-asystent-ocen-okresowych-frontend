@@ -14,6 +14,7 @@ cp .env.example .env   # optional
 | -------------------- | ------- | ------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL`       | empty   | Backend base URL. Empty = same origin, via the dev proxy `/api` -> `:3000`                        |
 | `VITE_DEMO_ACCOUNTS` | empty   | `false` hides the demo accounts (one-click sign-in) on `/logowanie`; anything else shows them     |
+| `VITE_DEMO_TOOLS`    | empty   | `false` hides "Reset" and the API status in the top bar; never shown to the EMPLOYEE role               |
 
 Both are read at build time (`npm run build`, Docker build args).
 

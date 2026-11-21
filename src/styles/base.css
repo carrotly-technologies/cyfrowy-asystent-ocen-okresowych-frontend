@@ -94,6 +94,9 @@ a:hover {
 
 .visually-hidden {
   position: absolute !important;
+  /* pinned to the start: at its static position (e.g. in the last column of a wide table) it would widen the page */
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
@@ -313,11 +316,37 @@ a:hover {
   color: var(--text-secondary);
 }
 
-.checkbox {
-  width: 16px;
-  height: 16px;
-  margin: 0;
+/* Bare native checkbox/radio. Only the input is sized: a <label class="checkbox"> (or .check-label) wraps an input and
+   its text and keeps its natural width. */
+input.checkbox,
+label.checkbox > input[type='checkbox'],
+label.checkbox > input[type='radio'],
+.check-label > input[type='checkbox'],
+.check-label > input[type='radio'] {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.15em 0 0;
   accent-color: var(--accent);
+}
+
+label.checkbox,
+.check-label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  width: auto;
+  min-height: 2.75rem;
+  padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  line-height: var(--leading);
+  white-space: normal;
+  cursor: pointer;
+}
+
+label.checkbox > input:focus-visible,
+.check-label > input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* ---------- Tags ---------- */
@@ -382,7 +411,10 @@ a:hover {
 }
 
 /* Wide data tables scroll sideways inside their card on narrow screens instead of wrapping. */
-.panel:has(> .table) {
+.panel:has(> .table),
+.table-scroll {
+  position: relative;
+  max-width: 100%;
   overflow-x: auto;
 }
 

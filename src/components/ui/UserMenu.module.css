@@ -145,8 +145,18 @@
   box-shadow: var(--focus-shadow);
 }
 
-@media (max-width: 767px) {
+/* Below 1440px only the avatar (initials) stays; name and role are in the tooltip, the open menu and for screen readers */
+@media (max-width: 1439px) {
   .who {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .button {
+    gap: var(--s-1);
   }
 }
