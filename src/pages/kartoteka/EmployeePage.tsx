@@ -143,7 +143,7 @@ export function EmployeePage() {
             <dl className="dl">
               <dt>Etap</dt><dd>{e.currentCase.stageName}</dd>
               <dt>Status</dt><dd>{CASE_STATUS_LABEL[e.currentCase.status]}</dd>
-              {e.currentCase.nextDeadline && (<><dt>Termin</dt><dd><DeadlineText deadline={e.currentCase.nextDeadline} /><span className="legal legal--wrap">{e.currentCase.nextDeadline.legalBasis}</span></dd></>)}
+              {e.currentCase.nextDeadline && (<><dt>Termin</dt><dd><DeadlineText deadline={e.currentCase.nextDeadline} /><span className="small faint block">{e.currentCase.nextDeadline.legalBasis}</span></dd></>)}
               {e.currentCase.sheetId && (<><dt>Arkusz</dt><dd><Link to={`/teczka/${e.currentCase.id}/arkusz`}>Podgląd arkusza {e.currentCase.sheetId}</Link></dd></>)}
             </dl>
           ) : (

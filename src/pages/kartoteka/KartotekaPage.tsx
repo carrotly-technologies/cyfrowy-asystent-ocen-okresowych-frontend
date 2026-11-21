@@ -109,7 +109,7 @@ export function KartotekaPage() {
         )}
       </header>
 
-      <div className="filters">
+      <div className="filters filters--register">
         <input type="search" className="input filters__search" placeholder="Szukaj: nazwisko, stanowisko, komórka" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Szukaj pracownika" />
         <select className="select" value={unit} onChange={(e) => setUnit(e.target.value)} aria-label="Komórka organizacyjna">
           <option value="">Wszystkie komórki</option>

@@ -23,6 +23,23 @@
   width: min(100%, 18rem);
 }
 
+.filters--register {
+  flex-wrap: wrap;
+  row-gap: var(--s-2);
+}
+
+.filters--register .select {
+  width: auto;
+  max-width: min(100%, 18rem);
+}
+
+.filters--register .checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  white-space: nowrap;
+}
+
 .emp-tag {
   display: block;
   width: fit-content;

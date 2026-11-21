@@ -58,7 +58,7 @@ export function StatisticsPage() {
           <h1 className="h-page">Statystyki ocen okresowych</h1>
           <p className="page-head__meta">{s.unit ?? 'Cały urząd'} · stan na {fmtDate(s.generatedOn)}</p>
         </div>
-        <div className="btn-row">
+        <div className="btn-row filters--register">
           <select className="select" value={unit} onChange={(e) => setUnit(e.target.value)} aria-label="Komórka organizacyjna">
             <option value="">Cały urząd</option>
             {units.map((u) => <option key={u} value={u}>{u.split(',')[0]}</option>)}
