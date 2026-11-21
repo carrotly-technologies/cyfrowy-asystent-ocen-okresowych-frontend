@@ -126,7 +126,7 @@
 
 .bars__track {
   height: 0.75rem;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--bg-muted);
   overflow: hidden;
 }

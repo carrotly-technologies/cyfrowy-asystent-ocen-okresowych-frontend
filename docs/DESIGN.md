@@ -9,6 +9,27 @@ emblems or product names**.
 - Live catalogue: **`/ui`** (every component in every variant and state, light and dark side by side).
 - Form pattern: **`/wniosek-demo`** (step by step, check answers, confirmation).
 
+## gov.pl / civil-service look (22.11)
+
+Source and measurements: `review/design-mobywatel.md` (workspace). WDS (gov.pl / mObywatel) typography, spacing,
+focus and 48px controls; civil-service partner colours and "angular" shapes. No emblem, no official marks or names;
+the footer says the tool is not a gov.pl / KPRM / mObywatel service.
+
+- Colours: text `#0B1F35`, primary `#0052A5` (hover navy `#052D64`), SC blue `--sc-blue` `#35659A` (list titles,
+  table-head line, section rules), `--sc-navy` service bar, `--sc-band` footer link bar; page white, `--bg-subtle`
+  `#EFF3F7` for navigation, filters and table heads. Dark and high contrast redefine the `--sc-*` set.
+- Shapes: 4px for controls, cards, badges, dialogs (`--radius-pill` also resolves to 4px); 0 for bars, menus, tables.
+  Cards are flat (`--shadow-card: none`); shadows only on menus and dialogs. Important card: `<Card important>`.
+- Type: Open Sans 400/700, body 16/24, page title 28/36; dense tables 14px; UPPERCASE only for the service bar,
+  list labels, table heads and badges. Focus: `0 0 0 2px #fff, 0 0 0 4px #0B1F35`.
+- Shell (`src/shell/AppShell.tsx`): header 64px with our wordmark · navy service bar (role, office) · side navigation
+  ≥ 1024px (active = full accent fill) · "Menu" drawer below · bottom tab bar on phones for EMPLOYEE and SUPERVISOR ·
+  breadcrumbs (`src/shell/Breadcrumbs.tsx`) from 768px, `BackLink` only below · footer link bar + note.
+- Lists: `ResultList` / `ResultRow` ("job-offer list": status block, SC-blue title, `LABEL: value` pairs, whole row
+  is the link) on /zespol, /moje-oceny, /kartoteka (with the "SORTUJ:" bar) and /sprzeciwy.
+
+The table below predates this section; where they differ, this section and `tokens.css` win.
+
 ## Tokens
 
 | group | tokens | notes |
