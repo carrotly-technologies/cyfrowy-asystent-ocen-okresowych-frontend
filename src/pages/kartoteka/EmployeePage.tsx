@@ -53,6 +53,9 @@ export function EmployeePage() {
   const me = useMe()
   // ADMIN is a technical role: read only here, case data errors go through „Tryb korekty”.
   const canEdit = me.role === 'HR'
+  // Archiving: HR after the retention period; ADMIN also earlier, with a reason (art. 94 pkt 9b KP).
+  const canArchive = canEdit || me.role === 'ADMIN'
+  const [archiveReason, setArchiveReason] = useState('')
   const qc = useQueryClient()
   const navigate = useNavigate()
   const q = useQuery({ queryKey: ['employee', id], queryFn: ({ signal }) => getEmployee(id, signal) })
@@ -80,7 +83,7 @@ export function EmployeePage() {
   })
   const cycle = useMutation({ mutationFn: () => startCycle(id), onSuccess: refresh })
   const remove = useMutation({
-    mutationFn: () => deleteEmployee(id),
+    mutationFn: () => deleteEmployee(id, archiveReason.trim() || undefined),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['employees'] })
       navigate('/kartoteka')
@@ -106,11 +109,11 @@ export function EmployeePage() {
           <h1 className="h-page">{e.firstName} {e.lastName}</h1>
           <p className="page-head__meta">{e.position} · {e.unit}</p>
         </div>
-        {canEdit && !editing && (
+        {canArchive && !editing && (
           <div className="btn-row">
-            <button type="button" className="btn" onClick={() => setEditing(true)}>Edytuj dane</button>
+            {canEdit && <button type="button" className="btn" onClick={() => setEditing(true)}>Edytuj dane</button>}
             <button type="button" className="btn btn--ghost" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={15} aria-hidden="true" /> Usuń dane pracownika
+              <Trash2 size={15} aria-hidden="true" /> Archiwizuj i anonimizuj dane
             </button>
           </div>
         )}
@@ -245,22 +248,29 @@ export function EmployeePage() {
         </ConfirmDialog>
       )}
 
-      {canEdit && (
+      {canArchive && (
         <Dialog
           open={confirmDelete}
           onClose={() => setConfirmDelete(false)}
-          title="Usunąć dane pracownika?"
+          title="Zarchiwizować i zanonimizować dane pracownika?"
           actions={
             <>
               <button type="button" className="btn" onClick={() => setConfirmDelete(false)}>Anuluj</button>
-              <button type="button" className="btn btn--primary" disabled={remove.isPending} onClick={() => remove.mutate()}>Usuń trwale</button>
+              <button type="button" className="btn btn--primary" disabled={remove.isPending} onClick={() => remove.mutate()}>Archiwizuj i anonimizuj</button>
             </>
           }
         >
           <p>
-            Usunięte zostaną dane z kartoteki, nieobecności i oceny z importu. Zakończone oceny w systemie zostaną zanonimizowane
-            (zostają w statystykach bez danych osobowych). Nie można usunąć osoby, której ocena jest w toku.
+            Oceny okresowe są częścią akt osobowych, które przechowuje się przez 10 lat (art. 94 pkt 9b Kodeksu pracy). Po
+            upływie tego okresu dane z kartoteki, nieobecności i oceny z importu zostaną usunięte, a zakończone oceny w
+            systemie zanonimizowane (zostają w statystykach bez danych osobowych). Nie można tego zrobić, gdy ocena jest w toku.
           </p>
+          {me.role === 'ADMIN' && (
+            <label className="field">
+              <span className="field__label">Powód archiwizacji przed upływem okresu przechowywania (tylko administrator)</span>
+              <textarea className="textarea" rows={2} value={archiveReason} onChange={(ev) => setArchiveReason(ev.target.value)} />
+            </label>
+          )}
           <MutationError error={remove.error} />
         </Dialog>
       )}

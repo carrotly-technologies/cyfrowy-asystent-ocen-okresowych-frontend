@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import type { PreviousAssessment, PromotionAttached } from '../../api/cases'
 import {
   Checkbox,
+  DateInput,
   ErrorSummary,
   Field,
   InfoList,
@@ -16,7 +17,8 @@ import {
   type RadioMatrixGroup,
 } from '../../components/ui'
 import { usePatchCase } from '../../lib/caseQueries'
-import { fmtAvg, fmtDate, plPoints } from '../../lib/format'
+import { DEMO_TODAY, fmtAvg, fmtDate, plPoints } from '../../lib/format'
+import { partIIOpen } from '../../lib/stages'
 import { criterionName } from '../../lib/model'
 import { officePlace } from '../../lib/office'
 import { liveResult } from '../../lib/result'
@@ -47,15 +49,14 @@ const RESULT_OPTIONS = [
 const samePrevious = (a: PreviousAssessment, b: PreviousAssessment) => a.result === b.result && a.level === b.level && a.date === b.date
 
 /**
- * Part II: the assessment itself. Filled as a draft from the start (Poradnik, etap II: „wypełniony na roboczo
- * arkusz oceny” before the assessment talk), corrected after the talk and locked by the evaluator's signature.
- * The backend decides (`partIIEditable` in patch.rules.ts); decision log: hacknation-backend/notatki/decyzje.md.
+ * Part II: the assessment itself. Editable from the assessment talk stage until the evaluator signs (field schema of
+ * sheets A/B/C: „dostępne do edycji od etapu rozmowy oceniającej”); earlier the evaluator keeps observations and
+ * notatki robocze. The backend decides (`partIIEditable` in patch.rules.ts).
  */
 export function SheetPartII({ detail, model, criteria, onBack, onNext }: StageProps & { onBack?: () => void; onNext: () => void }) {
   const patch = usePatchCase(detail.id)
   const signed = detail.signedByEvaluatorOn
-  // A draft until the evaluator signs (hacknation-backend/notatki/decyzje.md, 2026-11-21).
-  const editable = !signed
+  const editable = partIIOpen(detail)
   const [justification, setJustification] = useState(detail.justification)
   const [iprz, setIprz] = useState(detail.iprz)
   const [previous, setPrevious] = useState<PreviousAssessment>(detail.previousAssessment ?? EMPTY_PREVIOUS)
@@ -67,9 +68,10 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
 
   const r = liveResult(detail, criteria.all, model)
   const negative = r.result === 'NEGATIVE'
-  const conversationDate = detail.assessmentTalkOn
-  const periodFrom = detail.partI.acknowledgedByEmployeeOn
-  const periodTo = signed ?? detail.partI.assessmentDue
+  // Defaults per the field schema: talk today; period from the criteria day to today (or the due date if passed).
+  const conversationDate = detail.assessmentTalkOn ?? DEMO_TODAY
+  const periodFrom = detail.assessmentPeriod?.from ?? detail.partI.confirmedByEvaluatorOn
+  const periodTo = detail.assessmentPeriod?.to ?? signed ?? DEMO_TODAY
   // Points come from the sheet and their labels from the competency model (both from the API), as in the template.
   const columns = criteria.scale.map((p) => ({ value: String(p), label: model.scale.find((x) => x.points === p)?.label ?? '', sublabel: plPoints(p) }))
   const row = (c: string) => ({ id: c, label: criterionName(model, c), error: errorFor(decisionId(c)) })
@@ -147,18 +149,43 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
         </InlineAlert>
       )}
 
-      <PartSection title="Rozmowa i okres oceny" hint="Uzupełniane automatycznie.">
-        <InfoList>
-          <InfoRow label="Data przeprowadzenia rozmowy oceniającej" value={conversationDate ? fmtDate(conversationDate) : 'Po rozmowie oceniającej'} />
-          <InfoRow
-            label="Okres, w którym oceniany podlegał ocenie"
-            value={
-              periodFrom
-                ? `od ${fmtDate(periodFrom)} do ${periodTo ? fmtDate(periodTo) : '—'}${!signed && periodTo ? ' (termin oceny)' : ''}`
-                : 'Od dnia, w którym oceniany zapozna się z częścią I'
-            }
-          />
-        </InfoList>
+      <PartSection
+        title="Rozmowa i okres oceny"
+        hint={editable ? 'Wpisane domyślnie: rozmowa dziś, okres od ustalenia kryteriów do dziś (albo do terminu oceny, jeśli minął). Popraw, jeśli trzeba; zapisuje się od razu.' : undefined}
+      >
+        {editable ? (
+          <div className={s.fields}>
+            <Field id="talk-date" label="Data przeprowadzenia rozmowy oceniającej">
+              {(p) => (
+                <DateInput
+                  {...p}
+                  value={conversationDate}
+                  min={detail.partI.acknowledgedByEmployeeOn ?? undefined}
+                  max={DEMO_TODAY}
+                  onChange={(e) => e.target.value && patch.mutate({ assessmentTalkOn: e.target.value })}
+                />
+              )}
+            </Field>
+            <Field id="period-from" label="Okres oceny: od">
+              {(p) => (
+                <DateInput {...p} value={periodFrom ?? ''} max={periodTo ?? DEMO_TODAY} onChange={(e) => patch.mutate({ assessmentPeriod: { from: e.target.value || null } })} />
+              )}
+            </Field>
+            <Field id="period-to" label="Okres oceny: do">
+              {(p) => (
+                <DateInput {...p} value={periodTo ?? ''} min={periodFrom ?? undefined} max={DEMO_TODAY} onChange={(e) => patch.mutate({ assessmentPeriod: { to: e.target.value || null } })} />
+              )}
+            </Field>
+          </div>
+        ) : (
+          <InfoList>
+            <InfoRow label="Data przeprowadzenia rozmowy oceniającej" value={detail.assessmentTalkOn ? fmtDate(detail.assessmentTalkOn) : 'Po rozmowie oceniającej'} />
+            <InfoRow
+              label="Okres, w którym oceniany podlegał ocenie"
+              value={periodFrom ? `od ${fmtDate(periodFrom)} do ${periodTo ? fmtDate(periodTo) : '—'}` : 'Od dnia ustalenia kryteriów (część I)'}
+            />
+          </InfoList>
+        )}
       </PartSection>
 
       <PartSection title="Oceny cząstkowe" hint="Ocenę cząstkową każdego kryterium wybierasz Ty. Wybór zapisuje się od razu.">
@@ -201,7 +228,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
       <Field
         id={IPRZ_ID}
         label="Wnioski dotyczące indywidualnego programu rozwoju zawodowego"
-        hint="Obszar, forma rozwoju, termin lub sposób monitorowania, oczekiwany efekt (art. 108 ustawy o służbie cywilnej)."
+        hint="Obszar, forma rozwoju, termin lub sposób monitorowania, oczekiwany efekt. Ocena zawiera wnioski dotyczące IPRZ (art. 81 ust. 5 ustawy o służbie cywilnej; §11 ust. 1 pkt 5 rozp. PRM z 4.04.2016)."
         error={errorFor(IPRZ_ID)}
       >
         {(p) => <TextArea {...p} rows={5} readOnly={!editable} value={iprz} onChange={(e) => setIprz(e.target.value)} />}

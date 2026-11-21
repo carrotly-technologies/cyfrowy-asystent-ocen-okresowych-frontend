@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import {
   decideDueDateRequest,
   fileObjection,
@@ -45,6 +46,7 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
   const showForm = can(detail, 'FILE_OBJECTION')
   if (!showForm && detail.objections.length === 0 && !detail.acknowledgedOn) return null
   const termPassed = !!detail.objectionDeadline && (detail.objectionDeadline.daysLeft ?? 0) < 0
+  const to = detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu'
   return (
     <section className="section" aria-labelledby="objection-h">
       <h2 id="objection-h" className="h-section">Sprzeciw od oceny</h2>
@@ -55,17 +57,18 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
       )}
       {(showForm || (detail.objections.length > 0 && !detail.objections.every((o) => o.decision))) && <ObjectionNextSteps detail={detail} />}
       {detail.objections.map((o) => (
-        <ObjectionStatus key={o.id} objection={o} />
+        <ObjectionStatus key={o.id} objection={o} who={detail.objectionAddressee?.who} />
       ))}
       {showForm && (
         <form className="panel legal-form" onSubmit={submit} noValidate>
           <p>
             Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} showLegal />
           </p>
-          <Field label="Treść sprzeciwu" hint="Wskaż kryteria lub ustalenia, z którymi się nie zgadzasz, i uzasadnij to. Sprzeciw trafi do dyrektora generalnego urzędu." error={error}>
+          <Field label="Treść sprzeciwu" hint={`Wskaż kryteria lub ustalenia, z którymi się nie zgadzasz, i uzasadnij to. Sprzeciw trafi do ${to}.`} error={error}>
             {(c) => <TextArea {...c} rows={5} value={text} onChange={(e) => setText(e.target.value)} />}
           </Field>
-          <Button type="submit" loading={m.isPending}>Wnieś sprzeciw do dyrektora generalnego</Button>
+          <Button type="submit" loading={m.isPending}>Wnieś sprzeciw</Button>
+          {detail.objectionAddressee && <p className="small muted">Adresat sprzeciwu: {to} <span className="legal">{detail.objectionAddressee.legalBasis}</span></p>}
         </form>
       )}
       <ConfirmDialog
@@ -77,7 +80,7 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
         errorText={legalErrorText}
       >
         <ul className="bullets">
-          <li>Sprzeciw trafi do {detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu'}. Oceniający zostanie o nim powiadomiony.</li>
+          <li>Sprzeciw trafi do {to}.{detail.objectionAddressee?.decider === 'EVALUATOR' ? '' : ' Oceniający zostanie o nim powiadomiony.'}</li>
           <li>Po wysłaniu nie można go wycofać ani zmienić jego treści.</li>
           {detail.objectionNextSteps?.[1] && <li>{detail.objectionNextSteps[1].text}</li>}
           <li>O rozstrzygnięciu dowiesz się w aplikacji.</li>
@@ -115,7 +118,7 @@ function ObjectionNextSteps({ detail }: { detail: CaseDetail }) {
   )
 }
 
-export function ObjectionStatus({ objection: o }: { objection: ObjectionView }) {
+export function ObjectionStatus({ objection: o, who = 'Dyrektor generalny urzędu' }: { objection: ObjectionView; who?: string }) {
   const d = o.decision
   return (
     <InlineAlert
@@ -127,7 +130,7 @@ export function ObjectionStatus({ objection: o }: { objection: ObjectionView }) 
       </p>
       {!d && (
         <p className="small">
-          Dyrektor generalny rozpatruje sprzeciw do: <DeadlineText deadline={o.decisionDeadline} showLegal />
+          {who} rozpatruje sprzeciw do: <DeadlineText deadline={o.decisionDeadline} showLegal />
         </p>
       )}
       {d && (
@@ -135,6 +138,7 @@ export function ObjectionStatus({ objection: o }: { objection: ObjectionView }) 
           <strong>Uzasadnienie ({d.decidedBy.name}):</strong> {d.reason}
         </p>
       )}
+      {d?.deliveredOn && d.deliveredOn !== d.decidedOn && <p className="small">Rozstrzygnięcie doręczono {fmtDate(d.deliveredOn)}.</p>}
       {d?.outcome === 'CHANGE' && <p className="small">Zmienioną ocenę oceniający podpisuje i ponownie przekazuje do zapoznania.</p>}
       {d?.outcome === 'REDO' && <p className="small">Dotychczasowa ocena została anulowana; oceniający sporządza ją ponownie (etap „Rozmowa oceniająca i ocena”). Od nowej oceny przysługuje sprzeciw.</p>}
       {o.courtAppealDeadline && (
@@ -369,11 +373,21 @@ export function EvaluatorLegalPanel({ detail }: { detail: CaseDetail }) {
   const [fiction, setFiction] = useState(false)
   const showFiction = can(detail, 'RECORD_ACK_FICTION')
   const decide = can(detail, 'DECIDE_DUE_DATE_REQUEST')
+  // Sheet A: the objection goes to the person who made the assessment (art. 83 ust. 2), i.e. this evaluator.
+  const decideObjection = can(detail, 'DECIDE_OBJECTION')
   if (!showFiction && !decide && !detail.ackFiction && detail.objections.length === 0) return null
   return (
     <div className="legal-panel">
       {decide && <DueDateDecisionForm detail={detail} />}
-      {detail.objections.map((o) => <ObjectionStatus key={o.id} objection={o} />)}
+      {detail.objections.map((o) => <ObjectionStatus key={o.id} objection={o} who={detail.objectionAddressee?.who} />)}
+      {decideObjection && (
+        <InlineAlert tone="warning" title="Sprzeciw czeka na Twoje rozstrzygnięcie">
+          <p className="small">
+            Od oceny na arkuszu A sprzeciw wnosi się do osoby, która dokonała oceny. <span className="legal">{detail.objectionAddressee?.legalBasis}</span>
+          </p>
+          <Link className="btn btn--sm" to={`/sprzeciwy/${encodeURIComponent(detail.id)}`}>Rozpatrz sprzeciw</Link>
+        </InlineAlert>
+      )}
       <AckFictionInfo detail={detail} />
       {showFiction && (
         <InlineAlert tone="info" title="Oceniany nie potwierdza zapoznania z oceną?">

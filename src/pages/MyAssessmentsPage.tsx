@@ -223,7 +223,7 @@ const ACK_TEXT: Partial<Record<CaseAction, { title: string; text: string; button
   },
   EMPLOYEE_ACK_ASSESSMENT: {
     title: 'Zapoznaj się z oceną',
-    text: 'Przeczytaj arkusz poniżej. Potwierdzenie oznacza, że zapoznałeś(-aś) się z oceną; od tego dnia biegnie 7 dni na sprzeciw do dyrektora generalnego urzędu (art. 83 ust. 1 ustawy o służbie cywilnej).',
+    text: 'Przeczytaj arkusz poniżej. Potwierdzenie oznacza, że zapoznałeś(-aś) się z oceną; od tego dnia biegnie 7 dni na sprzeciw do {to} (art. 83 ustawy o służbie cywilnej).',
     button: 'Zapoznałem(-am) się z oceną',
   },
 }
@@ -235,7 +235,7 @@ function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: R
     const t = ACK_TEXT[action]!
     return (
       <InlineAlert tone="warning" title={`Wymaga Twojego działania: ${t.title.toLowerCase()}`}>
-        <p>{t.text}</p>
+        <p>{t.text.replace('{to}', detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu')}</p>
         {action === 'EMPLOYEE_ACK_PART_I' && criteria && (
           <>
             <p>

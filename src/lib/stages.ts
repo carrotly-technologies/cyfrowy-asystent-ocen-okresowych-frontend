@@ -60,6 +60,18 @@ export function allows(detail: CaseDetail, action: CaseAction): boolean {
   return detail.availableActions.includes(action)
 }
 
+/**
+ * Part II/III of the sheet are editable from the assessment talk stage until the signature (field schema of
+ * sheets A/B/C; the stage comes from the API as `partIIEditableFrom`, the backend enforces it).
+ */
+export function partIIOpen(detail: CaseDetail): boolean {
+  if (detail.signedByEvaluatorOn) return false
+  const order = detail.stages.map((s) => s.id)
+  const from = order.indexOf(detail.partIIEditableFrom ?? 'ASSESSMENT')
+  const now = order.indexOf(detail.currentStage)
+  return now >= from && detail.currentStage !== 'ACKNOWLEDGEMENT'
+}
+
 export type StepStatus = 'done' | 'current' | 'todo'
 
 /** One step of the horizontal stage stepper (one backend stage). */

@@ -120,7 +120,7 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
         id="assessment-due"
         label="Termin sporządzenia oceny"
         optional
-        hint="Zostaw puste, aby system wpisał termin z przepisów: 24 miesiące, a po ocenie negatywnej 6 miesięcy od zapoznania z nią."
+        hint="Zostaw puste, aby system wpisał termin z przepisów: 24 miesiące od zatrudnienia na czas nieokreślony albo od poprzedniej oceny (art. 81 ust. 4 ustawy), a po ocenie negatywnej 6 miesięcy od zapoznania z nią."
       >
         {(p) => <TextInput {...p} type="date" width={20} value={due} onChange={(e) => setDue(e.target.value)} />}
       </Field>
