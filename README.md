@@ -58,6 +58,36 @@ npm run build     # type-check + production build to dist/
 npm run preview   # serve the production build
 ```
 
+## End-to-end tests (Playwright)
+
+`npm run test:e2e` runs the whole periodic assessment in a real browser (Chromium), against a local backend with its
+demo seed (specs in `e2e/`):
+
+1. the supervisor picks the sheet and additional criteria, confirms part I, the assessed person confirms it, the
+   supervisor scores part II, signs and hands the assessment over, the assessed person acknowledges it
+   (case c-004, accounts `j.kaminska` and `j.mazur`);
+2. a negative assessment cannot be signed without a justification (case c-007).
+
+```bash
+# once: the browser for Playwright
+npx playwright install chromium
+
+# terminal 1, backend repo: in-memory storage (no DATABASE_URL), demo seed
+npm run start:dev                 # http://localhost:3000
+
+# terminal 2, this repo
+npm run test:e2e                  # starts Vite on :5174 by itself; npm run test:e2e:ui for the interactive runner
+npx playwright show-report        # HTML report, with a trace of every failed test
+```
+
+Every test restores the demo seed first (`POST /api/demo/reset`), so it changes the data of the backend it runs
+against: never point it at a shared or production backend. The tests run one at a time.
+
+| Variable      | Default                 | Description                                                         |
+| ------------- | ----------------------- | ------------------------------------------------------------------- |
+| `E2E_API_URL` | `http://localhost:3000` | Backend the tests run against (the Vite proxy target and the reset) |
+| `E2E_PORT`    | `5174`                  | Port of the Vite dev server Playwright starts for the tests         |
+
 ## Deploy
 
 `main` is auto-deployed to Coolify from this repo's `Dockerfile` (Vite build, then nginx serving `dist/` with an

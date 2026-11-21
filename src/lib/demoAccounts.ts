@@ -26,6 +26,7 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = DEMO_ACCOUNTS_ENABLED
       { login: 'j.kaminska', name: 'Joanna Kamińska', role: 'SUPERVISOR', description: 'Zespół z 8 ocenami w toku (arkusze B i C)' },
       { login: 'a.nowak', name: 'Anna Nowak', role: 'EMPLOYEE', description: 'Oceniana: 2 oceny (poprzednia i bieżąca)' },
       { login: 'p.wojcik', name: 'Piotr Wójcik', role: 'EMPLOYEE', description: 'Oceniany: czeka na potwierdzenie części I' },
+      { login: 'j.mazur', name: 'Julia Mazur', role: 'EMPLOYEE', description: 'Oceniana: ocena od wyboru arkusza' },
       { login: 'r.sikora', name: 'Robert Sikora', role: 'SUPERVISOR', description: 'Zespół z 2 teczkami ocen' },
       { login: 'a.pawlak', name: 'Agnieszka Pawlak', role: 'SUPERVISOR', description: 'Zespół z 2 teczkami ocen' },
       { login: 'a.lis', name: 'Agnieszka Lis', role: 'HR', description: 'Monitoring ocen w całym urzędzie' },
