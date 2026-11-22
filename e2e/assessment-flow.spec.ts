@@ -97,6 +97,7 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   await employee.reload()
   await expect(employee.getByText('Wymaga Twojego działania: zapoznaj się z oceną', { exact: true })).toBeVisible()
   await employee.getByRole('button', { name: 'Zapoznałem(-am) się z oceną' }).click()
+  await confirmDialog(employee, 'Potwierdzić zapoznanie z oceną?', 'Potwierdzam zapoznanie')
   await expect(employee.getByText(/Zapoznałeś\(-aś\) się z oceną/)).toBeVisible()
 
   await page.reload()

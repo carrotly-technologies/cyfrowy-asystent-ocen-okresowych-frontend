@@ -140,6 +140,10 @@ export interface CaseDetail extends CaseSummary {
   objectionNextSteps?: { text: string; legalBasis: string }[]
   /** To whom the sprzeciw goes (genitive in `to`), when the API provides it. */
   objectionAddressee?: { decider?: 'EVALUATOR' | 'DIRECTOR'; to: string; who: string; legalBasis: string }
+  /** Whether a sprzeciw lies from the current assessment (false after a change of the assessment, art. 83 ust. 4). */
+  objectionRight?: { open: boolean; note: string | null; legalBasis: string }
+  /** The upheld objection (change / re-making) behind the current assessment, for the evaluator's banner. */
+  objectionDecisionNotice?: ObjectionDecisionNotice | null
   /** Notatki robocze oceniającego (bez skutków prawnych, nie trafiają do arkusza). */
   workingNotes?: string
   /** Etap, od którego część II/III jest edytowalna (schemat pól arkuszy A/B/C). */
@@ -244,6 +248,17 @@ export interface AckFiction {
 }
 
 export type ObjectionOutcome = 'DISMISS' | 'CHANGE' | 'REDO'
+
+export interface ObjectionDecisionNotice {
+  outcome: 'CHANGE' | 'REDO'
+  decidedOn: string
+  decidedBy: ActorRef
+  reason: string
+  title: string
+  text: string
+  changes: { criterionId: string; from: number | null; to: number }[]
+  legalBasis: string
+}
 
 export interface ObjectionView {
   id: string
@@ -385,8 +400,11 @@ export const recordAckFiction = (id: string, body: { date: string; reason: strin
 export const fileObjection = (id: string, text: string) => apiPost<CaseDetail>(casePath(id, 'objection'), { text })
 export const decideObjection = (
   id: string,
-  body: { outcome: ObjectionOutcome; reason: string; decisions?: Record<string, number>; justification?: string; deliveredOn?: string },
+  body: { outcome: ObjectionOutcome; reason: string; decisions?: Record<string, number>; justification?: string; decidedOn?: string; deliveredOn?: string },
 ) => apiPost<CaseDetail>(casePath(id, 'objection/decision'), body)
+/** Labour court term (art. 83 ust. 5) for a delivery date, computed by the API. */
+export const getCourtTerm = (deliveredOn: string, signal?: AbortSignal) =>
+  apiGet<Deadline>(`/objections/court-term?deliveredOn=${encodeURIComponent(deliveredOn)}`, signal)
 export const requestDueDateChange = (id: string, body: { reason: string; proposedDate?: string | null }) =>
   apiPost<CaseDetail>(casePath(id, 'due-date-request'), body)
 export const withdrawDueDateRequest = (id: string) => apiPost<CaseDetail>(casePath(id, 'due-date-request/withdraw'), {})

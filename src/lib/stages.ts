@@ -65,7 +65,8 @@ export function allows(detail: CaseDetail, action: CaseAction): boolean {
  * sheets A/B/C; the stage comes from the API as `partIIEditableFrom`, the backend enforces it).
  */
 export function partIIOpen(detail: CaseDetail): boolean {
-  if (detail.signedByEvaluatorOn) return false
+  // Locked by the API, e.g. after the assessment was changed in the decision of a sprzeciw (art. 83 ust. 4).
+  if (detail.signedByEvaluatorOn || detail.locks?.partII) return false
   const order = detail.stages.map((s) => s.id)
   const from = order.indexOf(detail.partIIEditableFrom ?? 'ASSESSMENT')
   const now = order.indexOf(detail.currentStage)

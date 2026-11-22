@@ -23,7 +23,11 @@ export function StageNotOpen({ detail, stage }: { detail: CaseDetail; stage: Sta
         status={
           <InlineAlert tone="info" title="Ten etap jeszcze się nie rozpoczął">
             <p>Najpierw trzeba zakończyć etap „{stageTitle(current)}”.</p>
-            {WHAT[stage] && <p>{WHAT[stage]}</p>}
+            {stage === 'ACKNOWLEDGEMENT' && detail.objectionRight?.open === false ? (
+              <p>Oceniany zapoznaje się ze zmienioną oceną na swoim koncie; od zmienionej oceny nie przysługuje kolejny sprzeciw.</p>
+            ) : (
+              WHAT[stage] && <p>{WHAT[stage]}</p>
+            )}
           </InlineAlert>
         }
       />

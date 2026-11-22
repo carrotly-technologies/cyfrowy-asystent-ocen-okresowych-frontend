@@ -41,8 +41,15 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
   // The current step is the first one without a date and the only one expanded; once all four have a date nothing is.
   const currentIndex = steps.findIndex((s) => !s.date)
   const nextCycle = detail.history.filter((h) => h.text.startsWith('Nowy cykl')).at(-1)
+  // art. 83 ust. 4: no sprzeciw from an assessment changed after one (rule and note from the API).
+  const noObjection = detail.objectionRight?.open === false ? detail.objectionRight : null
   const status = acked ? (
     <InlineAlert tone="info" title={`Oceniany zapoznał się z oceną ${fmtDate(detail.acknowledgedOn)}`}>
+      {noObjection && (
+        <p>
+          Od zmienionej oceny nie przysługuje kolejny sprzeciw. <span className="legal">{noObjection.legalBasis}</span>
+        </p>
+      )}
       {detail.objectionDeadline && (
         <>
           <p>
@@ -65,9 +72,13 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
       return (
         <>
           <FormalCheck detail={detail} label="Podpisz ocenę" onDone={afterSign} />
-          <p className="small">
-            <Link to={caseUrl(detail.id, 'ASSESSMENT')}>Wróć do oceny, aby poprawić część II lub III</Link>
-          </p>
+          {detail.locks?.partII ? (
+            <p className="small muted">{detail.locks.partII}</p>
+          ) : (
+            <p className="small">
+              <Link to={caseUrl(detail.id, 'ASSESSMENT')}>Wróć do oceny, aby poprawić część II lub III</Link>
+            </p>
+          )}
         </>
       )
     }
@@ -98,8 +109,9 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
               <dd>{fmtDate(detail.signedByEvaluatorOn)}</dd>
             </dl>
             <p>
-              Oceniany dostanie powiadomienie i potwierdzi zapoznanie na swoim koncie. Od dnia zapoznania biegnie termin na
-              sprzeciw. Tej czynności nie można cofnąć.
+              Oceniany dostanie powiadomienie i potwierdzi zapoznanie na swoim koncie.{' '}
+              {noObjection ? 'Od zmienionej oceny nie przysługuje kolejny sprzeciw.' : 'Od dnia zapoznania biegnie termin na sprzeciw.'} Tej
+              czynności nie można cofnąć.
             </p>
           </ConfirmDialog>
           <MutationError error={act.error} />

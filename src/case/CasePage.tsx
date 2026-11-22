@@ -11,10 +11,11 @@ import { ErrorState, LoadingState } from '../components/QueryState'
 import { BackLink, StageStepper, StatusBadge } from '../components/ui'
 import { useCase } from '../lib/caseQueries'
 import { useFeatures } from '../lib/features'
-import { caseCriteria, useCriteria, useSheets, type CaseCriteria } from '../lib/model'
+import { caseCriteria, criterionName, useCriteria, useSheets, type CaseCriteria } from '../lib/model'
 import { canOpenStage, caseSteps, caseUrl, CASE_STATUS_LABEL, stageFromSlug, stepTarget, STAGE_SHORT, STAGE_SLUG, viewStage } from '../lib/stages'
 import { HOME_BY_ROLE, useMe } from '../lib/useAuth'
 import { CaseHistory } from './CaseHistory'
+import { ObjectionDecisionBanner } from './LegalPaths'
 import s from './CasePage.module.css'
 import { DocumentStage } from './stages/DocumentStage'
 import { ObservationStage } from './stages/ObservationStage'
@@ -169,6 +170,7 @@ export function CasePage() {
         />
       </div>
       <div className={s.panels}>
+        <ObjectionDecisionBanner detail={detail} names={(c) => criterionName(model.data, c)} />
         <CasePanels detail={detail} supervisor={me.role === 'SUPERVISOR'} />
         {pdfError && <p className="sheet-bar__error" role="alert">{pdfError}</p>}
         <CaseHistory detail={detail} />

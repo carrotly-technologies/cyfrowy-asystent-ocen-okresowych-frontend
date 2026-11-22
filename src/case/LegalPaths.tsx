@@ -55,7 +55,9 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
           <p>{notice}</p>
         </InlineAlert>
       )}
-      {(showForm || (detail.objections.length > 0 && !detail.objections.every((o) => o.decision))) && <ObjectionNextSteps detail={detail} />}
+      {(showForm || detail.objectionRight?.open === false || (detail.objections.length > 0 && !detail.objections.every((o) => o.decision))) && (
+        <ObjectionNextSteps detail={detail} />
+      )}
       {detail.objections.map((o) => (
         <ObjectionStatus key={o.id} objection={o} who={detail.objectionAddressee?.who} />
       ))}
@@ -146,6 +148,35 @@ export function ObjectionStatus({ objection: o, who = 'Dyrektor generalny urzęd
           Możliwość odwołania do sądu pracy: <DeadlineText deadline={o.courtAppealDeadline} showLegal />
         </p>
       )}
+    </InlineAlert>
+  )
+}
+
+/**
+ * The upheld objection behind the current assessment (change or re-making), shown on the case above the work area:
+ * the evaluator must see what the decider set and why (texts and changed scores from the API).
+ */
+export function ObjectionDecisionBanner({ detail, names }: { detail: CaseDetail; names: (criterionId: string) => string }) {
+  const n = detail.objectionDecisionNotice
+  if (!n) return null
+  const pending = !detail.sentForAckOn
+  return (
+    <InlineAlert tone={pending ? 'warning' : 'info'} title={n.title}>
+      <p className="small">
+        <strong>Uzasadnienie ({n.decidedBy.name}):</strong> {n.reason}
+      </p>
+      {n.changes.length > 0 && (
+        <ul className="bullets small">
+          {n.changes.map((c) => (
+            <li key={c.criterionId}>
+              {names(c.criterionId)}: {c.from ?? '—'} → <strong>{c.to}</strong>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="small">
+        {n.text} <span className="legal">{n.legalBasis}</span>
+      </p>
     </InlineAlert>
   )
 }

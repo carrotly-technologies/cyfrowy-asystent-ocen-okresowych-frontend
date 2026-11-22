@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { getCases, type CaseAction, type CaseDetail, type CaseSummary, type Deadline } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { BackLink, Button, InfoList, InfoRow, InlineAlert, ResultList, ResultRow, StageStepper, StatusBadge, type ResultTone } from '../components/ui'
+import { BackLink, Button, ConfirmDialog, InfoList, InfoRow, InlineAlert, ResultList, ResultRow, StageStepper, StatusBadge, type ResultTone } from '../components/ui'
 import { useCase, useCaseAction } from '../lib/caseQueries'
-import { fmtDate } from '../lib/format'
+import { DEMO_TODAY, fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, findCriterion, useCriteria, useSheets } from '../lib/model'
 import { allows, caseSteps, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 import { useMe } from '../lib/useAuth'
@@ -223,12 +223,20 @@ const ACK_TEXT: Partial<Record<CaseAction, { title: string; text: string; button
 
 function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: ReactNode }) {
   const act = useCaseAction(detail.id, { follow: false })
+  const [confirmAck, setConfirmAck] = useState(false)
   const action = (['EMPLOYEE_ACK_PART_I', 'EMPLOYEE_ACK_ASSESSMENT'] as const).find((a) => allows(detail, a))
+  const to = detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu'
+  // art. 83 ust. 4: no further sprzeciw from an assessment changed after one (the API's rule, with its note).
+  const closedNote = detail.objectionRight && !detail.objectionRight.open ? detail.objectionRight.note : null
   if (action) {
     const t = ACK_TEXT[action]!
+    const text =
+      action === 'EMPLOYEE_ACK_ASSESSMENT' && closedNote
+        ? `Przeczytaj zmienioną ocenę w arkuszu poniżej i potwierdź, że się z nią zapoznałeś(-aś). ${closedNote}`
+        : t.text.replace('{to}', to)
     return (
       <InlineAlert tone="warning" title={`Wymaga Twojego działania: ${t.title.toLowerCase()}`}>
-        <p>{t.text.replace('{to}', detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu')}</p>
+        <p>{text}</p>
         {action === 'EMPLOYEE_ACK_PART_I' && criteria && (
           <>
             <p>
@@ -242,10 +250,33 @@ function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: R
             )}
           </>
         )}
-        <Button loading={act.isPending} onClick={() => act.mutate(action)}>
+        <Button loading={act.isPending} onClick={() => (action === 'EMPLOYEE_ACK_ASSESSMENT' ? setConfirmAck(true) : act.mutate(action))}>
           {t.button}
         </Button>
         {act.error ? <p role="alert">{legalErrorText(act.error)}</p> : null}
+        <ConfirmDialog
+          open={confirmAck}
+          title="Potwierdzić zapoznanie z oceną?"
+          confirmLabel="Potwierdzam zapoznanie"
+          onCancel={() => setConfirmAck(false)}
+          onConfirm={() => act.mutateAsync('EMPLOYEE_ACK_ASSESSMENT')}
+          errorText={legalErrorText}
+        >
+          <ul className="bullets">
+            <li>
+              Data zapoznania: <strong className="num">{fmtDate(DEMO_TODAY)}</strong>.
+            </li>
+            {closedNote ? (
+              <li>{closedNote}</li>
+            ) : (
+              <li>
+                Od tego dnia biegnie 7 dni na wniesienie sprzeciwu do {to}. Jeśli ostatni dzień wypada w dzień wolny od pracy, termin
+                przesuwa się na najbliższy dzień roboczy.
+              </li>
+            )}
+            <li>Potwierdzenie nie oznacza zgody z oceną. Tej czynności nie można cofnąć.</li>
+          </ul>
+        </ConfirmDialog>
       </InlineAlert>
     )
   }
@@ -260,6 +291,8 @@ function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: R
               ? `Sprzeciw z ${fmtDate(filed.filedOn)} został rozstrzygnięty ${fmtDate(filed.decision.decidedOn)}. Szczegóły poniżej.`
               : `Wniosłeś(-aś) sprzeciw ${fmtDate(filed.filedOn)}. Czeka na rozstrzygnięcie; szczegóły poniżej.`}
           </p>
+        ) : closedNote ? (
+          <p>Od zmienionej oceny nie przysługuje kolejny sprzeciw; szczegóły poniżej, w sekcji „Sprzeciw od oceny”.</p>
         ) : d && isStalePast(d) ? (
           <p>Termin na wniesienie sprzeciwu minął {fmtDate(d.date)}.</p>
         ) : d ? (
