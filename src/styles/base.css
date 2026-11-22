@@ -48,6 +48,16 @@ figure {
   margin: 0;
 }
 
+/* Running text: readable line length (--measure, 75ch) and space between paragraphs (≥ 0.75em).
+   :where() keeps max-width at zero specificity, so any component can widen its own text. */
+:where(p) {
+  max-width: var(--measure);
+}
+
+p + p {
+  margin-top: 0.75em;
+}
+
 ul,
 ol {
   padding: 0;
@@ -164,10 +174,10 @@ a.btn--link:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--gap-icon);
   min-height: var(--control-h);
   max-width: 100%;
-  padding: 0 20px;
+  padding: 0 var(--s-5);
   border: 1px solid var(--accent);
   border-radius: var(--radius-btn);
   background: var(--bg-surface);
@@ -218,7 +228,7 @@ a.btn--link:hover {
 
 .btn--sm {
   min-height: var(--control-h-sm);
-  padding: 0 12px;
+  padding: 0 var(--s-3);
   font-size: var(--text-sm);
 }
 
@@ -246,7 +256,7 @@ a.btn--link:hover {
 /* Phones: a long label wraps instead of pushing the page sideways (also with enlarged text) */
 @media (max-width: 767px) {
   .btn:not(.btn--link) {
-    padding-block: 6px;
+    padding-block: var(--s-2);
     line-height: var(--leading-tight);
     text-align: center;
     white-space: normal;
@@ -257,14 +267,14 @@ a.btn--link:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--gap-actions);
 }
 
 /* ---------- Fields ---------- */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--s-1);
 }
 
 .field__label {
@@ -287,7 +297,7 @@ a.btn--link:hover {
 .select,
 .textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--s-3);
   border: 1px solid var(--border-input);
   border-radius: var(--radius-xs);
   background: var(--bg-surface);
@@ -301,7 +311,7 @@ a.btn--link:hover {
 }
 
 .select {
-  padding-right: 4px;
+  padding-right: var(--s-1);
 }
 
 .textarea {
@@ -367,9 +377,9 @@ label.checkbox > input:focus-visible,
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--gap-icon);
   min-height: 1.5rem;
-  padding: 2px 8px;
+  padding: var(--s-0) var(--s-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-badge);
   background: var(--bg-subtle);
@@ -461,7 +471,7 @@ label.checkbox > input:focus-visible,
 }
 
 .table th {
-  padding: 10px 14px;
+  padding: var(--s-3) var(--pad-cell-x);
   border-bottom: 2px solid var(--sc-blue);
   background: var(--bg-subtle);
   color: var(--text);
@@ -475,7 +485,7 @@ label.checkbox > input:focus-visible,
 
 .table td {
   max-width: 280px;
-  padding: 12px 14px;
+  padding: var(--s-3) var(--pad-cell-x);
   border-bottom: 1px solid var(--border);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -510,7 +520,7 @@ label.checkbox > input:focus-visible,
 
 .notice svg {
   flex: none;
-  margin-top: 2px;
+  margin-top: var(--s-0);
 }
 
 .notice--info {
@@ -541,7 +551,7 @@ label.checkbox > input:focus-visible,
 .dl {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 6px var(--s-3);
+  gap: var(--s-2) var(--s-4);
   font-size: var(--text-sm);
 }
 
@@ -564,7 +574,7 @@ label.checkbox > input:focus-visible,
 }
 
 .state__title {
-  margin-bottom: 4px;
+  margin-bottom: var(--s-2);
   color: var(--text);
   font-weight: var(--weight-semibold);
 }

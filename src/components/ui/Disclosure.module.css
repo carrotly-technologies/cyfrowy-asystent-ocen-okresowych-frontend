@@ -45,7 +45,7 @@
 .chevron {
   flex: none;
   /* centres the 16px icon on the first line of text */
-  margin-top: calc((1lh - 16px) / 2);
+  margin-top: calc((1lh - 16px) / 2); /* 16px = chevron icon size: centres it on the first line */
   transition: transform 0.15s;
 }
 

@@ -157,6 +157,6 @@
   }
 
   .button {
-    gap: var(--s-1);
+    gap: var(--gap-icon);
   }
 }

@@ -51,7 +51,7 @@
 .error {
   display: flex;
   align-items: flex-start;
-  gap: var(--s-1);
+  gap: var(--gap-icon);
   color: var(--danger);
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
@@ -60,7 +60,7 @@
 
 .error svg {
   flex: none;
-  margin-top: 3px;
+  margin-top: var(--s-0);
 }
 
 .control {
