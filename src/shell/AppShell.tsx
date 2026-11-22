@@ -175,7 +175,7 @@ export function AppShell() {
         </nav>
 
         <main className="main" id="main" tabIndex={-1}>
-          <Breadcrumbs role={me.role} />
+          <Breadcrumbs />
           <div className="main__content">
             <Outlet />
           </div>
@@ -288,7 +288,7 @@ type NavItem = {
 }
 
 /**
- * Main links for a role; `match` lists the paths that highlight the link (a case file belongs to "Mój zespół").
+ * Main links for a role; `match` lists the paths that highlight the link (a person page and a case file belong to "Mój zespół").
  * `/ustawienia` is the gear icon in the header (and a row in the drawer).
  */
 function navItems(role: Role): NavItem[] {
@@ -308,17 +308,8 @@ function navItems(role: Role): NavItem[] {
   return [
     ...(byRole[role] ?? []),
     ...(role === 'ADMIN' ? [{ to: '/admin/korekty', label: 'Tryb korekty', Icon: FilePen, match: ['/admin/korekty'] }] : []),
-    ...(role === 'HR' || role === 'ADMIN' || role === 'SUPERVISOR'
-      ? [
-          {
-            to: '/kartoteka',
-            label: role === 'SUPERVISOR' ? 'Pracownicy' : 'Kartoteka',
-            Icon: Contact,
-            match: ['/kartoteka'],
-            bottom: role === 'SUPERVISOR',
-          },
-        ]
-      : []),
+    // The supervisor's people live in „Mój zespół” (/zespol/:id); /kartoteka redirects there.
+    ...(role === 'HR' || role === 'ADMIN' ? [{ to: '/kartoteka', label: 'Kartoteka', Icon: Contact, match: ['/kartoteka'] }] : []),
     ...(role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR' ? [{ to: '/statystyki', label: 'Statystyki', Icon: ChartColumn, match: ['/statystyki'] }] : []),
     { to: '/baza-wiedzy', label: 'Baza wiedzy', short: 'Wiedza', Icon: BookOpen, match: ['/baza-wiedzy'], group: true, bottom: role === 'EMPLOYEE' },
   ]

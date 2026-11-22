@@ -34,7 +34,9 @@ The app is **Cyfrowy Asystent Ocen Okresowych** (UI in Polish): the periodic ass
   list in `src/lib/demoAccounts.ts`, hidden with `VITE_DEMO_ACCOUNTS=false`). The token sits in `sessionStorage`
   (`ocena.token`) and goes with every API call; a 401 sends you back to sign-in. Routes and the menu depend on
   the role (`src/lib/useAuth.ts`, `src/shell/RequireAuth.tsx`);
-- `/zespol` — supervisor: deadline-driven to-do list and team table;
+- `/zespol` — supervisor: deadline-driven to-do list and team table (a row opens the person, „Teczka” opens the case);
+- `/zespol/:id` — supervisor: one person of the team (current assessment with „Otwórz teczkę”, history of
+  assessments, absences, register data); the supervisor has no separate register menu item;
 - `/teczka/:id/:stage` — supervisor: the case file with the 7 stages (`src/case/stages`):
   `arkusz-i-kryteria` (sheet with the system's suggestion, up to 3 additional criteria with their descriptions
   from the catalogue, due date), `rozmowa-rozpoczynajaca` (part I), `potwierdzenie-czesci-i` (waits for the
@@ -49,7 +51,7 @@ The app is **Cyfrowy Asystent Ocen Okresowych** (UI in Polish): the periodic ass
   with new scores, ponowne sporządzenie); the evaluator's case file shows pending termin requests and „fikcja zapoznania”;
 - `/hr` — HR monitoring with counters, filters, (simulated) reminders and „Fikcja zapoznania” for cases awaiting
   acknowledgement; `/baza-wiedzy` — assistant;
-- `/kartoteka`, `/kartoteka/:id` — HR register (HR, ADMIN edit; SUPERVISOR reads own team): search/sort/filter,
+- `/kartoteka`, `/kartoteka/:id` — HR register (HR edits, ADMIN reads; a SUPERVISOR is redirected to `/zespol`, `/zespol/:id`): search/sort/filter,
   add/edit/delete employee, evaluator (podległość), substitutions, absences (with the art. 81 ust. 7 extension shown),
   history of assessments, start of a new cycle, CSV import of past assessments and CSV export;
 - `/statystyki` — HR, ADMIN, DIRECTOR: results, levels, timeliness, stages, promotions, per unit, CSV export;

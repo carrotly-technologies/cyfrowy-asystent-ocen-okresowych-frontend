@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router'
+import type { ReactNode } from 'react'
+import { Navigate, Route, Routes, useParams } from 'react-router'
 import { CasePage } from './case/CasePage'
 import { AdminCorrectionsPage } from './pages/AdminCorrectionsPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
@@ -20,6 +21,7 @@ import { SheetPage } from './sheet/SheetPage'
 import { AppShell } from './shell/AppShell'
 import { RouteTitle } from './shell/RouteTitle'
 import { HomeRedirect, RequireAuth, RequireRole } from './shell/RequireAuth'
+import { useMe } from './lib/useAuth'
 
 export default function App() {
   return (
@@ -38,6 +40,7 @@ export default function App() {
           <Route index element={<HomeRedirect />} />
           <Route element={<RequireRole roles={['SUPERVISOR']} />}>
             <Route path="/zespol" element={<TeamPage />} />
+            <Route path="/zespol/:id" element={<EmployeePage variant="team" />} />
             <Route path="/teczka/:id/:stage?" element={<CasePage />} />
             <Route path="/dobrostan" element={<TeamWellbeingPage />} />
             <Route path="/dobrostan/:personId" element={<PersonWellbeingPage />} />
@@ -55,8 +58,8 @@ export default function App() {
             <Route path="/sprzeciwy/:id" element={<ObjectionCasePage />} />
           </Route>
           <Route element={<RequireRole roles={['HR', 'ADMIN', 'SUPERVISOR']} />}>
-            <Route path="/kartoteka" element={<KartotekaPage />} />
-            <Route path="/kartoteka/:id" element={<EmployeePage />} />
+            <Route path="/kartoteka" element={<SupervisorToTeam><KartotekaPage /></SupervisorToTeam>} />
+            <Route path="/kartoteka/:id" element={<SupervisorToTeam><EmployeePage /></SupervisorToTeam>} />
           </Route>
           <Route element={<RequireRole roles={['HR', 'ADMIN', 'DIRECTOR']} />}>
             <Route path="/statystyki" element={<StatisticsPage />} />
@@ -74,4 +77,12 @@ export default function App() {
     </Routes>
     </>
   )
+}
+
+/** The supervisor has one place for their people: /kartoteka → /zespol, /kartoteka/:id → /zespol/:id (HR, ADMIN unchanged). */
+function SupervisorToTeam({ children }: { children: ReactNode }) {
+  const me = useMe()
+  const { id } = useParams()
+  if (me.role !== 'SUPERVISOR') return children
+  return <Navigate to={id ? `/zespol/${encodeURIComponent(id)}` : '/zespol'} replace />
 }

@@ -82,6 +82,15 @@
   text-underline-offset: 3px;
 }
 
+.actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
 .link:focus-visible {
   box-shadow: none;
 }
@@ -162,6 +171,15 @@
 
   .statusCell {
     align-items: center;
+  }
+
+  .titleCell {
+    flex-wrap: wrap;
+  }
+
+  .actions {
+    flex-basis: 100%;
+    margin-top: 0;
   }
 
   .status {

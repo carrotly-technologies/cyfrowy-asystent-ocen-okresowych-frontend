@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlayCircle, Trash2 } from 'lucide-react'
+import { FolderOpen, PlayCircle, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
@@ -48,7 +48,12 @@ function fieldsOf(e: EmployeeView): EmployeeFields {
   }
 }
 
-export function EmployeePage() {
+/**
+ * One employee: the HR register card (`/kartoteka/:id`, variant `register`) or the supervisor's person page in
+ * „Mój zespół” (`/zespol/:id`, variant `team`). The team variant orders the sections for the evaluator (current
+ * assessment with „Otwórz teczkę”, history, absences, register data); permissions are the same in both.
+ */
+export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 'team' }) {
   const { id = '' } = useParams()
   const me = useMe()
   // ADMIN is a technical role: read only here, case data errors go through „Tryb korekty”.
@@ -100,10 +105,116 @@ export function EmployeePage() {
   const onStartCycle = () => (lateOpening ? setConfirmLateCycle(true) : cycle.mutate())
   const due = e.currentCase?.assessmentDue ?? null
   const beforeOpeningTalk = !!e.currentCase && ['SHEET_SELECTION', 'OPENING_TALK', 'PART_I_ACK'].includes(e.currentCase.stage)
+  const team = variant === 'team'
+
+  const dataSection = (
+    <section className="panel panel__body" aria-labelledby="data-h">
+      <h2 id="data-h" className="h-section">Dane w kartotece</h2>
+      {editing ? (
+        <>
+          <EmployeeForm initial={fieldsOf(e)} units={units.length ? units : [e.unit]} submitLabel="Zapisz zmiany" pending={save.isPending} onSubmit={(f) => save.mutate(f)} onCancel={() => setEditing(false)} />
+          <p className="small faint">Zmiana oceniającego przenosi ocenę w toku do nowego oceniającego (wpis w historii teczki).</p>
+          <MutationError error={save.error} />
+        </>
+      ) : (
+        <dl className="dl">
+          <dt>Status</dt><dd>{e.employment === 'URZEDNIK' ? 'urzędnik służby cywilnej' : 'pracownik służby cywilnej'}</dd>
+          {e.employment === 'URZEDNIK' && (
+            <>
+              <dt>Mianowanie / stopień</dt>
+              <dd>{e.appointedYear ?? '—'} · {e.grade ? `${e.grade} stopień` : 'brak danych'}{e.gradeGrantedOn && ` (od ${fmtDate(e.gradeGrantedOn)})`}</dd>
+            </>
+          )}
+          <dt>Zatrudnienie na czas nieokreślony od</dt><dd>{e.indefiniteSince ? fmtDate(e.indefiniteSince) : '—'}</dd>
+          <dt>Oceniający</dt>
+          <dd>
+            {e.evaluatorName ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : 'nie przypisano'}
+            {e.substitution && <span className="small faint block">zastępstwo do {fmtDate(e.substitution.to)}</span>}
+          </dd>
+          <dt>Arkusz</dt>
+          <dd className="emp-dl-text">
+            {e.sheetId} {!e.currentCase?.sheetId && <span className="faint">— sugestia: {e.sheetSuggestion.reason} ({e.sheetSuggestion.legalBasis}); decyduje oceniający</span>}
+          </dd>
+        </dl>
+      )}
+    </section>
+  )
+  const cycleSection = (
+    <section className="panel panel__body" aria-labelledby="cycle-h">
+      <h2 id="cycle-h" className="h-section">Bieżąca ocena</h2>
+      {e.currentCase ? (
+        <dl className="dl">
+          <dt>Etap</dt><dd>{e.currentCase.stageName}</dd>
+          <dt>Status</dt><dd>{CASE_STATUS_LABEL[e.currentCase.status]}</dd>
+          {e.currentCase.nextDeadline && (
+            <>
+              <dt>{due && due.date !== e.currentCase.nextDeadline.date ? 'Najbliższy termin' : 'Termin'}</dt>
+              <dd className="emp-dl-text">
+                <span className="block small">{e.currentCase.nextDeadline.label}</span>
+                <DeadlineText deadline={e.currentCase.nextDeadline} />
+                <span className="small faint block">{e.currentCase.nextDeadline.legalBasis}</span>
+                {longAbsence && beforeOpeningTalk && (
+                  <span className="small block emp-due-note">
+                    Termin rozmowy rozpoczynającej nie jest przedłużany o nieobecność; przedłuża się tylko termin sporządzenia oceny
+                    (art. 81 ust. 7 ustawy o służbie cywilnej).
+                  </span>
+                )}
+              </dd>
+            </>
+          )}
+          {due && due.date !== e.currentCase.nextDeadline?.date && (
+            <>
+              <dt>Termin oceny</dt>
+              <dd className="emp-dl-text">
+                <DeadlineText deadline={due} />
+                {due.extended && due.baseDate && (
+                  <span className="small block">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc</span>
+                )}
+              </dd>
+            </>
+          )}
+          {due?.extended && due.date === e.currentCase.nextDeadline?.date && due.baseDate && (
+            <>
+              <dt>Przedłużenie</dt>
+              <dd className="emp-dl-text small">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc (art. 81 ust. 7)</dd>
+            </>
+          )}
+          {e.currentCase.sheetId && (<><dt>Arkusz</dt><dd><Link to={`/teczka/${e.currentCase.id}/arkusz`}>Podgląd arkusza {e.currentCase.sheetId}</Link></dd></>)}
+        </dl>
+      ) : (
+        <p className="muted">Brak teczki oceny w systemie.</p>
+      )}
+      {team && e.currentCase && (
+        <Link to={`/teczka/${e.currentCase.id}`} className="btn btn--primary emp-open-case">
+          <FolderOpen size={15} aria-hidden="true" /> Otwórz teczkę
+        </Link>
+      )}
+      {canEdit && !open && (
+        <>
+          <button type="button" className="btn btn--primary" disabled={cycle.isPending || preview?.ok === false} onClick={onStartCycle}>
+            <PlayCircle size={15} aria-hidden="true" /> Rozpocznij nowy cykl oceny
+          </button>
+          {preview?.ok === false ? (
+            <p className="small" role="note">{preview.reason}</p>
+          ) : preview?.openingTalk ? (
+            <p className="small faint">
+              Teczka trafi do oceniającego na etap wyboru arkusza. Rozmowa rozpoczynająca do{' '}
+              <span className="num">{fmtDate(preview.openingTalk.date)}</span>
+              {lateOpening && <strong> (termin już minął)</strong>}.
+            </p>
+          ) : (
+            <p className="small faint">Teczka trafi do oceniającego na etap wyboru arkusza; termin rozmowy rozpoczynającej liczy system.</p>
+          )}
+        </>
+      )}
+      {cycle.isSuccess && <p className="notice notice--ok" role="status">Rozpoczęto cykl oceny. {cycle.data.reason}</p>}
+      <MutationError error={cycle.error} />
+    </section>
+  )
 
   return (
     <div className="page page--wide">
-      <BackLink to="/kartoteka">Kartoteka pracowników</BackLink>
+      {team ? <BackLink to="/zespol">Mój zespół</BackLink> : <BackLink to="/kartoteka">Kartoteka pracowników</BackLink>}
       <header className="page-head">
         <div>
           <h1 className="h-page">{e.firstName} {e.lastName}</h1>
@@ -126,107 +237,23 @@ export function EmployeePage() {
         </InlineAlert>
       )}
 
-      <div className="emp-grid">
-        <section className="panel panel__body" aria-labelledby="data-h">
-          <h2 id="data-h" className="h-section">Dane w kartotece</h2>
-          {editing ? (
-            <>
-              <EmployeeForm initial={fieldsOf(e)} units={units.length ? units : [e.unit]} submitLabel="Zapisz zmiany" pending={save.isPending} onSubmit={(f) => save.mutate(f)} onCancel={() => setEditing(false)} />
-              <p className="small faint">Zmiana oceniającego przenosi ocenę w toku do nowego oceniającego (wpis w historii teczki).</p>
-              <MutationError error={save.error} />
-            </>
-          ) : (
-            <dl className="dl">
-              <dt>Status</dt><dd>{e.employment === 'URZEDNIK' ? 'urzędnik służby cywilnej' : 'pracownik służby cywilnej'}</dd>
-              {e.employment === 'URZEDNIK' && (
-                <>
-                  <dt>Mianowanie / stopień</dt>
-                  <dd>{e.appointedYear ?? '—'} · {e.grade ? `${e.grade} stopień` : 'brak danych'}{e.gradeGrantedOn && ` (od ${fmtDate(e.gradeGrantedOn)})`}</dd>
-                </>
-              )}
-              <dt>Zatrudnienie na czas nieokreślony od</dt><dd>{e.indefiniteSince ? fmtDate(e.indefiniteSince) : '—'}</dd>
-              <dt>Oceniający</dt>
-              <dd>
-                {e.evaluatorName ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : 'nie przypisano'}
-                {e.substitution && <span className="small faint block">zastępstwo do {fmtDate(e.substitution.to)}</span>}
-              </dd>
-              <dt>Arkusz</dt>
-              <dd className="emp-dl-text">
-                {e.sheetId} {!e.currentCase?.sheetId && <span className="faint">— sugestia: {e.sheetSuggestion.reason} ({e.sheetSuggestion.legalBasis}); decyduje oceniający</span>}
-              </dd>
-            </dl>
-          )}
-        </section>
-
-        <section className="panel panel__body" aria-labelledby="cycle-h">
-          <h2 id="cycle-h" className="h-section">Bieżąca ocena</h2>
-          {e.currentCase ? (
-            <dl className="dl">
-              <dt>Etap</dt><dd>{e.currentCase.stageName}</dd>
-              <dt>Status</dt><dd>{CASE_STATUS_LABEL[e.currentCase.status]}</dd>
-              {e.currentCase.nextDeadline && (
-                <>
-                  <dt>{due && due.date !== e.currentCase.nextDeadline.date ? 'Najbliższy termin' : 'Termin'}</dt>
-                  <dd className="emp-dl-text">
-                    <span className="block small">{e.currentCase.nextDeadline.label}</span>
-                    <DeadlineText deadline={e.currentCase.nextDeadline} />
-                    <span className="small faint block">{e.currentCase.nextDeadline.legalBasis}</span>
-                    {longAbsence && beforeOpeningTalk && (
-                      <span className="small block emp-due-note">
-                        Termin rozmowy rozpoczynającej nie jest przedłużany o nieobecność; przedłuża się tylko termin sporządzenia oceny
-                        (art. 81 ust. 7 ustawy o służbie cywilnej).
-                      </span>
-                    )}
-                  </dd>
-                </>
-              )}
-              {due && due.date !== e.currentCase.nextDeadline?.date && (
-                <>
-                  <dt>Termin oceny</dt>
-                  <dd className="emp-dl-text">
-                    <DeadlineText deadline={due} />
-                    {due.extended && due.baseDate && (
-                      <span className="small block">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc</span>
-                    )}
-                  </dd>
-                </>
-              )}
-              {due?.extended && due.date === e.currentCase.nextDeadline?.date && due.baseDate && (
-                <>
-                  <dt>Przedłużenie</dt>
-                  <dd className="emp-dl-text small">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc (art. 81 ust. 7)</dd>
-                </>
-              )}
-              {e.currentCase.sheetId && (<><dt>Arkusz</dt><dd><Link to={`/teczka/${e.currentCase.id}/arkusz`}>Podgląd arkusza {e.currentCase.sheetId}</Link></dd></>)}
-            </dl>
-          ) : (
-            <p className="muted">Brak teczki oceny w systemie.</p>
-          )}
-          {canEdit && !open && (
-            <>
-              <button type="button" className="btn btn--primary" disabled={cycle.isPending || preview?.ok === false} onClick={onStartCycle}>
-                <PlayCircle size={15} aria-hidden="true" /> Rozpocznij nowy cykl oceny
-              </button>
-              {preview?.ok === false ? (
-                <p className="small" role="note">{preview.reason}</p>
-              ) : preview?.openingTalk ? (
-                <p className="small faint">
-                  Teczka trafi do oceniającego na etap wyboru arkusza. Rozmowa rozpoczynająca do{' '}
-                  <span className="num">{fmtDate(preview.openingTalk.date)}</span>
-                  {lateOpening && <strong> (termin już minął)</strong>}.
-                </p>
-              ) : (
-                <p className="small faint">Teczka trafi do oceniającego na etap wyboru arkusza; termin rozmowy rozpoczynającej liczy system.</p>
-              )}
-            </>
-          )}
-          {cycle.isSuccess && <p className="notice notice--ok" role="status">Rozpoczęto cykl oceny. {cycle.data.reason}</p>}
-          <MutationError error={cycle.error} />
-        </section>
-      </div>
-
-      <Absences employeeId={id} canEdit={canEdit} onChange={refresh} />
-      <History employeeId={id} />
+      {team ? (
+        <>
+          <div className="emp-grid">{cycleSection}</div>
+          <History employeeId={id} />
+          <Absences employeeId={id} canEdit={canEdit} onChange={refresh} />
+          <div className="section">{dataSection}</div>
+        </>
+      ) : (
+        <>
+          <div className="emp-grid">
+            {dataSection}
+            {cycleSection}
+          </div>
+          <Absences employeeId={id} canEdit={canEdit} onChange={refresh} />
+          <History employeeId={id} />
+        </>
+      )}
 
       {canEdit && (
         <ConfirmDialog
