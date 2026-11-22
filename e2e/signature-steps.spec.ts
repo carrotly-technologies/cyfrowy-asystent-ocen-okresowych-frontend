@@ -72,3 +72,31 @@ test('oś kroków mieści się na telefonie bez przewijania w poziomie', async (
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(0)
 })
+
+for (const assistant of [false, true]) {
+  test(`oś kroków ma te same krawędzie co komunikat etapu nad nią (1440 px${assistant ? ', z panelem Asystenta' : ''})`, async ({ page }) => {
+    await page.addInitScript((on) => localStorage.setItem('ocena.assistant', on ? '1' : '0'), assistant)
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await signIn(page, SUPERVISOR)
+    await page.goto('/teczka/c-006/zapoznanie')
+
+    // The visible edges of the status are those of its alert; .stage-status itself also holds the side padding.
+    const alert = page.locator('.stage-status > *').first()
+    await expect(alert).toBeVisible()
+    await expect(timeline(page)).toBeVisible()
+    const a = (await alert.boundingBox())!
+    const f = (await timeline(page).boundingBox())!
+    expect(Math.abs(f.x - a.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(f.x + f.width - (a.x + a.width))).toBeLessThanOrEqual(1)
+  })
+}
+
+test('oś kroków z panelem Asystenta mieści się na telefonie bez przewijania w poziomie', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('ocena.assistant', '1'))
+  await page.setViewportSize({ width: 375, height: 800 })
+  await signIn(page, SUPERVISOR)
+  await page.goto('/teczka/c-007/podpis')
+  await expect(step(page, 2).getByRole('button', { name: 'Podpisz ocenę' })).toBeVisible()
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(0)
+})

@@ -1037,7 +1037,7 @@
 /* The stage's status alert under .stage-head (normal flow, scrolls with the page). */
 .stage-status {
   min-width: 0;
-  max-width: 880px;
+  max-width: var(--content-narrow);
   padding: var(--s-5) var(--s-6) 0;
 }
 
@@ -1046,7 +1046,7 @@
 }
 
 .stage-pad--narrow {
-  max-width: 880px;
+  max-width: var(--content-narrow);
 }
 
 .block-h {
@@ -1613,8 +1613,10 @@
 /* =========================================================
    Document stage
    ========================================================= */
+/* Same edges as the stage status above it: .stage-status is --content-narrow wide including its side padding (the
+   same as .stage-pad's), so the box inside .stage-pad is narrower by both paddings. */
 .doc-flow {
-  max-width: 48rem;
+  max-width: calc(var(--content-narrow) - 2 * var(--s-6));
   margin-bottom: var(--s-6);
   padding: var(--s-4);
   border: 1px solid var(--border);
