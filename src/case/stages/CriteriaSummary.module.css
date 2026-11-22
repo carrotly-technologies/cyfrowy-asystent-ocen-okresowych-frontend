@@ -1,0 +1,68 @@
+/* Key–value table of criteria (CriteriaSummary.tsx), like „Dane w kartotece”. Colours only from tokens. */
+.group {
+  display: grid;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+/* Text wraps: the shared .table keeps cells on one line with an ellipsis, which would hide the descriptions. */
+.kv th[scope='row'],
+.kv td {
+  max-width: none;
+  padding: var(--s-3) var(--pad-cell-x);
+  border-bottom: 1px solid var(--border);
+  overflow: visible;
+  line-height: var(--leading);
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+/* Row headers are labels, not the uppercase column-head style of .table. */
+.kv th[scope='row'] {
+  width: 30%;
+  min-width: 10rem;
+  background: var(--bg-subtle);
+  color: var(--text);
+  font-size: inherit;
+  font-weight: var(--weight-semibold);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.kv tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.more {
+  margin-top: var(--s-2);
+}
+
+/* Narrow screens: the label above its value, no sideways scrolling. */
+@media (max-width: 767px) {
+  .kv,
+  .kv tbody,
+  .kv tr,
+  .kv th[scope='row'],
+  .kv td {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+
+  .kv th[scope='row'] {
+    padding-bottom: var(--s-1);
+    border-bottom: 0;
+  }
+
+  .kv td {
+    padding-top: var(--s-1);
+  }
+}

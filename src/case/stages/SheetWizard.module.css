@@ -49,11 +49,17 @@
   min-width: 0;
 }
 
-.people,
-.criteria {
+.people {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s-4) var(--s-8);
+  min-width: 0;
+}
+
+/* Criteria tables (CriteriaSummary) need the full width for the descriptions: one under the other. */
+.criteria {
+  display: grid;
+  gap: var(--s-6);
   min-width: 0;
 }
 
@@ -78,8 +84,7 @@
 }
 
 @media (max-width: 767px) {
-  .people,
-  .criteria {
+  .people {
     grid-template-columns: minmax(0, 1fr);
   }
 

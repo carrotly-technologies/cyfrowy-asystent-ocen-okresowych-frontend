@@ -1,57 +1,3 @@
-.questionsLabel {
-  margin-bottom: var(--s-4);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-  line-height: var(--leading-tight);
-}
-
-.list {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Two classes so these win over the shared .card rules regardless of stylesheet order. */
-.list .competency {
-  padding: var(--s-4);
-  box-shadow: none;
-}
-
-.list .competency > h4 {
-  font-size: var(--text-body);
-  overflow-wrap: anywhere;
-}
-
-/* Like .bullets (#37): accent-coloured dots, hanging indent, long names wrap. */
-.indicators {
-  margin: var(--s-2) 0 0;
-  padding-left: var(--s-5);
-  list-style: disc outside;
-  line-height: var(--leading);
-  overflow-wrap: anywhere;
-}
-
-.indicators > li + li {
-  margin-top: var(--s-1);
-}
-
-.indicators > li::marker {
-  color: var(--accent);
-}
-
-.editor {
-  display: grid;
-  gap: var(--s-6);
-  max-width: var(--form-max);
-}
-
-.add {
-  margin-top: var(--s-4);
-}
-
 .finalActions {
   display: flex;
   flex-wrap: wrap;
@@ -61,21 +7,9 @@
   border-top: var(--border-w) solid var(--border);
 }
 
-.editorActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--s-2) var(--s-4);
-}
-
 @media (max-width: 767px) {
   .finalActions {
     flex-direction: column;
-    align-items: stretch;
-  }
-
-  .editorActions {
-    flex-direction: column-reverse;
     align-items: stretch;
   }
 }

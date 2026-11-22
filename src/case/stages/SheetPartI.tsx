@@ -9,10 +9,10 @@ import { allows } from '../../lib/stages'
 import { useMe } from '../../lib/useAuth'
 import type { StageProps } from '../CasePage'
 import { AdditionalCriteriaPicker } from './AdditionalCriteriaPicker'
+import { CriteriaSummary } from './CriteriaSummary'
 import { MutationError } from './common'
 import { PartHeading, PartSection, WizardActions } from './SheetWizardCommon'
 import { StageError } from './StageLayout'
-import layout from './StageLayout.module.css'
 import s from './SheetWizard.module.css'
 
 type TopicKey = keyof PartI['topics']
@@ -158,12 +158,7 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
         hint={criteriaEditable ? 'Kryteria dodatkowe możesz zmienić do potwierdzenia części I.' : 'Kryteria ustalono w kroku „Arkusz i kryteria”.'}
       >
         <div className={s.criteria}>
-          <div>
-            <p className={s.listLabel}>Kryteria obowiązkowe</p>
-            <ul className={layout.bullets}>
-              {criteria.mandatory.map((c) => <li key={c}>{criterionName(model, c)}</li>)}
-            </ul>
-          </div>
+          <CriteriaSummary title={`Kryteria obowiązkowe (${criteria.mandatory.length})`} ids={criteria.mandatory} model={model} level={5} />
           {criteriaEditable ? (
             <div>
               <AdditionalCriteriaPicker
@@ -178,16 +173,13 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
               <MutationError error={criteriaPatch.error} />
             </div>
           ) : (
-          <div>
-            <p className={s.listLabel}>Kryteria dodatkowe wybrane przez oceniającego (nie więcej niż {maxAdditional})</p>
-            {criteria.additional.length ? (
-              <ul className={layout.bullets}>
-                {criteria.additional.map((c) => <li key={c}>{criterionName(model, c)}</li>)}
-              </ul>
-            ) : (
-              <p className={layout.muted}>Brak</p>
-            )}
-          </div>
+            <CriteriaSummary
+              title={`Kryteria dodatkowe wybrane przez oceniającego (${criteria.additional.length}/${maxAdditional})`}
+              ids={criteria.additional}
+              model={model}
+              level={5}
+              empty="Nie wybrano kryteriów dodatkowych."
+            />
           )}
         </div>
         <Field
