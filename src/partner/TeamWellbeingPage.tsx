@@ -11,7 +11,7 @@ import s from './Partner.module.css'
 
 const KINDS: SignalKind[] = ['BURNOUT_RISK', 'OVERLOAD', 'MOTIVATION_DROP', 'APPRECIATION']
 
-/** "Mój zespół — dobrostan": the supervisor's HR partner panel. */
+/** "Dobrostan zespołu" (/dobrostan): the supervisor's HR partner panel. Headings avoid other menu labels ("Mój zespół", "Pracownicy"). */
 export function TeamWellbeingPage() {
   const navigate = useNavigate()
   const q = useQuery({ queryKey: ['partner-team'], queryFn: ({ signal }) => getPartnerTeam(signal) })
@@ -22,7 +22,7 @@ export function TeamWellbeingPage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1 className="h-page">Mój zespół — dobrostan</h1>
+          <h1 className="h-page">Dobrostan zespołu</h1>
           <p className="page-head__meta">Wirtualny HR partner: sygnały przeciążenia, spadku motywacji, ryzyka wypalenia i momenty do docenienia.</p>
         </div>
       </header>
@@ -48,7 +48,7 @@ export function TeamWellbeingPage() {
       </section>
 
       <section className="section" aria-labelledby="mem-h">
-        <h2 id="mem-h" className="h-section">Pracownicy</h2>
+        <h2 id="mem-h" className="h-section">Puls pracowników</h2>
         <div className="panel">
           <table className="table">
             <thead>
