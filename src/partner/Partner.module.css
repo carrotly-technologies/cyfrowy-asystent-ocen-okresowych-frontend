@@ -199,3 +199,69 @@
   font-size: var(--text-md);
   font-weight: var(--weight-bold);
 }
+
+/* Signal cards on /dobrostan/:personId: one column, two from 1024 px; cards fill the content width. */
+.signals {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+}
+
+@media (min-width: 1024px) {
+  .signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.signals > * {
+  min-width: 0;
+}
+
+/* A single signal takes the whole row instead of half of it. */
+.signals > :only-child {
+  grid-column: 1 / -1;
+}
+
+/* Header of a signal card: the title takes the row, the badge and level wrap under it when there is no room. */
+.signalHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  min-width: 0;
+}
+
+.signalHead .signalTitle {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.signalMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+/* Pulse chart of one person: drawn in the container's own pixels, so it fills the card without stretching. */
+.pulseChart {
+  width: 100%;
+  min-width: 0;
+}
+
+.pulseSvg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.pulseSvg .chartLabel {
+  font-size: var(--text-xs);
+}
+
+.pulseSvg .chartLine,
+.pulseSvg .chartGrid {
+  vector-effect: non-scaling-stroke;
+}
