@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
+import { FolderOpen } from 'lucide-react'
+import { Link } from 'react-router'
 import { getTeam, type CaseSummary } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
@@ -69,8 +71,13 @@ function TeamRow({ c }: { c: CaseSummary }) {
   const [title, position, assessment, stage, deadline, next, status] = COLUMNS.map((col) => col.label)
   return (
     <ResultTableRow
-      to={caseUrl(c.id)}
-      linkLabel={`Otwórz teczkę: ${name}`}
+      to={`/zespol/${encodeURIComponent(c.person.id)}`}
+      linkLabel={`Pokaż pracownika: ${name}`}
+      actions={
+        <Link to={caseUrl(c.id)} className="btn btn--sm" aria-label={`Teczka oceny: ${name}`}>
+          <FolderOpen size={15} aria-hidden="true" /> Teczka
+        </Link>
+      }
       title={name}
       titleLabel={title}
       status={statusOf(c)}

@@ -51,6 +51,10 @@
   margin: var(--s-4) 0;
 }
 
+.emp-open-case {
+  margin-top: var(--s-3);
+}
+
 .emp-form {
   display: flex;
   flex-direction: column;

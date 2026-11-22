@@ -50,9 +50,11 @@ type RowProps = {
   /** Last cell: filled tile with an UPPERCASE label (text, never colour alone). */
   status: { label: string; sub?: string; tone: ResultTone }
   statusLabel: string
+  /** Extra controls under the title (e.g. a shortcut link); they sit above the row link and stay clickable. */
+  actions?: ReactNode
 }
 
-export function ResultTableRow({ title, titleLabel, to, linkLabel, cells, status, statusLabel }: RowProps) {
+export function ResultTableRow({ title, titleLabel, to, linkLabel, cells, status, statusLabel, actions }: RowProps) {
   return (
     <div role="row" className={cx(s.row, s.bodyRow, to && s.clickable)}>
       <div role="cell" className={cx(s.cell, s.titleCell)}>
@@ -66,6 +68,7 @@ export function ResultTableRow({ title, titleLabel, to, linkLabel, cells, status
             title
           )}
         </span>
+        {actions && <span className={s.actions}>{actions}</span>}
       </div>
       {cells.map((c) => (
         <div key={c.label} role="cell" className={s.cell}>

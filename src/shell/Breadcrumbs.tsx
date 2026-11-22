@@ -1,26 +1,28 @@
 import { ChevronRight } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
-import type { Role } from '../api/cases'
+import { useTeamPersonName } from './useTeamPersonName'
 
 type Crumb = { to: string; label: string }
 
 /** Parent and current page for detail routes (depth ≥ 2); list pages get no breadcrumbs. */
-function trail(path: string, role: Role): { parents: Crumb[]; current: string } | null {
+function trail(path: string, personName: string | null): { parents: Crumb[]; current: string } | null {
+  if (/^\/zespol\/[^/]+/.test(path)) return { parents: [{ to: '/zespol', label: 'Mój zespół' }], current: personName ?? 'Pracownik' }
   if (/^\/teczka\/[^/]+/.test(path)) return { parents: [{ to: '/zespol', label: 'Mój zespół' }], current: 'Teczka oceny' }
   if (/^\/dobrostan\/.+/.test(path)) return { parents: [{ to: '/dobrostan', label: 'Dobrostan zespołu' }], current: 'Pracownik' }
   if (/^\/moje-oceny\/.+/.test(path)) return { parents: [{ to: '/moje-oceny', label: 'Moje oceny' }], current: 'Ocena okresowa' }
   if (/^\/sprzeciwy\/.+/.test(path)) return { parents: [{ to: '/sprzeciwy', label: 'Sprzeciwy' }], current: 'Sprzeciw' }
   if (/^\/kartoteka\/.+/.test(path))
-    return { parents: [{ to: '/kartoteka', label: role === 'SUPERVISOR' ? 'Pracownicy' : 'Kartoteka' }], current: 'Pracownik' }
+    return { parents: [{ to: '/kartoteka', label: 'Kartoteka' }], current: 'Pracownik' }
   return null
 }
 
 /**
  * gov.pl breadcrumbs above the page (from 768px). On phones only the page's own "‹ Powrót" link (BackLink) shows.
  */
-export function Breadcrumbs({ role }: { role: Role }) {
+export function Breadcrumbs() {
   const { pathname } = useLocation()
-  const t = trail(pathname, role)
+  const personName = useTeamPersonName(pathname)
+  const t = trail(pathname, personName)
   if (!t) return null
   return (
     <nav className="crumbs" aria-label="Okruszki">
