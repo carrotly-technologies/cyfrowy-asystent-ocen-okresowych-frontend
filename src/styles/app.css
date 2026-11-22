@@ -1506,12 +1506,9 @@
   border: 0;
 }
 
-/* A legend does not sit on the label baseline by default: make it lay out like the other .field__label. */
-.obs-form__kind > legend {
-  float: left;
-  width: 100%;
-  margin-bottom: var(--s-1);
-  padding: 0;
+/* The kind pills are as tall as the date and criterion controls next to them. */
+.obs-form__kind .radio-pill {
+  height: var(--control-h);
 }
 
 .obs-form__sdr {
