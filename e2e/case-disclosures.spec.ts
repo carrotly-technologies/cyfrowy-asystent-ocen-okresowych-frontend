@@ -42,3 +42,34 @@ test('Teczka: akordeony pod paskiem etapów wyglądają tak samo i otwierają si
   await page.keyboard.press('Space')
   await expect(history).not.toHaveAttribute('open')
 })
+
+test('Rozmowa oceniająca: „Podpowiedzi HR partnera” w tym samym akordeonie i kartach co reszta teczki', async ({ page }) => {
+  // c-001 is at the assessment stage of supervisor j.kaminska, with observations quoted as feedback.
+  await signIn(page, SUPERVISOR)
+  await page.goto('/teczka/c-001/ocena?czesc=2')
+
+  const hints = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Podpowiedzi HR partnera' }) })
+  const history = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Historia sprawy/ }) })
+  await expect(hints).toHaveCount(1)
+  const look = (el: HTMLElement) => {
+    const d = getComputedStyle(el)
+    const s = getComputedStyle(el.querySelector('summary')!)
+    return [d.borderColor, d.borderRadius, d.backgroundColor, s.padding, s.fontWeight, s.fontSize, s.listStyleType].join('|')
+  }
+  expect(await hints.evaluate(look)).toBe(await history.evaluate(look))
+
+  await hints.locator('summary').click()
+  await expect(hints).toHaveAttribute('open')
+  for (const name of ['Mocne strony', 'Obszary do rozwoju', 'Jak sformułować informację zwrotną (sytuacja – zachowanie – rezultat)']) {
+    await expect(hints.locator('h4.h-sub', { hasText: name })).toBeVisible()
+  }
+  // Quotes carry the same tags as the observation log.
+  const tags = hints.locator('blockquote .tag')
+  expect(await tags.count()).toBeGreaterThan(0)
+  for (const tag of await tags.all()) await expect(tag).toHaveClass(/tag--(ok|warn)/)
+  await expect(hints.getByRole('heading', { name: 'Zapytaj HR partnera' })).toBeVisible()
+
+  // No horizontal scroll on a phone.
+  await page.setViewportSize({ width: 375, height: 800 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
