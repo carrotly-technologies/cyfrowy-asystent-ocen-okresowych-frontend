@@ -3,7 +3,7 @@ import { ShieldCheck, Sparkles } from 'lucide-react'
 import { useId, useState } from 'react'
 import { askPartner } from '../api/partner'
 import { errorMessage } from '../api/client'
-import { Button, InlineAlert, TextArea } from '../components/ui'
+import { Button, Card, InlineAlert, TextArea } from '../components/ui'
 import s from './Partner.module.css'
 
 const EXAMPLES = [
@@ -13,7 +13,7 @@ const EXAMPLES = [
   'Jakie formy rozwoju zaproponować?',
 ]
 
-/** "Zapytaj HR partnera": the question goes out pseudonymized; without an LLM the answer comes from the rules. */
+/** "Zapytaj wirtualnego asystenta HR" (shared `Card`): the question goes out pseudonymized; without an LLM the answer comes from the rules. */
 export function AskPartner({ personId, caseId }: { personId?: string; caseId?: string }) {
   const id = useId()
   const [question, setQuestion] = useState('')
@@ -25,9 +25,10 @@ export function AskPartner({ personId, caseId }: { personId?: string; caseId?: s
     ask.mutate(text)
   }
   return (
-    <section className={`${s.box} ${s.stack}`} aria-labelledby={`${id}-h`}>
-      <h3 id={`${id}-h`} className={s.row}>
-        <Sparkles size={18} aria-hidden="true" /> Zapytaj HR partnera
+    <Card>
+      <div className={s.stack} role="group" aria-labelledby={`${id}-h`}>
+      <h3 id={`${id}-h`} className={`${s.row} ${s.askTitle}`}>
+        <Sparkles size={18} aria-hidden="true" /> Zapytaj wirtualnego asystenta HR
       </h3>
       <form
         className={s.stack}
@@ -37,7 +38,7 @@ export function AskPartner({ personId, caseId }: { personId?: string; caseId?: s
         }}
       >
         <label htmlFor={`${id}-q`} className="visually-hidden">
-          Pytanie do HR partnera
+          Pytanie do wirtualnego asystenta HR
         </label>
         <TextArea id={`${id}-q`} rows={3} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Np. jak porozmawiać o obciążeniu pracą?" />
         <div className={s.row}>
@@ -61,7 +62,7 @@ export function AskPartner({ personId, caseId }: { personId?: string; caseId?: s
           <p className={s.muted}>
             {ask.data.mode === 'LLM'
               ? 'Odpowiedź modelu językowego na podstawie zanonimizowanego kontekstu.'
-              : 'Odpowiedź z reguł HR partnera (model językowy nie jest skonfigurowany albo nie odpowiedział).'}{' '}
+              : 'Odpowiedź z reguł wirtualnego asystenta HR (model językowy nie jest skonfigurowany albo nie odpowiedział).'}{' '}
             {ask.data.disclaimer}
           </p>
           <details>
@@ -73,6 +74,7 @@ export function AskPartner({ personId, caseId }: { personId?: string; caseId?: s
           </details>
         </div>
       )}
-    </section>
+      </div>
+    </Card>
   )
 }

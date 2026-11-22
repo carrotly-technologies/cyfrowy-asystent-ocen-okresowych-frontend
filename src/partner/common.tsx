@@ -1,6 +1,6 @@
 import type { ReasonSource, Signal, SignalKind, SignalLevel, TrendKind } from '../api/partner'
 import { LEVEL_LABEL, LEVEL_TONE, SIGNAL_SHORT, TREND_LABEL, TREND_TONE } from './labels'
-import { StatusBadge } from '../components/ui'
+import { Card, StatusBadge } from '../components/ui'
 import { fmtDate, fmtNumber } from '../lib/format'
 import s from './Partner.module.css'
 
@@ -20,13 +20,13 @@ export function TrendBadge({ kind }: { kind: TrendKind }) {
   return <StatusBadge tone={TREND_TONE[kind]}>{TREND_LABEL[kind]}</StatusBadge>
 }
 
-/** A flag with the data that triggered it ("dlaczego") and the suggested actions. */
+/** A flag with the data that triggered it ("dlaczego") and the suggested actions: the shared `Card` with a coloured left edge. */
 export function SignalCard({ signal }: { signal: Signal }) {
   const levelClass = signal.level === 'ALERT' ? s.alert : signal.level === 'WATCH' ? s.watch : s.positive
   return (
-    <article className={`${s.box} ${s.signal} ${levelClass}`}>
+    <Card className={`${s.signal} ${levelClass}`}>
       <div className={s.row}>
-        <h3 style={{ margin: 0 }}>{signal.title}</h3>
+        <h3 className={s.signalTitle}>{signal.title}</h3>
         <SignalBadge kind={signal.kind} level={signal.level} />
         <span className={s.muted}>({LEVEL_LABEL[signal.level]})</span>
       </div>
@@ -47,7 +47,7 @@ export function SignalCard({ signal }: { signal: Signal }) {
           </li>
         ))}
       </ul>
-    </article>
+    </Card>
   )
 }
 

@@ -1,111 +1,139 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
-import { getPartnerTeam, type PartnerTeam, type SignalKind } from '../api/partner'
+import { getPartnerTeam, type PartnerTeam, type TeamMember, type SignalKind } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { InlineAlert } from '../components/ui'
+import { ButtonLink, Card, InlineAlert, ResultTable, ResultTableRow, type ResultTableColumn } from '../components/ui'
 import { countLabel, fmtDate, fmtNumber } from '../lib/format'
 import { PrivacyNote, SignalBadge, Sparkline, TrendBadge } from './common'
-import { SIGNAL_SHORT } from './labels'
+import { ASSISTANT_INTRO, ASSISTANT_NAME, ASSISTANT_SCOPE, SIGNAL_SHORT } from './labels'
 import s from './Partner.module.css'
 
 const KINDS: SignalKind[] = ['BURNOUT_RISK', 'OVERLOAD', 'MOTIVATION_DROP', 'APPRECIATION']
 
-/** "Dobrostan zespołu" (/dobrostan): the supervisor's HR partner panel. Headings avoid other menu labels ("Oceny zespołu", "Pracownicy"). */
+/**
+ * "Dobrostan zespołu" (/dobrostan): the supervisor's view of the virtual HR assistant, in the look of „Oceny zespołu”
+ * (sections with a count, `ResultTable`, `Card`). Headings avoid other menu labels ("Oceny zespołu", "Pracownicy").
+ */
 export function TeamWellbeingPage() {
-  const navigate = useNavigate()
   const q = useQuery({ queryKey: ['partner-team'], queryFn: ({ signal }) => getPartnerTeam(signal) })
   if (q.isPending) return <div className="page"><LoadingState /></div>
   if (q.isError) return <div className="page"><ErrorState error={q.error} what="dobrostan zespołu" onRetry={() => q.refetch()} /></div>
   const t = q.data
+  const flagged = t.members.filter((m) => m.signals.length > 0).length
   return (
     <div className="page">
       <header className="page-head">
         <div>
           <h1 className="h-page">Dobrostan zespołu</h1>
-          <p className="page-head__meta">Wirtualny HR partner: sygnały przeciążenia, spadku motywacji, ryzyka wypalenia i momenty do docenienia.</p>
+          <p className="page-head__meta">{ASSISTANT_NAME}: puls i sygnały w Twoim zespole</p>
         </div>
       </header>
 
-      <InlineAlert tone="info">{t.disclaimer} Sygnały nie są częścią oceny okresowej.</InlineAlert>
+      {/* One note instead of two: what the assistant is, what the supervisor sees, and that it is not part of the assessment. */}
+      <InlineAlert tone="info" title={ASSISTANT_INTRO}>
+        {ASSISTANT_SCOPE}
+      </InlineAlert>
 
       <section className="section" aria-labelledby="sig-h">
-        <h2 id="sig-h" className="h-section">Sygnały w zespole</h2>
-        <div className={s.counters}>
-          {KINDS.map((k) => (
-            <div key={k} className={s.box}>
-              <p className={s.muted}>{SIGNAL_SHORT[k]}</p>
-              <p style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, margin: 0 }}>{t.signalCounts[k] ?? 0}</p>
-            </div>
-          ))}
+        <div className="section__head">
+          <h2 id="sig-h" className="h-section">Sygnały w zespole</h2>
+          <span className="faint small">{countLabel(flagged, 'osoba z sygnałami', 'osoby z sygnałami', 'osób z sygnałami')}</span>
         </div>
+        <ul className={s.counters} aria-label="Liczba sygnałów według rodzaju">
+          {KINDS.map((k) => (
+            <li key={k}>
+              <Card className={s.counter}>
+                <span className="block">{SIGNAL_SHORT[k]}</span>
+                <strong className={s.count}>{t.signalCounts[k] ?? 0}</strong>
+              </Card>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="section" aria-labelledby="agg-h">
-        <h2 id="agg-h" className="h-section">Puls zespołu (średnie z okresów 2-tygodniowych)</h2>
-        <TeamChart team={t} />
-        <QuestionAverages team={t} />
+        <div className="section__head">
+          <h2 id="agg-h" className="h-section">Puls zespołu</h2>
+        </div>
+        <div className={s.stack}>
+          <TeamChart team={t} />
+          <QuestionAverages team={t} />
+        </div>
       </section>
 
       <section className="section" aria-labelledby="mem-h">
-        <h2 id="mem-h" className="h-section">Puls pracowników</h2>
-        <div className="panel">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Pracownik</th>
-                <th>Wskaźnik dobrostanu (1–5)</th>
-                <th>Trend</th>
-                <th>Sygnały</th>
-                <th aria-label="Akcje" />
-              </tr>
-            </thead>
-            <tbody>
-              {t.members.map((m) => (
-                <tr key={m.personId} className="is-link" onClick={() => navigate(`/dobrostan/${m.personId}`)}>
-                  <td>
-                    <div className="person">
-                      <span className="person__name">{m.name}</span>
-                      <span className="person__meta">{m.position}</span>
-                    </div>
-                  </td>
-                  <td>
-                    {m.series.length > 0 ? (
-                      <>
-                        <Sparkline points={m.series} label={`Puls: ${m.name}`} />
-                        <span className={`${s.muted} ${s.block}`}>{m.lastPulse ? `ostatni ${fmtDate(m.lastPulse)}` : ''}</span>
-                      </>
-                    ) : (
-                      <span className={s.muted}>nie wypełnia pulsu</span>
-                    )}
-                  </td>
-                  <td>
-                    <TrendBadge kind={m.trend} />
-                  </td>
-                  <td>
-                    <div className={s.badges}>
-                      {m.signals.length === 0 && <span className={s.muted}>brak</span>}
-                      {m.signals.map((sg) => (
-                        <SignalBadge key={sg.kind} kind={sg.kind} level={sg.level} />
-                      ))}
-                    </div>
-                  </td>
-                  <td className="cell-action">
-                    <Link to={`/dobrostan/${m.personId}`} className="btn btn--sm" aria-label={`Karta: ${m.name}`} onClick={(e) => e.stopPropagation()}>
-                      Karta <ChevronRight size={14} aria-hidden="true" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="section__head">
+          <h2 id="mem-h" className="h-section">Puls pracowników</h2>
+          <span className="faint small">{countLabel(t.members.length, 'osoba', 'osoby', 'osób')}</span>
         </div>
+        <ResultTable label="Puls pracowników" columns={COLUMNS}>
+          {t.members.map((m) => (
+            <MemberRow key={m.personId} m={m} />
+          ))}
+        </ResultTable>
       </section>
 
       <section className="section">
         <PrivacyNote items={t.privacy} />
       </section>
     </div>
+  )
+}
+
+const COLUMNS: ResultTableColumn[] = [
+  { label: 'Pracownik', width: 'minmax(0, 1.4fr)' },
+  { label: 'Wskaźnik dobrostanu (1–5)', width: 'minmax(0, 1.2fr)' },
+  { label: 'Trend', width: 'minmax(min-content, 1fr)' },
+  { label: 'Sygnały', width: 'minmax(0, 1.2fr)' },
+  { label: 'Akcje', width: 'max-content', hidden: true },
+]
+
+function MemberRow({ m }: { m: TeamMember }) {
+  const [title, index, trend, signals] = COLUMNS.map((c) => c.label)
+  const to = `/dobrostan/${encodeURIComponent(m.personId)}`
+  return (
+    <ResultTableRow
+      to={to}
+      linkLabel={`Karta dobrostanu: ${m.name}`}
+      title={
+        <>
+          {m.name}
+          <span className={`${s.muted} block`}>{m.position}</span>
+        </>
+      }
+      titleLabel={title}
+      cells={[
+        {
+          label: index,
+          value:
+            m.series.length > 0 ? (
+              <>
+                <Sparkline points={m.series} label={`Puls: ${m.name}`} />
+                {m.lastPulse && <span className={s.muted}>ostatni {fmtDate(m.lastPulse)}</span>}
+              </>
+            ) : (
+              <span className={s.muted}>nie wypełnia pulsu</span>
+            ),
+        },
+        { label: trend, value: <TrendBadge kind={m.trend} /> },
+        {
+          label: signals,
+          value: (
+            <span className={s.badges}>
+              {m.signals.length === 0 && <span className={s.muted}>brak</span>}
+              {m.signals.map((sg) => (
+                <SignalBadge key={sg.kind} kind={sg.kind} level={sg.level} />
+              ))}
+            </span>
+          ),
+        },
+      ]}
+      action={
+        <ButtonLink to={to} variant="secondary" size="small" aria-label={`Zobacz kartę: ${m.name}`}>
+          Zobacz kartę <ChevronRight size={16} aria-hidden="true" />
+        </ButtonLink>
+      }
+    />
   )
 }
 
@@ -117,7 +145,8 @@ function TeamChart({ team }: { team: PartnerTeam }) {
   const bw = (w - 30) / periods.length
   const y = (v: number) => 16 + ((5 - v) * (h - 44)) / 4
   return (
-    <div className={s.box}>
+    <Card title="Średni indeks pulsu zespołu (1–5) w okresach 2-tygodniowych">
+      <div className={s.stack}>
       <svg className={s.chart} style={{ maxWidth: '40rem' }} viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Średni indeks pulsu zespołu w kolejnych okresach">
         {[1, 3, 5].map((v) => (
           <g key={v}>
@@ -147,7 +176,8 @@ function TeamChart({ team }: { team: PartnerTeam }) {
       <p className={s.muted}>
         Średnie pokazujemy tylko wtedy, gdy w okresie są odpowiedzi co najmniej {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}.
       </p>
-    </div>
+      </div>
+    </Card>
   )
 }
 
@@ -156,19 +186,24 @@ function QuestionAverages({ team }: { team: PartnerTeam }) {
   const latest = [...team.aggregate].reverse().find((p) => p.averages)
   if (!latest?.averages) {
     return (
-      <p className={s.muted}>
-        Średnie dla poszczególnych pytań pokażemy, gdy w okresie będą odpowiedzi co najmniej{' '}
-        {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}.
-      </p>
+      <Card title="Średnie dla pytań">
+        <p className={s.muted}>
+          Średnie dla poszczególnych pytań pokażemy, gdy w okresie będą odpowiedzi co najmniej{' '}
+          {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}.
+        </p>
+      </Card>
     )
   }
   const averages = latest.averages
   return (
-    <div className={s.box}>
-      <h3>
-        Średnie dla pytań – cały zespół, {fmtDate(latest.from)}–{fmtDate(latest.to)} ({countLabel(latest.respondents, 'osoba', 'osoby', 'osób')})
-      </h3>
+    <Card title="Średnie dla pytań">
+      <div className={s.stack}>
+      <p className={s.muted}>
+        Cały zespół, {fmtDate(latest.from)}–{fmtDate(latest.to)} ({countLabel(latest.respondents, 'osoba', 'osoby', 'osób')})
+      </p>
+      <div className="table-scroll">
       <table className="table">
+        <caption className="visually-hidden">Średnie odpowiedzi zespołu na pytania pulsu</caption>
         <thead>
           <tr>
             <th>Pytanie</th>
@@ -184,7 +219,9 @@ function QuestionAverages({ team }: { team: PartnerTeam }) {
           ))}
         </tbody>
       </table>
+      </div>
       <p className={s.muted}>Odpowiedzi poszczególnych osób na pytania widzi tylko każda z tych osób.</p>
-    </div>
+      </div>
+    </Card>
   )
 }

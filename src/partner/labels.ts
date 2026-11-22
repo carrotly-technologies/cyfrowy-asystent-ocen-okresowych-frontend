@@ -35,3 +35,11 @@ export const LEVEL_LABEL: Record<SignalLevel, string> = {
   POSITIVE: 'pozytywny',
 }
 
+
+/** User-facing name of the module (code and files keep "partner"): a feature of the app, not a person from HR. */
+export const ASSISTANT_NAME = 'Wirtualny asystent HR'
+
+/** What the supervisor sees and that nothing here affects the assessment; under /dobrostan and behind the "i" in the hints. */
+export const ASSISTANT_INTRO = 'Wirtualny asystent HR to funkcja aplikacji, nie osoba.'
+export const ASSISTANT_SCOPE =
+  'Widzisz tylko ogólny wskaźnik pulsu i sygnały; pojedynczych odpowiedzi nie widzi nikt poza pracownikiem. Nic tutaj nie wpływa na ocenę okresową.'
