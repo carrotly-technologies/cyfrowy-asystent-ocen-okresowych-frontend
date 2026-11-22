@@ -15,113 +15,66 @@
   container-type: inline-size;
 }
 
-/* ---- Coverage of criteria: tile grid, 1 per row on a phone, up to 4 on a wide stage ---- */
-.tiles {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* ---- Coverage of criteria: a .table with a segment bar and a state tag per criterion ---- */
+.coverage {
+  table-layout: auto;
 }
 
-@container (min-width: 32rem) {
-  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.coverage th[scope='row'] {
+  /* Row headers look like ordinary cells (the .table head style is for the column headers only). */
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+  vertical-align: middle;
 }
 
-@container (min-width: 50rem) {
-  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.coverage tbody tr:last-child th[scope='row'] {
+  border-bottom: 0;
 }
 
-@container (min-width: 68rem) {
-  .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
+.critCell {
   width: 100%;
-  height: 100%;
-  padding: var(--s-3);
-  border: var(--border-w) solid var(--accent-border);
-  border-radius: var(--radius);
-  background: var(--accent-faint);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--text-sm);
-  text-align: left;
-  cursor: pointer;
 }
 
-.tile:hover {
-  background: var(--accent-subtle);
-}
-
-.tile:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-shadow);
-}
-
-.tile[aria-pressed='true'] {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-.tile[aria-pressed='true']:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--accent), var(--focus-shadow);
-}
-
-.tileThin {
-  border-color: var(--warn-border);
-  background: var(--warn-bg);
-}
-
-.tileThin:hover {
-  background: var(--warn-bg);
-  border-color: var(--warn);
-}
-
-.tileThin[aria-pressed='true'] {
-  border-color: var(--warn);
-  box-shadow: inset 0 0 0 1px var(--warn);
-}
-
-.tileName {
-  font-weight: var(--weight-semibold);
+.critBtn {
+  max-width: 100%;
+  font-size: inherit;
   line-height: var(--leading-tight);
+  text-align: left;
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 
-.tileFoot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-  margin-top: auto;
+/* The filtered criterion: highlighted row and a fully underlined name (no button fill from the global pressed style). */
+.coverage .active > th,
+.coverage .active > td {
+  background: var(--accent-subtle);
 }
 
-.tileCount {
+.coverage .critBtn[aria-pressed='true'] {
+  background: none;
+  text-decoration-color: currentColor;
+}
+
+.countCell {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-1);
+  gap: var(--s-2);
   color: var(--text-secondary);
 }
 
-.tileCount strong {
+.countCell strong {
   color: var(--text);
-  font-size: var(--text-lg);
-  line-height: 1;
-}
-
-.tileThin .tileCount,
-.tileThin .tileCount strong {
-  color: var(--warn);
 }
 
 .bar {
   display: flex;
-  flex-wrap: wrap;
+  flex: none;
   gap: 2px;
 }
 
@@ -136,8 +89,26 @@
   background: var(--accent);
 }
 
-.tileThin .bar span.on {
-  background: var(--warn);
+/* The state tag sits in its own column; on a narrow stage (phone, or next to the assistant panel) the column is
+   hidden and the tag goes under the criterion name, so the table never scrolls sideways. */
+.stateInline {
+  display: none;
+}
+
+@container (max-width: 40rem) {
+  .stateCol {
+    display: none;
+  }
+
+  .stateInline {
+    display: block;
+    margin-top: var(--s-1);
+  }
+
+  .coverage th,
+  .coverage td {
+    padding-inline: 10px;
+  }
 }
 
 /* ---- Journal ---- */
@@ -150,6 +121,14 @@
 
 .journalHead h3 {
   margin-right: auto;
+}
+
+.filterStatus {
+  margin: 0;
+}
+
+.filterStatus:not(:empty) {
+  margin-top: var(--s-2);
 }
 
 .journalTools {

@@ -17,7 +17,7 @@ async function noHorizontalScroll(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
 }
 
-test('Okres obserwacji: jedna kolumna, kafelki pokrycia filtrują dziennik, S-D-R w 3 kolumnach', async ({ page }) => {
+test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, S-D-R w 3 kolumnach', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto(`/teczka/${CASE}/obserwacje`)
 
@@ -35,38 +35,55 @@ test('Okres obserwacji: jedna kolumna, kafelki pokrycia filtrują dziennik, S-D-
   expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThan(2)
   await expect(notes).not.toHaveAttribute('open')
 
-  // Tiles: name, count and bar; < 2 observations → warning colour and an icon.
-  const tiles = coverage(page).getByRole('button')
-  expect(await tiles.count()).toBeGreaterThan(0)
+  // Coverage table: Kryterium | Obserwacje (bar + count) | Stan; no tiles, no filter dropdown in the journal head.
+  const table = coverage(page).getByRole('table')
+  await expect(table.getByRole('columnheader')).toHaveText(['Kryterium', 'Obserwacje', 'Stan'])
+  const rows = table.getByRole('row').filter({ has: page.getByRole('rowheader') })
+  expect(await rows.count()).toBeGreaterThan(0)
+  await expect(journal(page).getByRole('combobox')).toHaveCount(0)
   // In the seed every criterion of c-003 has fewer than 2 observations.
-  for (const t of await tiles.all()) {
-    await expect(t).toContainText('mało dowodów')
-    await expect(t.locator('svg')).toHaveCount(1)
-    await expect(t).toHaveCSS('background-color', await page.evaluate(() => {
-      const probe = document.createElement('div')
-      probe.style.background = 'var(--warn-bg)'
-      document.body.append(probe)
-      const c = getComputedStyle(probe).backgroundColor
-      probe.remove()
-      return c
-    }))
+  for (const r of await rows.all()) {
+    await expect(r.locator('.tag--warn').filter({ visible: true })).toHaveText('Mało dowodów')
+    await expect(r.getByRole('cell').first()).toContainText(/\d+ obserwac/)
   }
   await expect(coverage(page).locator('.notice--warn')).toBeVisible()
 
-  // Click filters the journal (aria-pressed), a second click removes the filter.
+  // Click on a criterion name filters the journal (aria-pressed, highlighted row); a second click removes the filter.
   const total = await cards(page).count()
-  const tile = tiles.first()
-  const name = (await tile.locator('span').first().textContent())!.trim()
-  await expect(tile).toHaveAttribute('aria-pressed', 'false')
-  await tile.click()
-  await expect(tile).toHaveAttribute('aria-pressed', 'true')
-  await expect(journal(page).getByLabel('Filtruj po kryterium')).toHaveValue(/.+/)
+  const row = rows.first()
+  const btn = row.getByRole('button')
+  const name = (await btn.textContent())!.trim()
+  const status = journal(page).getByText(/^Pokazano:/)
+  await expect(btn).toHaveAttribute('aria-pressed', 'false')
+  await expect(status).toHaveCount(0)
+  const plainBg = await row.getByRole('cell').first().evaluate((e) => getComputedStyle(e).backgroundColor)
+  await btn.click()
+  await expect(btn).toHaveAttribute('aria-pressed', 'true')
+  expect(await row.getByRole('cell').first().evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe(plainBg)
+  await expect(status).toContainText(`Pokazano: ${name}`)
   const filtered = await cards(page).count()
   expect(filtered).toBeGreaterThan(0)
   expect(filtered).toBeLessThan(total)
   for (const card of await cards(page).all()) await expect(card).toContainText(name)
-  await tile.click()
-  await expect(tile).toHaveAttribute('aria-pressed', 'false')
+  await btn.click()
+  await expect(btn).toHaveAttribute('aria-pressed', 'false')
+  await expect(cards(page)).toHaveCount(total)
+  await expect(status).toHaveCount(0)
+
+  // „Pokaż wszystkie” removes the filter too (keyboard).
+  await btn.focus()
+  await page.keyboard.press('Enter')
+  await expect(btn).toHaveAttribute('aria-pressed', 'true')
+  await journal(page).getByRole('button', { name: 'Pokaż wszystkie' }).click()
+  await expect(btn).toHaveAttribute('aria-pressed', 'false')
+  await expect(cards(page)).toHaveCount(total)
+
+  // A criterion without observations: empty state of the filtered journal.
+  const emptyRow = rows.filter({ hasText: /(^|\D)0 obserwacji/ }).first()
+  await emptyRow.getByRole('button').click()
+  await expect(cards(page)).toHaveCount(0)
+  await expect(journal(page).getByText('Brak obserwacji dla tego kryterium.')).toBeVisible()
+  await emptyRow.getByRole('button').click()
   await expect(cards(page)).toHaveCount(total)
 
   // Desktop: Sytuacja, Działanie and Rezultat side by side.
@@ -102,9 +119,11 @@ for (const assistant of [false, true]) {
     await expect(coverage(page)).toBeVisible()
     await noHorizontalScroll(page)
 
-    const tiles = coverage(page).getByRole('button')
-    const xs = await tiles.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
-    expect(new Set(xs).size).toBe(1)
+    // Narrow stage: the „Stan” column is hidden, the tag sits under the criterion name.
+    const table = coverage(page).getByRole('table')
+    await expect(table.getByRole('columnheader', { name: 'Stan' })).toBeHidden()
+    const row = table.getByRole('row').filter({ has: page.getByRole('rowheader') }).first()
+    await expect(row.getByRole('rowheader').getByText('Mało dowodów')).toBeVisible()
 
     const parts = cards(page).first().locator('dl > div')
     const ys = await parts.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))

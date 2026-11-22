@@ -1,4 +1,4 @@
-import { AlertTriangle, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { Observation } from '../../api/cases'
@@ -54,36 +54,51 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
       <div className={`stage-pad ${css.page}`}>
         <section className={css.section} aria-labelledby="obs-coverage">
           <h3 id="obs-coverage" className="h-section">Pokrycie kryteriów dowodami</h3>
-          <p className="small muted">Kliknij kryterium, żeby zobaczyć w dzienniku tylko jego obserwacje. Ponowne kliknięcie pokazuje wszystkie.</p>
-          <ul className={css.tiles}>
-            {criteria.all.map((c) => {
-              const isThin = counts[c] < 2
-              return (
-                <li key={c}>
-                  <button
-                    type="button"
-                    className={`${css.tile} ${isThin ? css.tileThin : ''}`}
-                    aria-pressed={filter === c}
-                    onClick={() => setFilter(filter === c ? '' : c)}
-                  >
-                    <span className={css.tileName}>{criterionName(model, c)}</span>
-                    <span className={css.tileFoot}>
-                      <span className={css.tileCount}>
-                        {isThin && <AlertTriangle size={16} aria-hidden="true" />}
-                        <strong className="num">{counts[c]}</strong> {obsWord(counts[c])}
-                        {isThin && <span className="visually-hidden">, mało dowodów</span>}
+          <p className="small muted">Kliknij nazwę kryterium, żeby zobaczyć w dzienniku tylko jego obserwacje. Ponowne kliknięcie pokazuje wszystkie.</p>
+          <table className={`table ${css.coverage}`}>
+            <caption className="visually-hidden">Liczba obserwacji dla każdego kryterium</caption>
+            <thead>
+              <tr>
+                <th scope="col">Kryterium</th>
+                <th scope="col">Obserwacje</th>
+                <th scope="col" className={css.stateCol}>Stan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {criteria.all.map((c) => {
+                const isThin = counts[c] < 2
+                const state = (
+                  <span className={`tag ${isThin ? 'tag--warn' : 'tag--ok'}`}>{isThin ? 'Mało dowodów' : 'Wystarczająco'}</span>
+                )
+                return (
+                  <tr key={c} className={filter === c ? css.active : undefined}>
+                    <th scope="row" className={css.critCell}>
+                      <button
+                        type="button"
+                        className={`btn btn--link ${css.critBtn}`}
+                        aria-pressed={filter === c}
+                        onClick={() => setFilter(filter === c ? '' : c)}
+                      >
+                        {criterionName(model, c)}
+                      </button>
+                      <span className={css.stateInline}>{state}</span>
+                    </th>
+                    <td>
+                      <span className={css.countCell}>
+                        <span className={css.bar} aria-hidden="true">
+                          {Array.from({ length: Math.max(3, counts[c]) }, (_, i) => (
+                            <span key={i} className={i < counts[c] ? css.on : ''} />
+                          ))}
+                        </span>
+                        <span><strong className="num">{counts[c]}</strong> {obsWord(counts[c])}</span>
                       </span>
-                      <span className={css.bar} aria-hidden="true">
-                        {Array.from({ length: Math.max(3, counts[c]) }, (_, i) => (
-                          <span key={i} className={i < counts[c] ? css.on : ''} />
-                        ))}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+                    </td>
+                    <td className={css.stateCol}>{state}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
           {thin.length > 0 && (
             <p className="notice notice--warn">
               {thin.length > 3 ? `Mniej niż 2 obserwacje w ${thin.length} z ${criteria.all.length} kryteriów.` : `Mało dowodów: ${thin.map((c) => criterionName(model, c)).join(', ')}.`} Bez przykładów ocena opiera się na ogólnym wrażeniu — zbieraj je przed rozmową oceniającą.
@@ -92,21 +107,25 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
         </section>
 
         <section className={css.section} aria-labelledby="obs-journal">
-          <div className={css.journalHead}>
-            <h3 id="obs-journal" className="h-section">Dziennik obserwacji <span className="faint num">({detail.observations.length})</span></h3>
-            <div className={css.journalTools}>
-              <select className="select select--inline" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtruj po kryterium">
-                <option value="">Wszystkie kryteria</option>
-                {criteria.all.map((c) => (
-                  <option key={c} value={c}>{criterionName(model, c)}</option>
-                ))}
-              </select>
-              {!done && (
-                <button type="button" className="btn" onClick={() => setFormOpen((v) => !v)} aria-expanded={formOpen}>
-                  <Plus size={15} aria-hidden="true" /> Dodaj obserwację
-                </button>
-              )}
+          <div>
+            <div className={css.journalHead}>
+              <h3 id="obs-journal" className="h-section">Dziennik obserwacji <span className="faint num">({detail.observations.length})</span></h3>
+              <div className={css.journalTools}>
+                {!done && (
+                  <button type="button" className="btn" onClick={() => setFormOpen((v) => !v)} aria-expanded={formOpen}>
+                    <Plus size={15} aria-hidden="true" /> Dodaj obserwację
+                  </button>
+                )}
+              </div>
             </div>
+            <p className={`small ${css.filterStatus}`} aria-live="polite">
+              {filter && (
+                <>
+                  Pokazano: <strong>{criterionName(model, filter)}</strong> ·{' '}
+                  <button type="button" className="btn btn--link" onClick={() => setFilter('')}>Pokaż wszystkie</button>
+                </>
+              )}
+            </p>
           </div>
 
           {formOpen && (
