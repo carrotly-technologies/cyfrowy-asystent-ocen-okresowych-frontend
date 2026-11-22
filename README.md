@@ -126,3 +126,6 @@ Compose buduje ten obraz z katalogu obok repozytorium backendu; adres API (`PUBL
 ## Licencja
 
 EUPL-1.2 (European Union Public Licence), plik [`LICENSE`](LICENSE).
+
+Krój dokumentów: podgląd i wydruk arkusza w Times New Roman (jak wzór z rozporządzenia), z zapasowym webfontem Tinos
+(`@fontsource/tinos`, licencja SIL OFL 1.1) tylko dla arkusza; reszta UI w Open Sans (SIL OFL 1.1).
