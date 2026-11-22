@@ -26,6 +26,7 @@ import { days, DEMO_TODAY, fmtDate, fmtDaysLeft } from '../../lib/format'
 import { evaluatorLabel } from '../../lib/evaluator'
 import { CASE_STATUS_LABEL, caseUrl } from '../../lib/stages'
 import { useMe } from '../../lib/useAuth'
+import { EmployeeAccount } from './EmployeeAccount'
 import { EmployeeForm } from './EmployeeForm'
 import './kartoteka.css'
 
@@ -305,6 +306,7 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
             {dataSection}
             {cycleSection}
           </div>
+          {canArchive && <EmployeeAccount personId={id} />}
           <Absences employeeId={id} canEdit={canEdit} onChange={refresh} />
           <History employeeId={id} />
         </>

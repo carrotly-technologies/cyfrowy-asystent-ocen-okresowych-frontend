@@ -25,3 +25,19 @@ export const logout = () => apiPost<void>('/auth/logout', undefined)
 export const getUsers = (signal?: AbortSignal) => apiGet<UserView[]>('/admin/users', signal)
 export const updateUserRole = (id: string, role: Role) =>
   apiPatch<UserView>(`/admin/users/${encodeURIComponent(id)}`, { role })
+
+/** An EMPLOYEE account just created for a person from the kartoteka; the password is shown once. */
+export interface CreatedAccount {
+  account: UserView
+  temporaryPassword: string
+}
+
+export interface PersonAccount {
+  account: UserView | null
+  suggestedLogin: string
+}
+
+export const getPersonAccount = (personId: string, signal?: AbortSignal) =>
+  apiGet<PersonAccount>(`/admin/users/person/${encodeURIComponent(personId)}`, signal)
+export const createEmployeeAccount = (personId: string, login: string) =>
+  apiPost<CreatedAccount>('/admin/users', { personId, login })
