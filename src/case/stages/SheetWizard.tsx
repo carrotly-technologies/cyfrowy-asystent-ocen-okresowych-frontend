@@ -1,11 +1,13 @@
 import { useEffect, type ReactNode } from 'react'
 import { CaseHintsPanel } from '../../partner/CaseHintsPanel'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Plus } from 'lucide-react'
 import type { CaseDetail } from '../../api/cases'
 import { InlineAlert } from '../../components/ui'
 import { useCaseAction } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
-import { allows, caseUrl } from '../../lib/stages'
+import { allows, caseUrl, observationLockOf } from '../../lib/stages'
+import { useMe } from '../../lib/useAuth'
 import type { StageProps } from '../CasePage'
 import { SheetPartII } from './SheetPartII'
 import { SheetPartIII } from './SheetPartIII'
@@ -48,6 +50,9 @@ export function SheetWizard(props: StageProps) {
   const navigate = useNavigate()
   const part = readPart(params.get('czesc')) ?? 2
   const act = useCaseAction(detail.id, { follow: false })
+  const me = useMe()
+  // The journal stays open until the signature: new evidence can still be recorded before the assessment talk.
+  const canObserve = me.role === 'SUPERVISOR' && observationLockOf(detail) === null
 
   useEffect(() => {
     if (readPart(params.get('czesc')) === null) {
@@ -75,6 +80,15 @@ export function SheetWizard(props: StageProps) {
   return (
     <StageLayout info={info} title={title} status={status(detail)}>
       <SheetPartsStepper parts={PARTS} stateOf={(n) => (n < part ? 'done' : n === part ? 'current' : 'todo')} />
+      {canObserve && (
+        <p className="small">
+          Nowy przykład zachowania przed rozmową oceniającą?{' '}
+          <Link className="btn btn--link" to={caseUrl(detail.id, 'OBSERVATION')}>
+            <Plus size={14} aria-hidden="true" /> Dodaj obserwację
+          </Link>{' '}
+          ({detail.observations.length} w dzienniku)
+        </p>
+      )}
       <CaseHintsPanel caseId={detail.id} />
       {part === 2 && <SheetPartII {...props} onNext={() => goTo(3)} />}
       {part === 3 && (

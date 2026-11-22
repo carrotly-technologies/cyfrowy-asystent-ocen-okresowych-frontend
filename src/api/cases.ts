@@ -154,6 +154,8 @@ export interface CaseDetail extends CaseSummary {
   corrections?: Correction[]
   /** Dlaczego część I / części II–III są zablokowane (null = edytowalne). */
   locks?: { partI: string | null; partII: string | null }
+  /** Why no observation can be added now (null = the journal is open: observation and assessment stages until signing). */
+  observationsLock?: string | null
   history: HistoryEntry[]
   ackFiction: AckFiction | null
   objections: ObjectionView[]
