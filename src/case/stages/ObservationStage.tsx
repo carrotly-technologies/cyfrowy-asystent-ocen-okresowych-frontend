@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { Fragment, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { Observation } from '../../api/cases'
 import { useAddObservation, useCaseAction, usePatchCase } from '../../lib/caseQueries'
@@ -233,9 +233,38 @@ function obsWord(n: number): string {
  * Notatki robocze: the evaluator's free text without legal effect (never on the sheet, not visible to the assessed
  * person). Part II of the sheet itself opens only at the assessment talk stage (field schema of sheets A/B/C).
  */
+/** Saved shortly after typing stops, on blur and when leaving the stage; closing the tab with unsaved text warns. */
 function WorkingNotes({ caseId, initial }: { caseId: string; initial: string }) {
   const patch = usePatchCase(caseId)
   const [text, setText] = useState(initial)
+  const saved = useRef(initial)
+  const latest = useRef(text)
+  latest.current = text
+  const mutate = useRef(patch.mutate)
+  mutate.current = patch.mutate
+  const save = () => {
+    if (latest.current === saved.current) return
+    saved.current = latest.current
+    mutate.current({ workingNotes: latest.current })
+  }
+  // autosave 800 ms after the last keystroke
+  useEffect(() => {
+    if (text === saved.current) return
+    const t = setTimeout(save, 800)
+    return () => clearTimeout(t)
+  })
+  // leaving the stage (another route) saves; closing or reloading the tab with unsaved text asks first
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (latest.current !== saved.current) e.preventDefault()
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => {
+      window.removeEventListener('beforeunload', warn)
+      save()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   return (
     <Disclosure title="Notatki robocze" bodyClassName={css.notesBody}>
       <p className="small muted">
@@ -248,9 +277,11 @@ function WorkingNotes({ caseId, initial }: { caseId: string; initial: string }) 
         aria-label="Notatki robocze"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        onBlur={() => text !== initial && patch.mutate({ workingNotes: text })}
+        onBlur={save}
       />
-      {patch.isSuccess && <p className="small muted" aria-live="polite">Zapisano.</p>}
+      <p className="small muted" aria-live="polite">
+        {patch.isPending ? 'Zapisywanie…' : text !== saved.current ? 'Zmiany zapiszą się automatycznie.' : patch.isSuccess ? 'Zapisano.' : ''}
+      </p>
       <MutationError error={patch.error} />
     </Disclosure>
   )

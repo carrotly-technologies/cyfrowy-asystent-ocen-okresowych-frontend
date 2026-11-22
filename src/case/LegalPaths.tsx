@@ -422,7 +422,9 @@ export function EvaluatorLegalPanel({ detail }: { detail: CaseDetail }) {
       <AckFictionInfo detail={detail} />
       {showFiction && (
         <InlineAlert tone="info" title="Oceniany nie potwierdza zapoznania z oceną?">
-          {fiction ? (
+          {detail.sentForAckOn === DEMO_TODAY ? (
+            <p className="small">{FICTION_TOO_EARLY}</p>
+          ) : fiction ? (
             <AckFictionForm detail={detail} onDone={() => setFiction(false)} />
           ) : (
             <Button type="button" variant="secondary" size="small" onClick={() => setFiction(true)}>Stwierdź fikcję zapoznania</Button>
@@ -432,6 +434,10 @@ export function EvaluatorLegalPanel({ detail }: { detail: CaseDetail }) {
     </div>
   )
 }
+
+/** Shown instead of the action on the day the assessment was handed over: the assessed person still has time. */
+const FICTION_TOO_EARLY =
+  'Ocena została przekazana dziś. Fikcję zapoznania stwierdza się dopiero wtedy, gdy oceniany mimo doręczenia nie potwierdza zapoznania (odmowa, nieobecność): ta możliwość pojawi się od następnego dnia.'
 
 /** HR (kadry): records the fiction of acknowledgement from the monitoring table, in a dialog. */
 export function AckFictionButton({ caseId, name }: { caseId: string; name: string }) {
@@ -458,5 +464,6 @@ function AckFictionLoader({ caseId, onDone }: { caseId: string; onDone: () => vo
   if (!q.data.legalActions?.includes('RECORD_ACK_FICTION')) {
     return <><p className="muted">W tej sprawie nie można teraz odnotować fikcji zapoznania (ocena nie została przekazana albo zapoznanie jest już odnotowane).</p>{close}</>
   }
+  if (q.data.sentForAckOn === DEMO_TODAY) return <><p className="muted">{FICTION_TOO_EARLY}</p>{close}</>
   return <AckFictionForm detail={q.data} onDone={onDone} onCancel={onDone} />
 }

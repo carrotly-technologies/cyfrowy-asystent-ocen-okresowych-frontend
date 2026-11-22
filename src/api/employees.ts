@@ -54,6 +54,8 @@ export interface EmployeeView extends EmployeeFields {
   /** Predicted next periodic assessment (`YYYY-MM-DD`): last assessment + 24 months, computed by the backend (art. 81 ust. 1). */
   nextEvaluationDueOn: string | null
   obligatoryPromotion: ObligatoryPromotion
+  /** Archiving: end of the retention of the personnel file (null: no assessment on record), assessment in progress. */
+  archive?: { retentionUntil: string | null; inProgress: boolean }
 }
 
 export interface ObligatoryPromotion {

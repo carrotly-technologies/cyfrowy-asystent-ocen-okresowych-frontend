@@ -66,7 +66,7 @@ export function AskPartner({ personId, caseId }: { personId?: string; caseId?: s
             {ask.data.disclaimer}
           </p>
           <details>
-            <summary className={s.muted} style={{ cursor: 'pointer' }}>
+            <summary className={`${s.muted} summary-chevron`}>
               Co trafiłoby do modelu ({ask.data.replacements} zamienionych danych)
             </summary>
             <p className={s.muted}>{ask.data.anonymizationNote}</p>

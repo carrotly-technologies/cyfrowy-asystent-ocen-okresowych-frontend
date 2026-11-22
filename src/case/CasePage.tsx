@@ -1,4 +1,4 @@
-import { FileText, MessageSquareText, Printer } from 'lucide-react'
+import { Download, FileText, MessageSquareText } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import type { CaseDetail, StageId } from '../api/cases'
@@ -120,7 +120,7 @@ export function CasePage() {
                 )
               }
             >
-              <Printer size={15} strokeWidth={1.75} aria-hidden="true" />
+              <Download size={15} strokeWidth={1.75} aria-hidden="true" />
               Pobierz PDF
             </button>
             {features.assistant && (

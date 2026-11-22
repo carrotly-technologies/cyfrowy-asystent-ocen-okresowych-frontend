@@ -58,7 +58,7 @@ export function AdminCorrectionsPage() {
               onChange={(e) => setCaseId(e.target.value)}
               options={cases.data.map((c) => ({
                 value: c.id,
-                label: `${c.person.lastName} ${c.person.firstName} · arkusz ${c.sheetId ?? '—'} · ${CASE_STATUS_LABEL[c.status]} · oceniający: ${c.evaluatorName}${c.corrections ? ` · korekty: ${c.corrections}` : ''}`,
+                label: `${c.person.firstName} ${c.person.lastName} · arkusz ${c.sheetId ?? '—'} · ${CASE_STATUS_LABEL[c.status]} · oceniający: ${c.evaluatorName}${c.corrections ? ` · korekty: ${c.corrections}` : ''}`,
               }))}
             />
           )}

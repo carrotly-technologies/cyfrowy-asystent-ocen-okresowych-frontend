@@ -20,10 +20,10 @@ import {
 import { CaseActionLink } from '../../components/CaseActionLink'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
-import { BackLink, ConfirmDialog, DateInput, Dialog, InlineAlert } from '../../components/ui'
+import { BackLink, Button, ConfirmDialog, DateInput, Dialog, InlineAlert } from '../../components/ui'
 import { errorMessage } from '../../api/client'
 import { MutationError } from '../../case/stages/common'
-import { days, fmtDate, fmtDaysLeft } from '../../lib/format'
+import { days, DEMO_TODAY, fmtDate, fmtDaysLeft } from '../../lib/format'
 import { evaluatorLabel } from '../../lib/evaluator'
 import { CASE_STATUS_LABEL } from '../../lib/stages'
 import { useMe } from '../../lib/useAuth'
@@ -107,6 +107,11 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
   const due = e.currentCase?.assessmentDue ?? null
   const beforeOpeningTalk = !!e.currentCase && ['SHEET_SELECTION', 'OPENING_TALK', 'PART_I_ACK'].includes(e.currentCase.stage)
   const team = variant === 'team'
+  const archive = e.archive
+  const retentionRunning = !!archive?.retentionUntil && archive.retentionUntil > DEMO_TODAY
+  // HR cannot archive before the retention ends; an ADMIN can, with a reason. Nobody while an assessment runs.
+  const archiveBlocked = !!archive?.inProgress || (retentionRunning && me.role !== 'ADMIN')
+  const archiveNeedsReason = me.role === 'ADMIN' && (retentionRunning || !archive)
 
   const dataSection = (
     <section className="panel panel__body" aria-labelledby="data-h">
@@ -292,16 +297,34 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
           actions={
             <>
               <button type="button" className="btn" onClick={() => setConfirmDelete(false)}>Anuluj</button>
-              <button type="button" className="btn btn--primary" disabled={remove.isPending} onClick={() => remove.mutate()}>Archiwizuj i anonimizuj</button>
+              <Button
+                destructive
+                loading={remove.isPending}
+                disabled={archiveBlocked || (archiveNeedsReason && !archiveReason.trim())}
+                onClick={() => remove.mutate()}
+              >
+                Archiwizuj i anonimizuj
+              </Button>
             </>
           }
         >
+          {archive?.inProgress ? (
+            <InlineAlert tone="warning" title="Teraz nie można zarchiwizować">
+              Pracownik ma ocenę w toku. Najpierw zakończ ocenę (zapoznanie ocenianego z oceną).
+            </InlineAlert>
+          ) : retentionRunning ? (
+            <InlineAlert tone={me.role === 'ADMIN' ? 'info' : 'warning'} title={`Okres przechowywania trwa do ${fmtDate(archive!.retentionUntil!)}`}>
+              Oceny okresowe są częścią akt osobowych (art. 94 pkt 9b Kodeksu pracy: 10 lat od ostatniej oceny).{' '}
+              {me.role === 'ADMIN'
+                ? 'Przed upływem tego okresu możesz zarchiwizować dane tylko z podanym powodem.'
+                : 'Przed upływem tego okresu dane może zarchiwizować wyłącznie administrator, podając powód.'}
+            </InlineAlert>
+          ) : null}
           <p>
-            Oceny okresowe są częścią akt osobowych, które przechowuje się przez 10 lat (art. 94 pkt 9b Kodeksu pracy). Po
-            upływie tego okresu dane z kartoteki, nieobecności i oceny z importu zostaną usunięte, a zakończone oceny w
-            systemie zanonimizowane (zostają w statystykach bez danych osobowych). Nie można tego zrobić, gdy ocena jest w toku.
+            Po archiwizacji dane z kartoteki, nieobecności i oceny z importu zostaną usunięte, a zakończone oceny w systemie
+            zanonimizowane (zostają w statystykach bez danych osobowych). Tej operacji nie można cofnąć.
           </p>
-          {me.role === 'ADMIN' && (
+          {archiveNeedsReason && !archive?.inProgress && (
             <label className="field">
               <span className="field__label">Powód archiwizacji przed upływem okresu przechowywania (tylko administrator)</span>
               <textarea className="textarea" rows={2} value={archiveReason} onChange={(ev) => setArchiveReason(ev.target.value)} />
