@@ -81,7 +81,7 @@
   position: absolute;
   top: calc(100% + var(--s-2));
   right: 0;
-  z-index: var(--z-overlay);
+  z-index: var(--z-dropdown);
   width: min(300px, calc(100vw - 2 * var(--s-4)));
   padding: var(--s-2);
   border: var(--border-w) solid var(--border);

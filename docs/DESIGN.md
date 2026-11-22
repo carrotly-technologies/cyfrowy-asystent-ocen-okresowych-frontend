@@ -47,6 +47,7 @@ The table below predates this section; where they differ, this section and `toke
 | spacing | `--s-0` 2, `--s-1` 4, `--s-2` 8, `--s-3` 12, `--s-4` 16, `--s-5` 20, `--s-6` 24, `--s-8` 32, `--s-10` 40, `--s-12` 48, `--s-14` 56, `--s-16` 64; roles `--gap-*`, `--pad-*` | see "Spacing" below |
 | radius | `--radius-xs` 4 (fields, alerts), `--radius` 8, `--radius-lg` 12 (cards), `--radius-xl` 16 (dialogs), `--radius-pill` (buttons, badges) | |
 | sizes | `--control-h` 48, `--control-h-sm` 36, `--tap` 44 (these three and `--topbar-h` in `rem`), `--content-max` 1200, `--form-max` 640 | |
+| layers | `--z-sticky` 10, `--z-dropdown` 20, `--z-bottom-nav` 30, `--z-panel` 40, `--z-header` 50, `--z-overlay` 100, `--z-toast` 200 | see "Layers" below |
 
 **Dark mode** follows the system (`prefers-color-scheme`) by default; in `/ustawienia` the user can force
 "Jasny" or "Ciemny", which puts `data-theme="light" | "dark"` on `<html>` (`src/lib/preferences.ts`, stored in
@@ -137,6 +138,32 @@ import { Button, ErrorSummary, Field, TextInput } from '../components/ui'
 `AppShell`: skip link "Przejdź do treści"; top bar with the product name, the main links, the settings gear
 (`/ustawienia`) and `UserMenu`; below 1024px the links go under a "Menu" button, and below 768px the gear moves
 into that menu as "Ustawienia". No horizontal scrolling. Content max width ~1200px.
+
+## Layers
+
+One z-index scale for the whole app (`src/styles/tokens.css`), lowest first:
+
+| token | value | what |
+|---|---|---|
+| (none) | auto | page content |
+| `--z-sticky` | 10 | sticky bars in the content (the case stage bar in `CasePage.module.css`) |
+| `--z-dropdown` | 20 | popovers and tooltips (`InfoTip`): above sticky bars, so a tooltip never hides under one; also the dropdown panels of the top bar (`UserMenu`, `NotificationBell`), relative to the top bar |
+| `--z-bottom-nav` | 30 | fixed bottom tab bar on phones |
+| `--z-panel` | 40 | the assistant slide-over in the case file (`.assistant--dock`): above the bottom tab bar, below the top bar |
+| `--z-header` | 50 | the top bar (`.topbar`) with its dropdowns |
+| `--z-overlay` | 100 | modal layers that are not in the browser top layer |
+| `--z-toast` | 200 | snackbars (`Feedback`) and the skip link |
+
+Native modal `<dialog>`s (`Dialog`, `ConfirmDialog`, the navigation drawer) open in the browser top layer, above
+all of these. Rules:
+
+- Use a token for anything that has to sit above other parts of the page; a bare `z-index: 1` or `2` is only for
+  order inside one component.
+- A dropdown takes the layer of the element that holds it: `position` + `z-index`, `transform`, `filter`,
+  `opacity < 1` or `isolation` on an ancestor make a stacking context, and nothing inside can rise above that
+  ancestor's layer. That is why the top bar, not its menus, carries `--z-header`: otherwise the sticky stage bar,
+  later in the DOM, covers the open user menu. Do not add such properties to ancestors of a dropdown without
+  checking its layer.
 
 ## UX rules
 

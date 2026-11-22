@@ -491,9 +491,16 @@
   --form-wide-max: 60rem;
   /* Readable line length of text blocks (50–75 characters; WCAG 1.4.8: ≤ 80) */
   --measure: 75ch;
-  --z-sticky: 10;
-  --z-overlay: 100;
-  --z-toast: 200;
+  /* Layers of the page (docs/DESIGN.md, "Layers"), lowest first. Every z-index that lifts something above the
+     page uses one of these; a bare 1 or 2 is only for order inside one component. The top bar sits above
+     everything in the content, so its dropdowns (user menu, notifications) always open over the sticky stage bar. */
+  --z-sticky: 10;      /* sticky bars in the content (the case stage bar) */
+  --z-dropdown: 20;    /* popovers and tooltips (InfoTip; the top bar menus inside the top bar) */
+  --z-bottom-nav: 30;  /* fixed bottom tab bar on phones */
+  --z-panel: 40;       /* assistant slide-over in the case file (below the top bar, above the bottom tab bar) */
+  --z-header: 50;      /* top bar of the app, with its dropdowns */
+  --z-overlay: 100;    /* modal layers outside the top layer */
+  --z-toast: 200;      /* snackbars and the skip link */
 
   /* ---------- Layout ---------- */
   --topbar-h: 4rem;
