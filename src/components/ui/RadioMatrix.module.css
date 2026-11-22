@@ -81,7 +81,7 @@
   transition: background-color var(--duration);
 }
 
-/* The whole cell is the click target of its radio. */
+/* The whole cell is the click target of its radio (WCAG 2.5.8), so the radio itself can be a bit smaller (20px). */
 .cellTarget {
   display: flex;
   align-items: center;
@@ -89,7 +89,7 @@
   min-height: calc(var(--tap) + var(--s-4));
   padding: var(--s-2);
   cursor: pointer;
-  --choice-box: 1.5rem;
+  --choice-box: 1.25rem;
 }
 
 /* The cell centres its radio; the first-line offset from Choice.module.css does not apply here. */

@@ -19,14 +19,14 @@ test('tabela kryteriów pokazuje pełnowymiarowe radiobuttony, a kliknięcie kom
   const radios = table.getByRole('radio')
   await expect(radios.first()).toBeVisible()
 
-  // Every radio in the table is a real 24px (1.5rem) circle, not a collapsed border.
+  // Every radio in the table is a real 20px (1.25rem) circle, not a collapsed border.
   const n = await radios.count()
   expect(n).toBeGreaterThan(0)
   for (let i = 0; i < n; i++) {
     const box = await radios.nth(i).boundingBox()
     expect(box, `radio ${i} has a box`).not.toBeNull()
-    expect(box!.width).toBeGreaterThanOrEqual(20)
-    expect(box!.height).toBeGreaterThanOrEqual(20)
+    expect(box!.width).toBeGreaterThanOrEqual(18)
+    expect(box!.height).toBeGreaterThanOrEqual(18)
   }
 
   // Clicking the cell (not the radio itself) selects its radio; the choice saves at once.
