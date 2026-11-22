@@ -1,3 +1,12 @@
+// Webfont fallback for the sheet only (Tinos, SIL OFL 1.1, metric-compatible with Times New Roman).
+import '@fontsource/tinos/latin-400.css'
+import '@fontsource/tinos/latin-ext-400.css'
+import '@fontsource/tinos/latin-400-italic.css'
+import '@fontsource/tinos/latin-ext-400-italic.css'
+import '@fontsource/tinos/latin-700.css'
+import '@fontsource/tinos/latin-ext-700.css'
+import '@fontsource/tinos/latin-700-italic.css'
+import '@fontsource/tinos/latin-ext-700-italic.css'
 import type { ReactNode } from 'react'
 import type { CaseDetail } from '../api/cases'
 import type { CriteriaCatalogue } from '../api/reference'

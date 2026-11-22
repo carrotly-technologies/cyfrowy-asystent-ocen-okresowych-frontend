@@ -1,13 +1,15 @@
 /* Official sheet (arkusz) — mirrors the Dz.U. 2016 poz. 470 / 2015 poz. 1144 templates.
-   Open Sans, thin black rules, A4 pages. Printing this page produces the PDF. */
+   Times New Roman as in the template (Tinos webfont fallback, scoped to the sheet; the app UI stays
+   in Open Sans), thin black rules, A4 pages. Printing this page produces the PDF. */
 .doc {
+  --doc-font: 'Times New Roman', 'Liberation Serif', Tinos, serif;
   --doc-ink: #111;
   --doc-rule: #222;
   --doc-shade: #f1f1f1;
   width: 210mm;
   margin: 0 auto;
   color: var(--doc-ink);
-  font-family: var(--font-sans);
+  font-family: var(--doc-font);
   font-size: 10.5pt;
   line-height: 1.35;
 }
@@ -132,7 +134,7 @@
 .doc-x {
   display: inline-block;
   min-width: 10px;
-  font-family: var(--font-sans);
+  font-family: var(--doc-font);
   font-weight: 600;
 }
 
@@ -147,7 +149,7 @@
 }
 
 .doc-val {
-  font-family: var(--font-sans);
+  font-family: var(--doc-font);
 }
 
 .doc-blank {
@@ -270,6 +272,7 @@
 
   .doc {
     width: auto;
+    font-family: var(--doc-font);
   }
 
   .doc-page {
