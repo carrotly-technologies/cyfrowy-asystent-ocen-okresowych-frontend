@@ -69,13 +69,17 @@ a {
   text-underline-offset: 2px;
 }
 
-a:hover {
+/* Text links only: a link styled as a button (`a.btn`, e.g. CaseActionLink) keeps its variant's text colour on hover,
+   otherwise it would get the dark --link-hover text on the dark --accent-hover background of .btn--primary.
+   `.btn--link` looks like a text link, so it does take the link hover colour. */
+a:not(.btn):hover,
+a.btn--link:hover {
   color: var(--link-hover);
   text-decoration-color: currentColor;
 }
 
-/* High contrast (/ustawienia): links are fully underlined, not just tinted */
-:root[data-contrast='high'] a,
+/* High contrast (/ustawienia): links are fully underlined, not just tinted (link-buttons stay without underline) */
+:root[data-contrast='high'] a:not(.btn),
 :root[data-contrast='high'] .btn--link {
   text-decoration-color: currentColor;
   text-decoration-thickness: max(1px, 0.0625em);
