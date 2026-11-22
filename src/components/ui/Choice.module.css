@@ -179,7 +179,7 @@
 /* Progressive disclosure: extra question under the chosen option */
 .conditional {
   margin: var(--s-1) 0 var(--s-2) calc(0.75rem - 1px); /* under the centre of the radio */
-  padding: var(--s-2) 0 var(--s-2) calc(var(--s-4) + 2px);
+  padding: var(--s-2) 0 var(--s-2) calc(var(--s-4) + 2px); /* + 2px: optical alignment with the label text */
   border-left: 4px solid var(--border-strong);
 }
 

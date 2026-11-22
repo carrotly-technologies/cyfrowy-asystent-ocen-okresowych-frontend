@@ -2,7 +2,7 @@
 
 .corr-lead {
   max-width: 48rem;
-  margin-top: 6px;
+  margin-top: var(--s-2);
   white-space: normal;
 }
 

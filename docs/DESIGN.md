@@ -44,7 +44,7 @@ The table below predates this section; where they differ, this section and `toke
 | status | `--ok*`, `--warn*`, `--danger*` (+ `--danger-strong` #900E1D), `--info*`, each with `-bg`, `-border`, `--on-*` | success bg #EEFAE1 |
 | focus | `--focus` (#0452A8), `--focus-shadow` = `0 0 0 2px focus, 0 0 0 4px inner, 0 0 0 6px focus` | gov.pl triple ring |
 | type | Open Sans 400/600/700; `--text-xs` 12 … `--text-body` 16 … `--text-3xl` 32 (px at 100%, defined in `rem`) | forms use 16px |
-| spacing | `--s-0` 2, `--s-1` 4, `--s-2` 8, `--s-3` 12, `--s-4` 16, `--s-5` 20, `--s-6` 24, `--s-8` 32, `--s-10` 40, `--s-12` 48, `--s-14` 56 | |
+| spacing | `--s-0` 2, `--s-1` 4, `--s-2` 8, `--s-3` 12, `--s-4` 16, `--s-5` 20, `--s-6` 24, `--s-8` 32, `--s-10` 40, `--s-12` 48, `--s-14` 56, `--s-16` 64; roles `--gap-*`, `--pad-*` | see "Spacing" below |
 | radius | `--radius-xs` 4 (fields, alerts), `--radius` 8, `--radius-lg` 12 (cards), `--radius-xl` 16 (dialogs), `--radius-pill` (buttons, badges) | |
 | sizes | `--control-h` 48, `--control-h-sm` 36, `--tap` 44 (these three and `--topbar-h` in `rem`), `--content-max` 1200, `--form-max` 640 | |
 
@@ -62,6 +62,38 @@ roles, for both themes: text and links ≥ 7:1 on every background role, control
 anything holding text are in `rem`, so they grow with it; spacing, borders, radii and icons stay in `px`.
 New text sizes and heights of elements with text go in `rem` (px ÷ 16). At 150% and 375px wide nothing
 may scroll sideways (WCAG 1.4.4, 1.4.10); on phones buttons wrap their label.
+
+## Spacing
+
+8px grid (`--s-N` = N × 4px, `--s-0` 2px), checked against GOV.UK / gov.pl spacing and WCAG 2.2 (2.5.8 Target Size,
+1.4.12 Text Spacing). Our main users are civil servants, often 45+: more white space and clear grouping (related
+things closer, groups further apart).
+
+- **Only tokens.** `gap`, `margin*` and `padding*` in `src/**/*.css` use `--s-*` or a role token, never raw px.
+  Exceptions, each with a comment: 1–2px borders and rules (e.g. `margin-bottom: -1px` under tabs), the optical
+  alignment of a decoration (icon size inside a `calc`), and the print sheet (`sheet.css`), which keeps the
+  template's measurements written as token sums (`calc(var(--s-2) + var(--s-0))` = 10px).
+- **Role tokens** (`tokens.css`) carry the minimums; use them when the role fits:
+
+  | token | value | use |
+  |---|---|---|
+  | `--gap-icon` | `--s-2` 8 | icon ↔ its text, status dot ↔ label (`.btn`, `.tag`, `StatusBadge`, `BackLink`, field error) |
+  | `--gap-chips` | `--s-2` 8 | chips, tags, badges, pills side by side |
+  | `--gap-actions` | `--s-3` 12 | buttons and link buttons in a row (`.btn-row`, stage header actions, `ResultTable` actions, case actions) |
+  | `--gap-grid` | `--s-5` 20 | columns and cards in a grid (16–24px allowed) |
+  | `--gap-field` | `--s-4` 16 | between form fields |
+  | `--gap-section` | `--s-8` 32 | between page sections (`.section`) |
+  | `--pad-card` | `--s-5` 20 | inside a card (`Card`) |
+  | `--pad-cell-x` | `--s-4` 16 | left and right inside table cells (≥ 12px) |
+
+- **Vertical:** label → control `--s-1` (they belong together), section head → content ≥ `--s-3`, paragraphs
+  `p + p` 0.75em, running text `max-width: var(--measure)` (75ch; `:where(p)` so a component can widen it).
+- **Targets:** controls stay at `--tap` (44px) where they can; anything smaller (inline links, chips) needs 24 × 24px
+  or enough space around it (2.5.8). Stacked buttons in a table cell are `--s-2` apart.
+- **Checks:** `e2e/spacing-a11y.spec.ts` opens „Oceny zespołu”, a person, the case (observations, assessment talk,
+  signature) and „Dobrostan” (list and a person) at 375, 768 and 1440px: no sideways scroll, axe `target-size`
+  without violations, and with the WCAG 1.4.12 text-spacing override no sideways scroll and no text cut off by
+  `overflow: hidden`.
 
 ## Components
 
@@ -114,7 +146,7 @@ into that menu as "Ustawienia". No horizontal scrolling. Content max width ~1200
 4. **Progressive disclosure**: conditional fields under the chosen radio option; no accordions in forms.
 5. **Plain language**; label above the field, hint under the label, never a placeholder as the label.
 6. **"Wstecz"** always keeps what was typed.
-7. **Accessibility** (WCAG 2.1 AA): contrast ≥ 4.5:1, visible focus ring on every interactive element, 44px touch targets, everything works with the keyboard, colour is never the only cue.
+7. **Accessibility** (WCAG 2.1 AA): contrast ≥ 4.5:1, visible focus ring on every interactive element, 44px touch targets, everything works with the keyboard, colour is never the only cue; targets ≥ 24 × 24px with space around smaller ones (WCAG 2.2, 2.5.8), spacing as in "Spacing".
 
 ## Case screen (design "Kompas kompetencji", frames 1–2)
 

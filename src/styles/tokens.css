@@ -447,6 +447,17 @@
   --s-14: 56px;
   --s-16: 64px;
 
+  /* Spacing roles (docs/DESIGN.md "Spacing"): minimums for readability, WCAG 2.5.8 and the 8px grid.
+     Use these instead of a raw --s-* where the role fits; related things closer, groups further apart. */
+  --gap-icon: var(--s-2); /* icon ↔ its text, dot ↔ status label */
+  --gap-chips: var(--s-2); /* chips, tags, badges, pills side by side */
+  --gap-actions: var(--s-3); /* buttons and link buttons in a row (btn-row, header and row actions) */
+  --gap-grid: var(--s-5); /* columns and cards in a grid (16–24px) */
+  --gap-field: var(--s-4); /* between form fields */
+  --gap-section: var(--s-8); /* between page sections */
+  --pad-card: var(--s-5); /* inside a card */
+  --pad-cell-x: var(--s-4); /* left and right inside table cells (≥ 12px) */
+
   /* ---------- Shape ---------- */
   /* "Angular" civil-service shapes: 4px for controls, cards, badges and dialogs; 0 for bars, menus and tables.
      No pills: --radius-pill stays only as a name and resolves to 4px; true circles use --radius-round. */

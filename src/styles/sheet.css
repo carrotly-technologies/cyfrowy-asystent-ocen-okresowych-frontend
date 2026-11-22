@@ -1,6 +1,7 @@
 /* Official sheet (arkusz) — mirrors the Dz.U. 2016 poz. 470 / 2015 poz. 1144 templates.
    Times New Roman as in the template (Tinos webfont fallback, scoped to the sheet; the app UI stays
-   in Open Sans), thin black rules, A4 pages. Printing this page produces the PDF. */
+   in Open Sans), thin black rules, A4 pages. Printing this page produces the PDF.
+   Spacing keeps the template's measurements, written with --s-* tokens (sums where the template is between steps). */
 .doc {
   --doc-font: 'Times New Roman', 'Liberation Serif', Tinos, serif;
   --doc-ink: #111;
@@ -16,7 +17,7 @@
 
 .doc-page {
   min-height: 297mm;
-  margin-bottom: 16px;
+  margin-bottom: var(--s-4);
   padding: 18mm 18mm 20mm;
   background: #fff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.04);
@@ -42,7 +43,7 @@
 
 .doc-annex__wzor {
   align-self: center;
-  margin-top: 6px;
+  margin-top: calc(var(--s-1) + var(--s-0));
   font-style: italic;
   font-weight: 400;
 }
@@ -50,8 +51,8 @@
 .doc-title {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 10px 0 14px;
+  gap: calc(var(--s-2) + var(--s-0));
+  margin: calc(var(--s-2) + var(--s-0)) 0 calc(var(--s-3) + var(--s-0));
   font-size: 11pt;
   font-weight: 600;
   text-align: center;
@@ -67,7 +68,7 @@
 }
 
 .doc-part {
-  margin: 4px 0 12px;
+  margin: var(--s-1) 0 var(--s-3);
   font-size: 11pt;
   font-weight: 600;
   text-align: center;
@@ -75,14 +76,14 @@
 
 .doc-table {
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: calc(var(--s-2) + var(--s-0));
   border: 1px solid var(--doc-rule);
   border-collapse: collapse;
 }
 
 .doc-table th,
 .doc-table td {
-  padding: 3px 6px;
+  padding: calc(var(--s-0) + 1px) calc(var(--s-1) + var(--s-0));
   border: 1px solid var(--doc-rule);
   font-size: 9.5pt;
   text-align: left;
@@ -143,7 +144,7 @@
   place-items: center;
   width: 16px;
   height: 16px;
-  margin-left: 8px;
+  margin-left: var(--s-2);
   border: 1px solid var(--doc-rule);
   vertical-align: -3px;
 }
@@ -168,19 +169,27 @@
 }
 
 .doc-line {
-  margin: 6px 0 12px;
+  margin: calc(var(--s-1) + var(--s-0)) 0 var(--s-3);
   font-size: 9.5pt;
 }
 
 .doc-box {
-  margin: 10px 0;
-  padding: 8px 10px;
+  margin: calc(var(--s-2) + var(--s-0)) 0;
+  padding: var(--s-2) calc(var(--s-2) + var(--s-0));
   border: 1px solid var(--doc-rule);
   font-size: 9.5pt;
 }
 
+.doc p {
+  max-width: none;
+}
+
+.doc p + p {
+  margin-top: 0;
+}
+
 .doc-box p + p {
-  margin-top: 4px;
+  margin-top: var(--s-1);
 }
 
 .doc-box--note {
@@ -188,14 +197,14 @@
 }
 
 .doc-h {
-  margin: 12px 0 4px;
+  margin: var(--s-3) 0 var(--s-1);
   font-size: 9.5pt;
   font-weight: 600;
 }
 
 .doc-text {
   min-height: 34mm;
-  padding: 6px 8px;
+  padding: calc(var(--s-1) + var(--s-0)) var(--s-2);
   border: 1px solid var(--doc-rule);
   font-size: 10pt;
   line-height: 1.45;
@@ -204,8 +213,8 @@
 
 .doc-sigs {
   display: grid;
-  gap: 14px;
-  margin: 16px 0 6px;
+  gap: calc(var(--s-3) + var(--s-0));
+  margin: var(--s-4) 0 calc(var(--s-1) + var(--s-0));
 }
 
 .doc-sig {
@@ -221,7 +230,7 @@
 
 .doc-sig__line {
   width: 100%;
-  padding-top: 2px;
+  padding-top: var(--s-0);
   border-top: 1px dotted var(--doc-rule);
   font-size: 8pt;
   font-style: italic;
@@ -229,7 +238,7 @@
 }
 
 .doc-footnote {
-  margin: 0 0 16px;
+  margin: 0 0 var(--s-4);
   color: var(--text-muted);
   font-family: var(--font-sans);
   font-size: var(--text-xs);

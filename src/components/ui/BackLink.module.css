@@ -1,7 +1,7 @@
 .root {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-1);
+  gap: var(--gap-icon);
   min-height: var(--tap);
   margin-left: calc(-1 * var(--s-1));
   padding: 0 var(--s-2) 0 0;

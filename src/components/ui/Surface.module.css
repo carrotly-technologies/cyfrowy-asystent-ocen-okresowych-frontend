@@ -1,7 +1,7 @@
 /* Card, InfoRow, Accordion, EmptyState */
 .card {
   display: block;
-  padding: var(--s-5);
+  padding: var(--pad-card);
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);

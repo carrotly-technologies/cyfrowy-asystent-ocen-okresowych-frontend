@@ -11,14 +11,14 @@
 }
 
 .hr-table .hr-actions > * + * {
-  margin-top: 4px;
+  margin-top: var(--s-2);
 }
 
 .hr-table .hr-actions .btn {
   height: auto;
   min-height: 2rem;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: var(--s-1);
+  padding-bottom: var(--s-1);
   line-height: 1.25;
   text-align: center;
   white-space: normal;
@@ -35,8 +35,8 @@
   line-height: 1.2;
   height: auto;
   min-height: 1.375rem;
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: var(--s-0);
+  padding-bottom: var(--s-0);
   border-radius: var(--radius-sm);
   text-align: left;
 }

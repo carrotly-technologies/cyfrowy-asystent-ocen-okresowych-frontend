@@ -22,7 +22,7 @@
 
 .coverage th[scope='row'] {
   /* Row headers look like ordinary cells (the .table head style is for the column headers only). */
-  padding: 12px 14px;
+  padding: var(--s-3) var(--pad-cell-x);
   border-bottom: 1px solid var(--border);
   background: none;
   font-size: inherit;
@@ -75,7 +75,7 @@
 .bar {
   display: flex;
   flex: none;
-  gap: 2px;
+  gap: var(--s-0);
 }
 
 .bar span {
@@ -107,7 +107,7 @@
 
   .coverage th,
   .coverage td {
-    padding-inline: 10px;
+    padding-inline: var(--s-3);
   }
 }
 

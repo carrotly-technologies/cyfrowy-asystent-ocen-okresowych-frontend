@@ -44,7 +44,7 @@
 .servicebar span {
   display: flex;
   align-items: center;
-  padding-top: 4px;
+  padding-top: var(--s-1);
   border-bottom: 4px solid var(--on-sc);
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);

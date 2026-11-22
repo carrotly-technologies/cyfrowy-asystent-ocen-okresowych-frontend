@@ -41,13 +41,13 @@
 .emp-tag {
   display: block;
   width: fit-content;
-  margin-top: 4px;
+  margin-top: var(--s-1);
 }
 
 .emp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-  gap: var(--s-4);
+  gap: var(--gap-grid);
   margin: var(--s-4) 0;
 }
 
@@ -64,7 +64,7 @@
 .emp-form__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-  gap: var(--s-3) var(--s-4);
+  gap: var(--gap-field) var(--s-4);
 }
 
 .emp-form__set {
@@ -100,7 +100,7 @@
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-  gap: var(--s-4);
+  gap: var(--gap-grid);
 }
 
 .stat-card .h-sub {
@@ -172,7 +172,7 @@
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-1);
+  gap: var(--s-2);
   margin: var(--s-4) 0 var(--s-3);
   border-bottom: 1px solid var(--border);
 }
@@ -184,7 +184,7 @@
   padding: var(--s-2) var(--s-3);
   border: 0;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  margin-bottom: -1px; /* tab border overlaps the 1px rule under the tabs */
   background: none;
   color: var(--text-secondary);
   font: inherit;
@@ -202,7 +202,7 @@
 }
 
 .tabs__n {
-  padding: 0 6px;
+  padding: 0 var(--s-2);
   border-radius: var(--radius-pill);
   background: var(--bg-muted);
   font-size: var(--text-xs);
@@ -221,7 +221,7 @@
 
 .emp-due-note {
   display: block;
-  margin-top: 2px;
+  margin-top: var(--s-0);
 }
 
 .emp-dl-text {
@@ -272,8 +272,8 @@
 .register-table .tag {
   height: auto;
   min-height: 1.375rem;
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: var(--s-0);
+  padding-bottom: var(--s-0);
   border-radius: var(--radius-sm);
   line-height: 1.2;
   white-space: normal;
