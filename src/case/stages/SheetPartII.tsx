@@ -52,11 +52,21 @@ const samePrevious = (a: PreviousAssessment, b: PreviousAssessment) => a.result 
  * Part II: the assessment itself. Editable from the assessment talk stage until the evaluator signs (field schema of
  * sheets A/B/C: „dostępne do edycji od etapu rozmowy oceniającej”); earlier the evaluator keeps observations and
  * notatki robocze. The backend decides (`partIIEditable` in patch.rules.ts).
+ *
+ * `readOnly`: a preview (e.g. at „Rozmowa rozpoczynająca”): every field locked, nothing is saved or validated, no
+ * error summary and no „Wstecz” / „Dalej”.
  */
-export function SheetPartII({ detail, model, criteria, onBack, onNext }: StageProps & { onBack?: () => void; onNext: () => void }) {
+export function SheetPartII({
+  detail,
+  model,
+  criteria,
+  onBack,
+  onNext,
+  readOnly = false,
+}: StageProps & { onBack?: () => void; onNext?: () => void; readOnly?: boolean }) {
   const patch = usePatchCase(detail.id)
   const signed = detail.signedByEvaluatorOn
-  const editable = partIIOpen(detail)
+  const editable = !readOnly && partIIOpen(detail)
   const [justification, setJustification] = useState(detail.justification)
   const [iprz, setIprz] = useState(detail.iprz)
   const [previous, setPrevious] = useState<PreviousAssessment>(detail.previousAssessment ?? EMPTY_PREVIOUS)
@@ -95,7 +105,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   ]
   const scores = Object.fromEntries(criteria.all.map((c) => [c, detail.decisions[c] != null ? String(detail.decisions[c]) : '']))
 
-  const decide = (c: string, v: string) => patch.mutate({ decisions: { [c]: Number(v) } })
+  const decide = (c: string, v: string) => editable && patch.mutate({ decisions: { [c]: Number(v) } })
 
 
   const previousDirty = urzednik && !samePrevious(previous, detail.previousAssessment ?? EMPTY_PREVIOUS)
@@ -112,7 +122,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
 
   // The answer decides whether part III is attached, so it is saved at once (like the partial scores).
   // NIE DOTYCZY is never chosen by hand: the backend sets it for a pracownik służby cywilnej, and then it is locked.
-  const answer = (v: string) => patch.mutate({ promotionRequest: { attached: v as PromotionAttached } })
+  const answer = (v: string) => editable && patch.mutate({ promotionRequest: { attached: v as PromotionAttached } })
   const attachedOptions = [
     {
       value: 'YES',
@@ -128,13 +138,14 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
 
   const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault()
-    if (!editable) return onNext()
+    if (readOnly) return
+    if (!editable) return onNext?.()
     const e = validate()
     setAttempted((n) => n + 1)
     if (e.length) return
     try {
       if (dirty) await patch.mutateAsync(changes())
-      onNext()
+      onNext?.()
     } catch {
       // the error is shown under the form
     }
@@ -143,7 +154,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   return (
     <form noValidate onSubmit={onSubmit} className={s.form}>
       <PartHeading roman="II">Ocena okresowa</PartHeading>
-      <ErrorSummary errors={errors} focusKey={attempted} />
+      {!readOnly && <ErrorSummary errors={errors} focusKey={attempted} />}
 
       {template && (
         <InlineAlert tone="info" title="Pouczenie">
@@ -191,7 +202,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
         )}
       </PartSection>
 
-      <PartSection title="Oceny cząstkowe" hint="Ocenę cząstkową każdego kryterium wybierasz Ty. Wybór zapisuje się od razu.">
+      <PartSection title="Oceny cząstkowe" hint={readOnly ? 'Ocenę cząstkową każdego kryterium wybierzesz Ty.' : 'Ocenę cząstkową każdego kryterium wybierasz Ty. Wybór zapisuje się od razu.'}>
         <RadioMatrix
           id={DECISION_ID}
           label="Oceny cząstkowe"
@@ -292,7 +303,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
         legend="Czy do oceny okresowej dołączono wniosek o przyznanie kolejnego stopnia służbowego?"
         hint={
           urzednik
-            ? 'Przy odpowiedzi TAK wypełnisz wniosek w części III. Wniosek można dołączyć tylko do oceny pozytywnej. Wybór zapisuje się od razu.'
+            ? `Przy odpowiedzi TAK wypełnisz wniosek w części III. Wniosek można dołączyć tylko do oceny pozytywnej.${readOnly ? '' : ' Wybór zapisuje się od razu.'}`
             : 'Oceniany jest pracownikiem służby cywilnej, więc odpowiedź jest ustawiona na stałe.'
         }
         error={errorFor(ATTACHED_ID)}
@@ -331,8 +342,12 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
         />
       </PartSection>
 
-      <StageError error={patch.error} />
-      <WizardActions onBack={back} loading={patch.isPending} />
+      {!readOnly && (
+        <>
+          <StageError error={patch.error} />
+          <WizardActions onBack={back} loading={patch.isPending} />
+        </>
+      )}
     </form>
   )
 }

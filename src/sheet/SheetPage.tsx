@@ -1,7 +1,7 @@
 import { ArrowLeft, Download, Printer } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { apiDownload, errorMessage } from '../api/client'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { useCase } from '../lib/caseQueries'
 import { caseCriteria, useCriteria, useSheets } from '../lib/model'
@@ -31,6 +31,7 @@ export function SheetPage() {
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [params] = useSearchParams()
+  const location = useLocation()
   const q = useCase(id)
   const model = useCriteria()
   const sheets = useSheets()
@@ -60,8 +61,12 @@ export function SheetPage() {
 
   const detail = q.data
   const name = `${detail.person.firstName} ${detail.person.lastName}`
+  // Opened from a stage of the case file (e.g. „Podgląd całego arkusza” at „Rozmowa rozpoczynająca”): back to it.
+  const from = (location.state as { from?: unknown } | null)?.from
+  const fromCase = typeof from === 'string' && from.startsWith(`/teczka/${detail.id}/`) ? from : null
   const back =
-    me.role === 'SUPERVISOR' ? caseUrl(detail.id, detail.currentStage) : me.role === 'EMPLOYEE' ? `/moje-oceny/${detail.id}` : HOME_BY_ROLE[me.role]
+    fromCase ??
+    (me.role === 'SUPERVISOR' ? caseUrl(detail.id, detail.currentStage) : me.role === 'EMPLOYEE' ? `/moje-oceny/${detail.id}` : HOME_BY_ROLE[me.role])
   const download = async () => {
     setDownloading(true)
     setDownloadError(null)

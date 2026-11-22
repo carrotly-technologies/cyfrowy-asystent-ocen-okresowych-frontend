@@ -38,7 +38,11 @@ const same = (a: Part3, b: Part3) => (Object.keys(a) as (keyof Part3)[]).every((
  * Part III: the request for the next civil-service grade (art. 89 ust. 1 ustawy o służbie cywilnej). It is a form
  * only when part II answers TAK; otherwise the part is not attached, as the template's footnote says.
  */
-/** `nextPending` / `nextError`: what "Dalej" does after saving (SheetWizard records the assessment talk). */
+/**
+ * `nextPending` / `nextError`: what "Dalej" does after saving (SheetWizard records the assessment talk).
+ * `readOnly`: a preview (e.g. at „Rozmowa rozpoczynająca”): the fields are shown locked, nothing is saved or
+ * validated, no error summary and no „Wstecz” / „Dalej”.
+ */
 export function SheetPartIII({
   detail,
   criteria,
@@ -47,15 +51,25 @@ export function SheetPartIII({
   nextPending = false,
   nextError,
   nextLabel,
-}: StageProps & { onBack: () => void; onNext: () => void; nextPending?: boolean; nextError?: unknown; nextLabel?: string }) {
+  readOnly = false,
+}: StageProps & {
+  onBack?: () => void
+  onNext?: () => void
+  nextPending?: boolean
+  nextError?: unknown
+  nextLabel?: string
+  readOnly?: boolean
+}) {
   const patch = usePatchCase(detail.id)
   const grades = useCivilServiceGrades()
   const template = criteria.sheet?.template
   const request = detail.promotionRequest
   const signed = detail.signedByEvaluatorOn
   // The same window as part II: from the assessment talk stage until the signature (field schema A/B/C).
-  const editable = partIIOpen(detail)
+  const editable = !readOnly && partIIOpen(detail)
   const attached = request.attached === 'YES'
+  // The preview shows the (empty) fields until part II answers the question; NIE / NIE DOTYCZY keep their notice.
+  const showForm = attached || (readOnly && request.attached === null)
   const name = `${detail.person.firstName} ${detail.person.lastName}`
 
   const [form, setForm] = useState<Part3>(() => pick(request))
@@ -120,18 +134,19 @@ export function SheetPartIII({
   // "Wstecz" keeps what was typed, without the checks of "Dalej".
   const back = () => {
     if (dirty) patch.mutate({ promotionRequest: current })
-    onBack()
+    onBack?.()
   }
 
   const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault()
-    if (!attached || !editable) return onNext()
+    if (readOnly) return
+    if (!attached || !editable) return onNext?.()
     const e = validate()
     setErrors(e)
     if (e.length) return
     try {
       if (dirty) await patch.mutateAsync({ promotionRequest: current })
-      onNext()
+      onNext?.()
     } catch {
       // the error is shown under the form
     }
@@ -140,10 +155,16 @@ export function SheetPartIII({
   return (
     <form noValidate onSubmit={onSubmit} className={s.form}>
       <PartHeading roman="III">Wniosek o przyznanie kolejnego stopnia służbowego</PartHeading>
-      <ErrorSummary errors={errors} />
+      {!readOnly && <ErrorSummary errors={errors} />}
       {template && <p className={layout.text}>{template.partIIIApplicability}</p>}
 
-      {!attached ? (
+      {readOnly && request.attached === null && (
+        <p className={layout.muted}>
+          Część III wypełnisz tylko wtedy, gdy w części II odpowiesz TAK na pytanie „Czy do oceny okresowej dołączono wniosek o przyznanie kolejnego stopnia
+          służbowego?”.
+        </p>
+      )}
+      {!showForm ? (
         <InlineAlert tone="info" title={request.attached === null ? 'Najpierw odpowiedz na pytanie w części II' : 'Część III nie jest dołączana'}>
           {request.attached === 'NOT_APPLICABLE' && <p>Oceniany jest pracownikiem służby cywilnej.</p>}
           {request.attached === 'NO' && <p>Oceniający nie dołącza wniosku o przyznanie kolejnego stopnia służbowego.</p>}
@@ -255,8 +276,12 @@ export function SheetPartIII({
         </>
       )}
 
-      <StageError error={patch.error ?? nextError} />
-      <WizardActions onBack={back} loading={patch.isPending || nextPending} nextLabel={nextLabel} />
+      {!readOnly && (
+        <>
+          <StageError error={patch.error ?? nextError} />
+          <WizardActions onBack={back} loading={patch.isPending || nextPending} nextLabel={nextLabel} />
+        </>
+      )}
     </form>
   )
 }
