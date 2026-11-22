@@ -158,7 +158,7 @@ export function MyCasePage() {
         Ocenę prowadzi Twój oceniający. Tutaj potwierdzasz kolejne kroki, widzisz terminy i możesz wnieść sprzeciw, jeśli nie zgadzasz się z oceną.
       </p>
 
-      <StageStepper label="Etapy oceny okresowej" steps={caseSteps(detail).map((s) => ({ key: s.key, label: s.label, status: s.status }))} />
+      <StageStepper label="Etapy oceny okresowej" steps={caseSteps(detail).map((s) => ({ key: s.key, label: s.label, shortLabel: s.shortLabel, status: s.status }))} />
 
       <section className="section">
         <EmployeeActions detail={detail} criteria={ackPartI && detail.sheetId ? criteriaList : null} />

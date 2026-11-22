@@ -35,6 +35,17 @@ export const STAGE_SHORT: Record<StageId, string> = {
   ACKNOWLEDGEMENT: 'Zapoznanie z oceną',
 }
 
+/** One-word step names under the circles of the stepper (the full name goes to the tooltip and screen readers). */
+export const STAGE_STEP: Record<StageId, string> = {
+  SHEET_SELECTION: 'Arkusz',
+  OPENING_TALK: 'Rozmowa',
+  PART_I_ACK: 'Potwierdzenie',
+  OBSERVATION: 'Obserwacje',
+  ASSESSMENT: 'Ocena',
+  SIGNATURE: 'Podpis',
+  ACKNOWLEDGEMENT: 'Zapoznanie',
+}
+
 export const stageTitle = (info: Pick<StageInfo, 'id' | 'name'>) => info.name
 
 export function sheetLabel(sheetId: string | null): string {
@@ -79,6 +90,8 @@ export type StepStatus = 'done' | 'current' | 'todo'
 export interface CaseStep {
   key: string
   label: string
+  /** One-word name shown under the circle. */
+  shortLabel: string
   stages: StageInfo[]
   status: StepStatus
 }
@@ -90,7 +103,7 @@ function stepStatus(s: StageInfo): StepStatus {
 }
 
 export function caseSteps(detail: Pick<CaseDetail, 'stages'>): CaseStep[] {
-  return detail.stages.map((s) => ({ key: s.id, label: STAGE_SHORT[s.id] ?? s.name, stages: [s], status: stepStatus(s) }))
+  return detail.stages.map((s) => ({ key: s.id, label: STAGE_SHORT[s.id] ?? s.name, shortLabel: STAGE_STEP[s.id] ?? s.name, stages: [s], status: stepStatus(s) }))
 }
 
 export function stepTarget(step: CaseStep): StageId {

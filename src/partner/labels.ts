@@ -19,7 +19,7 @@ export const TREND_TONE: Record<TrendKind, 'neutral' | 'success' | 'warning' | '
 export const SIGNAL_SHORT: Record<SignalKind, string> = {
   OVERLOAD: 'Przeciążenie',
   MOTIVATION_DROP: 'Spadek motywacji',
-  BURNOUT_RISK: 'Ryzyko wypalenia',
+  BURNOUT_RISK: 'Sygnał z pulsu',
   APPRECIATION: 'Do docenienia',
 }
 

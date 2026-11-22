@@ -60,3 +60,11 @@ export async function confirmDialog(page: Page, title: string | RegExp, confirmL
   await dialog.getByRole('button', { name: confirmLabel, exact: true }).click()
   await expect(dialog).toBeHidden({ timeout: 20_000 })
 }
+
+/** Opens the docked assistant panel of a case file (it is closed whenever a case file is entered). */
+export async function openAssistant(page: Page): Promise<void> {
+  const btn = page.locator('#case-assistant-btn')
+  await expect(btn).toBeVisible()
+  if ((await btn.getAttribute('aria-expanded')) !== 'true') await btn.click()
+  await expect(btn).toHaveAttribute('aria-expanded', 'true')
+}

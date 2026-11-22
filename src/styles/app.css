@@ -794,17 +794,17 @@
 
 .section__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--s-3);
   margin-bottom: var(--s-3);
 }
 
+/* the title wraps instead of being cut; the tools move under it when there is no room */
 .section__head > * {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 .person > *,

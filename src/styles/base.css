@@ -550,17 +550,17 @@ label.checkbox > input:focus-visible,
 /* ---------- Definition list ---------- */
 .dl {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: fit-content(40%) minmax(0, 1fr);
   gap: var(--s-2) var(--s-4);
   font-size: var(--text-sm);
 }
 
+/* detail cards: values wrap (never cut with an ellipsis), long words break only when they must */
 .dl dt,
 .dl dd {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .dl dt {

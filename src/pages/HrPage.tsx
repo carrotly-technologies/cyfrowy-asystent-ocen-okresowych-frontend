@@ -152,17 +152,15 @@ export function HrPage() {
             <tr>
               <th>Pracownik</th>
               <th>Komórka</th>
-              <th>Oceniający</th>
-              <th>Rodzaj</th>
               <th>Etap</th>
               <th>Termin</th>
               <th>Status</th>
-              <th>Przypomnienie</th>
+              <th className="hr-actions">Działania</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="muted">Brak procesów spełniających filtry.</td></tr>
+              <tr><td colSpan={6} className="muted">Brak procesów spełniających filtry.</td></tr>
             )}
             {rows.map((c) => {
               const sentToday = c.lastReminderOn === DEMO_TODAY
@@ -174,27 +172,36 @@ export function HrPage() {
                       <span className="person__meta" title={c.person.position}>{c.person.position}</span>
                     </div>
                   </td>
-                  <td className="cell-unit" title={c.person.unit}>{deptOf(c.person.unit)}</td>
-                  <td className="cell-evaluator">{evaluatorOf(c)}</td>
-                  <td>
-                    {c.sheetId ? (
-                      <Link to={`/teczka/${c.id}/arkusz`} title="Podgląd arkusza i PDF">{`Okresowa · arkusz ${c.sheetId}`}</Link>
-                    ) : (
-                      'Okresowa · —'
-                    )}
+                  <td className="cell-unit" title={c.person.unit}>
+                    {deptOf(c.person.unit)}
+                    <span className="cell-sub">oceniający: {evaluatorOf(c)}</span>
                   </td>
                   <td>
                     <div className="stage-cell">
                       <StageDots stages={c.stages} />
-                      <span className="stage-cell__name" title={STAGE_SHORT[c.currentStage]}>{STAGE_SHORT[c.currentStage]}</span>
+                      <span className="stage-cell__name">{STAGE_SHORT[c.currentStage]}</span>
+                      <span className="cell-sub">
+                        {c.sheetId ? (
+                          <Link to={`/teczka/${c.id}/arkusz`} title="Podgląd arkusza i PDF">{`arkusz ${c.sheetId}`}</Link>
+                        ) : (
+                          'arkusz do ustalenia'
+                        )}
+                      </span>
                     </div>
                   </td>
                   <td>{c.nextDeadline ? <DeadlineText deadline={c.nextDeadline} /> : <span className="faint">—</span>}</td>
                   <td><span title={CASE_STATUS_LABEL[c.status]} className={`tag ${c.status === 'OKRES_SPRZECIWU' || c.status === 'SPRZECIW_W_ROZPATRZENIU' || c.status === 'DO_ZAPOZNANIA' ? 'tag--accent' : ''}`}>{CASE_STATUS_LABEL[c.status]}</span></td>
                   <td className="hr-actions">
                     {c.remindable ? (
-                      <button type="button" className="btn btn--sm" disabled={sentToday || remind.isPending} onClick={() => remind.mutate([c.id])}>
-                        {sentToday ? 'Wysłano dziś' : 'Wyślij przypomnienie'}
+                      <button
+                        type="button"
+                        className="btn btn--sm"
+                        disabled={sentToday || remind.isPending}
+                        onClick={() => remind.mutate([c.id])}
+                        aria-label={sentToday ? undefined : `Wyślij przypomnienie: ${c.person.firstName} ${c.person.lastName}`}
+                        title={sentToday ? undefined : 'Wyślij przypomnienie oceniającemu'}
+                      >
+                        {sentToday ? 'Wysłano dziś' : 'Przypomnij'}
                       </button>
                     ) : (
                       <span className="faint small">{c.status === 'ZAKONCZONA' ? 'nie dotyczy (zakończona)' : 'nie dotyczy (sprzeciw u DG)'}</span>

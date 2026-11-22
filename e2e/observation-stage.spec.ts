@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { resetDemo, signIn } from './helpers.ts'
+import { resetDemo, signIn, openAssistant } from './helpers.ts'
 
 /** Case c-003 (Michał Lewandowski, sheet B) in the observation period, supervisor j.kaminska (backend demo seed). */
 const CASE = 'c-003'
@@ -124,10 +124,10 @@ test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, dzienn
 
 for (const assistant of [false, true]) {
   test(`Okres obserwacji przy 375 px${assistant ? ' z panelem Asystenta' : ''}: bez poziomego przewijania, dziennik jako oś czasu`, async ({ page }) => {
-    await page.addInitScript((on) => localStorage.setItem('ocena.assistant', on ? '1' : '0'), assistant)
     await page.setViewportSize({ width: 375, height: 800 })
     await signIn(page, SUPERVISOR)
     await page.goto(`/teczka/${CASE}/obserwacje`)
+    if (assistant) await openAssistant(page)
     await expect(coverage(page)).toBeVisible()
     await noHorizontalScroll(page)
 
@@ -142,9 +142,9 @@ for (const assistant of [false, true]) {
 }
 
 test('Okres obserwacji na desktopie z panelem Asystenta: bez poziomego przewijania', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('ocena.assistant', '1'))
   await signIn(page, SUPERVISOR)
   await page.goto(`/teczka/${CASE}/obserwacje`)
+  await openAssistant(page)
   await expect(journal(page)).toBeVisible()
   await noHorizontalScroll(page)
 })
