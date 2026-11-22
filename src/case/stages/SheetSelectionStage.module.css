@@ -48,11 +48,6 @@
   max-width: var(--form-max);
 }
 
-.checks {
-  display: grid;
-  gap: var(--s-3);
-}
-
 .add {
   margin-top: var(--s-4);
 }

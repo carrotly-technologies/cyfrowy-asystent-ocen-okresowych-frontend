@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import type { SheetId } from '../../api/reference'
-import { Button, Checkbox, ConfirmDialog, Field, Fieldset, InlineAlert, RadioGroup, TextInput } from '../../components/ui'
+import { Button, ConfirmDialog, Field, InlineAlert, RadioGroup, TextInput } from '../../components/ui'
 import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { criterionName, findCriterion, useSheets } from '../../lib/model'
 import { allows } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
+import { AdditionalCriteriaPicker } from './AdditionalCriteriaPicker'
 import { StageError, StageLayout } from './StageLayout'
 import layout from './StageLayout.module.css'
 import s from './SheetSelectionStage.module.css'
@@ -35,8 +36,6 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
   const mandatory = sheet?.mandatoryCriteria ?? []
   const max = sheet?.maxAdditionalCriteria ?? 0
   const selected = chosen.filter((c) => !mandatory.includes(c))
-  const full = selected.length >= max
-  const catalogue = model.criteria.filter((c) => !mandatory.includes(c.id))
   const toggle = (id: string, on: boolean) => setChosen((list) => (on ? [...list, id] : list.filter((x) => x !== id)))
 
   // Errors are shown in the dialog (ConfirmDialog) and by StageError.
@@ -94,27 +93,7 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
 
       <CriteriaList title={`Kryteria obowiązkowe arkusza ${sheetId}`} ids={mandatory} model={model} />
 
-      <Fieldset
-        id="extra-criteria"
-        legend={`Kryteria dodatkowe (${selected.length}/${max})`}
-        hint={`Najwyżej ${max}, najistotniejsze ze względu na obowiązki z opisu stanowiska (§5 ust. 2 rozp. PRM z 4.04.2016). Można nie wybrać żadnego.`}
-      >
-        <div className={s.checks}>
-          {catalogue.map((c) => {
-            const on = selected.includes(c.id)
-            return (
-              <Checkbox
-                key={c.id}
-                label={c.name}
-                hint={c.description.join(' ')}
-                checked={on}
-                disabled={!on && full}
-                onChange={(e) => toggle(c.id, e.target.checked)}
-              />
-            )
-          })}
-        </div>
-      </Fieldset>
+      <AdditionalCriteriaPicker id="extra-criteria" model={model} mandatory={mandatory} max={max} selected={selected} onToggle={toggle} />
 
       <Field
         id="assessment-due"
