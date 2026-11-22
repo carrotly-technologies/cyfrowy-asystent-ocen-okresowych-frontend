@@ -117,16 +117,48 @@
   outline-offset: 2px;
 }
 
-a.step:hover {
-  background: var(--bg-hover);
+/* Hover and keyboard focus look the same: the circle darkens (not colour alone: the name is underlined too).
+   Only linked steps react; a step without a link (span.step) has no hover state. */
+a.step {
+  cursor: pointer;
+  text-decoration: none;
 }
 
-/* no underline in any link state; hover is signalled by the background above */
-a.step,
-a.step:hover,
-a.step:focus-visible,
-a.step:visited {
-  text-decoration: none;
+a.step .marker {
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+a.step:hover .label,
+a.step:focus-visible .label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+a.step.done:hover .marker,
+a.step.done:focus-visible .marker {
+  border-color: var(--ok-hover);
+  background: var(--ok-hover);
+}
+
+a.step.current:hover .marker,
+a.step.current:focus-visible .marker {
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
+}
+
+a.step.todo:hover .marker,
+a.step.todo:focus-visible .marker {
+  border-color: var(--text-secondary);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.step .marker {
+    transition: none;
+  }
 }
 
 a.step:visited {

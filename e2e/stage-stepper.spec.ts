@@ -82,3 +82,66 @@ test('Teczka z otwartym asystentem: nazwy etapów nie łamią się litera po lit
   })
   expect(sticky.v).toBe(`${sticky.h}px`)
 })
+
+test('Teczka: hover i fokus na etapie przyciemniają okrąg i podkreślają nazwę, bez szarego tła', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await signIn(page, SUPERVISOR)
+  await page.goto('/teczka/c-001')
+
+  const links = stepper(page).getByRole('link')
+  await expect(links).toHaveCount(7)
+  const look = (i: number) =>
+    links.nth(i).evaluate((a) => {
+      const marker = getComputedStyle(a.querySelector('span:nth-child(1)')!)
+      const label = getComputedStyle(a.querySelector('span:nth-child(2)')!)
+      return {
+        bg: getComputedStyle(a).backgroundColor,
+        cursor: getComputedStyle(a).cursor,
+        markerBg: marker.backgroundColor,
+        markerBorder: marker.borderTopColor,
+        markerColor: marker.color,
+        underline: label.textDecorationLine,
+      }
+    })
+  const token = (name: string) =>
+    page.evaluate((n) => {
+      const probe = document.createElement('i')
+      probe.style.color = `var(${n})`
+      document.body.append(probe)
+      const c = getComputedStyle(probe).color
+      probe.remove()
+      return c
+    }, name)
+  const [okHover, accentHover, textSecondary, text] = await Promise.all(
+    ['--ok-hover', '--accent-hover', '--text-secondary', '--text'].map(token),
+  )
+
+  // At rest: no underline.
+  expect((await look(0)).underline).toBe('none')
+
+  // Done step (1): the green circle darkens.
+  await links.nth(0).hover()
+  let st = await look(0)
+  expect(st).toMatchObject({ bg: 'rgba(0, 0, 0, 0)', cursor: 'pointer', markerBg: okHover, markerBorder: okHover, underline: 'underline' })
+
+  // Current step (5): accent-hover outline and number.
+  await links.nth(4).hover()
+  st = await look(4)
+  expect(st).toMatchObject({ bg: 'rgba(0, 0, 0, 0)', markerBorder: accentHover, markerColor: accentHover, underline: 'underline' })
+  expect((await look(0)).underline).toBe('none')
+
+  // Future step (7): darker grey outline, number in the text colour.
+  await links.nth(6).hover()
+  st = await look(6)
+  expect(st).toMatchObject({ markerBorder: textSecondary, markerColor: text, underline: 'underline' })
+
+  // Keyboard focus looks the same as hover, plus the focus ring.
+  await page.mouse.move(0, 0)
+  await links.nth(3).focus()
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Tab')
+  await expect(links.nth(3)).toBeFocused()
+  st = await look(3)
+  expect(st).toMatchObject({ markerBg: okHover, underline: 'underline' })
+  expect(await links.nth(3).evaluate((a) => getComputedStyle(a).boxShadow)).not.toBe('none')
+})
