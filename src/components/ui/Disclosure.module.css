@@ -1,0 +1,85 @@
+/* Fold-out sections of the case page (Disclosure.tsx). Colours only from tokens, so dark mode and high contrast work. */
+.disclosure {
+  border: var(--border-w) solid var(--accent-border);
+  border-radius: var(--radius);
+  background: var(--accent-faint);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius);
+  cursor: pointer;
+  list-style: none;
+  font-weight: var(--weight-semibold);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:hover {
+  background: var(--accent-subtle);
+}
+
+/* Muted text in a title (legal basis, dates) stays ≥ 4.5:1 on the hover background too. */
+.summary :global(.legal),
+.summary :global(.faint) {
+  color: var(--text-secondary);
+}
+
+.summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+}
+
+.disclosure[open] > .summary {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.chevron {
+  flex: none;
+  /* centres the 16px icon on the first line of text */
+  margin-top: calc((1lh - 16px) / 2);
+  transition: transform 0.15s;
+}
+
+.disclosure[open] > .summary .chevron {
+  transform: rotate(180deg);
+}
+
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  min-width: 0;
+}
+
+.body {
+  display: grid;
+  gap: var(--s-3);
+  min-width: 0;
+  padding: 0 var(--s-3) var(--s-3);
+}
+
+/* Nested inside another panel: tighter, so it does not read as a box in a box. */
+.compact .summary {
+  padding: var(--s-1) var(--s-2);
+}
+
+.compact .body {
+  gap: var(--s-2);
+  padding: 0 var(--s-2) var(--s-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}

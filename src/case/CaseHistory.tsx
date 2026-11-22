@@ -1,5 +1,6 @@
 import { Lock } from 'lucide-react'
 import type { CaseDetail } from '../api/cases'
+import { Disclosure } from '../components/ui'
 import { fmtDate } from '../lib/format'
 
 /**
@@ -10,11 +11,15 @@ export function CaseHistory({ detail }: { detail: CaseDetail }) {
   const corrections = detail.corrections ?? []
   const locks = [detail.locks?.partI, detail.locks?.partII].filter((x): x is string => !!x)
   return (
-    <details className="case-history">
-      <summary>
-        Historia sprawy ({detail.history.length})
-        {corrections.length > 0 && <> · korekty administratora: {corrections.length}</>}
-      </summary>
+    <Disclosure
+      className="case-history"
+      title={
+        <span>
+          Historia sprawy ({detail.history.length})
+          {corrections.length > 0 && <> · korekty administratora: {corrections.length}</>}
+        </span>
+      }
+    >
       {locks.length > 0 && (
         <ul className="case-history__locks">
           {locks.map((l) => (
@@ -60,6 +65,6 @@ export function CaseHistory({ detail }: { detail: CaseDetail }) {
           </li>
         ))}
       </ol>
-    </details>
+    </Disclosure>
   )
 }

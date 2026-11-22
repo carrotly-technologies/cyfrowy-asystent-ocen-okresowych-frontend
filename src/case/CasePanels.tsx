@@ -1,5 +1,5 @@
-import { ChevronDown } from 'lucide-react'
 import type { CaseDetail } from '../api/cases'
+import { Disclosure } from '../components/ui'
 import { EvaluatorDeadlinesPanel } from './DeadlinesPanel'
 import { invitationState } from './invitations'
 import { EvaluatorLegalPanel } from './LegalPaths'
@@ -25,20 +25,21 @@ export function CasePanels({ detail, supervisor }: { detail: CaseDetail; supervi
   if (supervisor && invitations > 0) chips.push({ text: `aktualne zaproszenia: ${invitations}` })
 
   return (
-    <details className={s.panelBox} open={decide || undefined}>
-      <summary className={s.panelSummary}>
-        <ChevronDown className={s.panelChevron} size={16} strokeWidth={1.75} aria-hidden="true" />
-        <span className={s.panelTitle}>{supervisor ? 'Termin oceny, zaproszenia i wnioski' : 'Wnioski i sprzeciwy'}</span>
-        {chips.map((c) => (
-          <span key={c.text} className={`${s.panelChip} ${c.warn ? s.panelChipWarn : ''}`}>
-            {c.text}
-          </span>
-        ))}
-      </summary>
-      <div className={s.panelBody}>
-        <EvaluatorLegalPanel detail={detail} />
-        {supervisor && <EvaluatorDeadlinesPanel detail={detail} />}
-      </div>
-    </details>
+    <Disclosure
+      open={decide}
+      title={
+        <>
+          <span>{supervisor ? 'Termin oceny, zaproszenia i wnioski' : 'Wnioski i sprzeciwy'}</span>
+          {chips.map((c) => (
+            <span key={c.text} className={`${s.panelChip} ${c.warn ? s.panelChipWarn : ''}`}>
+              {c.text}
+            </span>
+          ))}
+        </>
+      }
+    >
+      <EvaluatorLegalPanel detail={detail} />
+      {supervisor && <EvaluatorDeadlinesPanel detail={detail} />}
+    </Disclosure>
   )
 }
