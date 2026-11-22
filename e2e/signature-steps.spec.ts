@@ -25,6 +25,7 @@ test('podpis to krok 2 z 4, a każdy następny krok ma swoją akcję na osi', as
   await expect(step(page, 1)).toContainText(/\d{2}\.\d{2}\.\d{4}/)
   await expect(step(page, 2)).toHaveAttribute('aria-current', 'step')
   await expect(step(page, 2)).toContainText('krok 2 z 4, teraz')
+  await expect(step(page, 2).getByText('Teraz', { exact: true })).toHaveCount(0)
   await expect(step(page, 2).getByRole('region', { name: 'Kontrola formalna' })).toBeVisible()
   const sign = step(page, 2).getByRole('button', { name: 'Podpisz ocenę' })
   await expect(sign).toBeVisible()
