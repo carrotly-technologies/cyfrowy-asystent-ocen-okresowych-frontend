@@ -26,7 +26,9 @@ the footer says the tool is not a gov.pl / KPRM / mObywatel service.
   ≥ 1024px (active = full accent fill) · "Menu" drawer below · bottom tab bar on phones for EMPLOYEE and SUPERVISOR ·
   breadcrumbs (`src/shell/Breadcrumbs.tsx`) from 768px, `BackLink` only below · footer link bar + note.
 - Lists: `ResultList` / `ResultRow` ("job-offer list": status block, SC-blue title, `LABEL: value` pairs, whole row
-  is the link) on /zespol, /moje-oceny, /kartoteka (with the "SORTUJ:" bar) and /sprzeciwy.
+  is the link) on /moje-oceny, /kartoteka (with the "SORTUJ:" bar) and /sprzeciwy. `ResultTable` / `ResultTableRow`
+  is the same list with column headers (ARIA table, one CSS grid, status in the last column, headers hidden and
+  `LABEL: value` per cell at ≤ 640px) on /zespol.
 
 The table below predates this section; where they differ, this section and `tokens.css` win.
 

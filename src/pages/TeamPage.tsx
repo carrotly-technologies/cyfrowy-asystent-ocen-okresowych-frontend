@@ -3,9 +3,9 @@ import { getTeam, type CaseSummary } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
-import { ResultList, ResultRow, type ResultTone } from '../components/ui'
+import { ResultTable, ResultTableRow, type ResultTableColumn, type ResultTone } from '../components/ui'
 import { useMe } from '../lib/useAuth'
-import { countLabel } from '../lib/format'
+import { countLabel, fmtDate } from '../lib/format'
 import { caseUrl, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 
 export function TeamPage() {
@@ -31,15 +31,25 @@ export function TeamPage() {
           <h2 id="team-h" className="h-section">Pracownicy</h2>
           <span className="faint small">{countLabel(cases.length, 'osoba', 'osoby', 'osób')}</span>
         </div>
-        <ResultList label="Pracownicy i ich oceny okresowe">
+        <ResultTable label="Pracownicy i ich oceny okresowe" columns={COLUMNS}>
           {cases.map((c) => (
             <TeamRow key={c.id} c={c} />
           ))}
-        </ResultList>
+        </ResultTable>
       </section>
     </div>
   )
 }
+
+const COLUMNS: ResultTableColumn[] = [
+  { label: 'Pracownik', width: 'minmax(0, 1.4fr)' },
+  { label: 'Stanowisko', width: 'minmax(0, 1.2fr)' },
+  { label: 'Ocena', width: 'minmax(0, 1fr)' },
+  { label: 'Etap', width: 'minmax(0, 1fr)' },
+  { label: 'Termin', width: 'minmax(0, 1.1fr)' },
+  { label: 'Następna ocena', width: 'minmax(0, 0.9fr)' },
+  { label: 'Status', width: '7.5rem' },
+]
 
 /** Status block: overdue first (red), then the case status (closed = grey, waiting for others = blue, running = green). */
 function statusOf(c: CaseSummary): { label: string; sub?: string; tone: ResultTone } {
@@ -56,29 +66,40 @@ function TeamRow({ c }: { c: CaseSummary }) {
   const sheet = c.sheetId ? `arkusz ${c.sheetId}` : 'arkusz do ustalenia'
   const stageName = current ? STAGE_SHORT[current.id] : '—'
   const name = `${c.person.firstName} ${c.person.lastName}`
+  const [title, position, assessment, stage, deadline, next, status] = COLUMNS.map((col) => col.label)
   return (
-    <ResultRow
+    <ResultTableRow
       to={caseUrl(c.id)}
       linkLabel={`Otwórz teczkę: ${name}`}
       title={name}
+      titleLabel={title}
       status={statusOf(c)}
-      meta={[
-        { label: 'Stanowisko', value: c.person.position },
-        { label: 'Ocena', value: `okresowa, ${sheet}` },
-        { label: 'Etap', value: `${idx + 1}/${c.stages.length} ${stageName}` },
+      statusLabel={status}
+      cells={[
+        { label: position, value: c.person.position },
+        { label: assessment, value: `okresowa, ${sheet}` },
+        {
+          label: stage,
+          value: (
+            <>
+              <span>{`${idx + 1}/${c.stages.length} ${stageName}`}</span>
+              <StageDots stages={c.stages} />
+            </>
+          ),
+        },
+        {
+          label: deadline,
+          value: c.nextDeadline ? (
+            <>
+              <DeadlineText deadline={c.nextDeadline} />
+              <span className="small muted">{c.nextDeadline.label.replace(/,?\s+do$/, '')}</span>
+            </>
+          ) : (
+            <span className="faint">—</span>
+          ),
+        },
+        { label: next, value: <span className="num">{fmtDate(c.nextEvaluationDueOn)}</span> },
       ]}
-      aside={
-        c.nextDeadline ? (
-          <>
-            <DeadlineText deadline={c.nextDeadline} />
-            <span className="small muted">{c.nextDeadline.label.replace(/,?\s+do$/, '')}</span>
-          </>
-        ) : undefined
-      }
-    >
-      <div className="result-dots">
-        <StageDots stages={c.stages} />
-      </div>
-    </ResultRow>
+    />
   )
 }
