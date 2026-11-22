@@ -85,13 +85,14 @@
 }
 
 .radio:checked {
-  border-width: 0.1875rem;
+  /* 1/8 of the box (3px at 24px), so the dot stays proportional and centred in a smaller box (RadioMatrix). */
+  border-width: calc(var(--choice-box, 1.5rem) * 0.125);
 }
 
 .radio:checked::after {
   content: '';
   position: absolute;
-  inset: 0.1875rem;
+  inset: calc(var(--choice-box, 1.5rem) * 0.125);
   border-radius: 50%;
   background: var(--accent);
 }
