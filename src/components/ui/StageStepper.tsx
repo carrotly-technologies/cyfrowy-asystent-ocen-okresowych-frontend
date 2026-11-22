@@ -28,10 +28,12 @@ const STATUS_TEXT: Record<StageStepStatus, string> = {
 }
 
 /**
- * Horizontal process stepper (chevrons). Done steps are light green with a check icon, the current step is
- * tinted, future steps are outlined; the step on screen carries aria-current="step". Each step is a
- * link, so the whole stepper works with Tab / Enter. Below 768px it turns into numbered dots plus the
- * name of the shown step, without horizontal scrolling.
+ * Horizontal process stepper: circles joined by a line, the stage name under each circle. Done steps are
+ * green circles with a white check (the line leading to them is green), the current step is an accent
+ * outline with its number, future steps are grey outlines. The step on screen carries aria-current="step"
+ * and a ring around its circle. Each step is a link, so the whole stepper works with Tab / Enter.
+ * When the stepper itself is narrow (phone, or the assistant panel open next to it) only the circles stay,
+ * with the name of the shown step under the line, without horizontal scrolling.
  */
 export function StageStepper({ steps, activeKey, label }: Props) {
   const active = activeKey ?? steps.find((st) => st.status === 'current')?.key
@@ -41,10 +43,12 @@ export function StageStepper({ steps, activeKey, label }: Props) {
       <ol className={s.list}>
         {steps.map((st, i) => {
           const isActive = st.key === active
+          // the line into this step is green once the previous step is done and this one has been reached
+          const reached = i > 0 && steps[i - 1].status === 'done' && st.status !== 'todo'
           const content = (
             <>
               <span className={s.marker} aria-hidden="true">
-                {st.status === 'done' ? <Check size={14} strokeWidth={3} /> : i + 1}
+                {st.status === 'done' ? <Check size={18} strokeWidth={3} /> : i + 1}
               </span>
               <span className={s.label}>{st.label}</span>
               <span className="visually-hidden">
@@ -54,7 +58,7 @@ export function StageStepper({ steps, activeKey, label }: Props) {
           )
           const cls = cx(s.step, s[st.status], isActive && s.active)
           return (
-            <li key={st.key} className={s.item}>
+            <li key={st.key} className={cx(s.item, reached && s.reached)}>
               {st.to ? (
                 <Link to={st.to} className={cls} aria-current={isActive ? 'step' : undefined} title={st.label}>
                   {content}

@@ -1,6 +1,10 @@
-/* Horizontal stage stepper: chevrons on desktop, numbered dots on phones. Tokens only. */
+/* Horizontal stage stepper: circles on a line, stage names under the circles. Tokens only.
+   The layout follows the width of the stepper itself (container query), not the viewport, so it also adapts when
+   the assistant panel narrows the case page: below 53rem only the circles stay, with the shown step's name under them. */
 .root {
-  --chev: 14px;
+  --dot: 32px; /* circle; px, so the row of circles always fits, also with enlarged text (/ustawienia) */
+  --line: 2px;
+  container-type: inline-size;
   min-width: 0;
 }
 
@@ -12,67 +16,43 @@
 }
 
 .item {
-  /* longer names get more room, so whole words fit instead of being split mid-word */
-  flex: 1 1 auto;
+  position: relative;
+  /* equal columns: the line between two circles always runs from centre to centre */
+  flex: 1 1 0;
   min-width: 0;
 }
 
-.item + .item {
-  margin-left: calc(var(--s-1) - var(--chev));
+/* the line from the previous circle to this one, drawn under both circles */
+.item + .item::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--s-1) + var(--dot) / 2 - var(--line) / 2);
+  right: 50%;
+  left: -50%;
+  height: var(--line);
+  background: var(--border-strong);
+}
+
+.item.reached::before {
+  background: var(--ok);
 }
 
 .step {
   position: relative;
+  z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--s-2);
-  min-height: var(--control-h);
+  gap: var(--s-1);
+  min-width: 0;
   height: 100%;
-  padding: var(--s-2) calc(var(--chev) + var(--s-3)) var(--s-2) calc(var(--chev) + var(--s-4));
+  padding: var(--s-1) var(--s-1) var(--s-1);
+  border-radius: var(--radius-xs);
   color: var(--text-secondary);
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   line-height: var(--leading-tight);
   text-align: center;
-  text-decoration: none;
-  isolation: isolate;
-  /* outer shape = border colour, ::before = fill inset by 1px */
-  background: var(--border-strong);
-  clip-path: polygon(0 0, calc(100% - var(--chev)) 0, 100% 50%, calc(100% - var(--chev)) 100%, 0 100%, var(--chev) 50%);
-}
-
-.item:first-child .step {
-  padding-left: var(--s-4);
-  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
-  clip-path: polygon(0 0, calc(100% - var(--chev)) 0, 100% 50%, calc(100% - var(--chev)) 100%, 0 100%);
-}
-
-.item:last-child .step {
-  padding-right: var(--s-4);
-  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--chev) 50%);
-}
-
-.item:only-child .step {
-  clip-path: none;
-}
-
-.step::before {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  background: var(--bg-surface);
-  clip-path: inherit;
-}
-
-.label {
-  min-width: 0;
-  /* never split a word at an arbitrary letter ("Potwierdze|nie"); hyphenate (html lang="pl") only if it cannot fit */
-  word-break: normal;
-  overflow-wrap: break-word;
-  hyphens: auto;
   text-decoration: none;
 }
 
@@ -81,159 +61,115 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: var(--border-w) solid currentColor;
-  border-radius: 50%;
-  font-size: var(--text-xs);
+  box-sizing: border-box;
+  width: var(--dot);
+  height: var(--dot);
+  border: var(--border-w-strong) solid var(--border-input);
+  border-radius: var(--radius-round);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  /* px like the circle, so the number always fits inside it */
+  font-size: 14px;
+  font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-/* done: light green fill, green border, text and check icon (--ok on --ok-bg >= 4.5:1, >= 7:1 in high contrast) */
+.label {
+  max-width: 100%;
+  /* whole words only ("Potwierdzenie" is never split mid-word); the names fit in two lines at the widths below */
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: manual;
+  text-wrap: balance;
+}
+
+/* done: filled green circle, white check (--on-ok on --ok >= 4.5:1), label in the text colour */
 .done {
-  background: var(--ok-border);
-  color: var(--ok);
-}
-
-.done::before {
-  background: var(--ok-bg);
+  color: var(--text);
 }
 
 .done .marker {
-  border-color: transparent;
-  background: transparent;
-  color: var(--ok);
+  border-color: var(--ok);
+  background: var(--ok);
+  color: var(--on-ok);
 }
 
-/* current: tinted accent */
+/* current: accent outline with the number, bold label */
 .current {
-  background: var(--accent-border);
-  color: var(--accent);
-}
-
-.current::before {
-  background: var(--accent-subtle);
-}
-
-/* the step shown on the page: bolder label + aria-current (not colour alone), no underline */
-.active .label {
+  color: var(--text);
   font-weight: var(--weight-bold);
 }
 
-a.step:hover::before {
-  filter: brightness(0.96);
+.current .marker {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-a.todo:hover::before {
+/* the step shown on the page: a ring around its circle + bold label + aria-current (not colour alone) */
+.active {
+  color: var(--text);
+  font-weight: var(--weight-bold);
+}
+
+.active .marker {
+  outline: var(--border-w-strong) solid var(--accent);
+  outline-offset: 2px;
+}
+
+a.step:hover {
   background: var(--bg-hover);
-  filter: none;
 }
 
-/* no underline in any link state; hover is signalled by the fill above */
+/* no underline in any link state; hover is signalled by the background above */
+a.step,
 a.step:hover,
 a.step:focus-visible,
-a.step:visited,
-a.step:hover .label,
-a.step:focus-visible .label,
-a.step:visited .label {
+a.step:visited {
   text-decoration: none;
 }
 
-/* clip-path cuts a box-shadow ring, so the focus ring is drawn inside */
-.step:focus-visible {
-  outline: none;
+a.step:visited {
+  color: inherit;
 }
 
-.step:focus-visible::after {
-  content: '';
-  position: absolute;
-  inset: 7px calc(var(--chev) + 4px);
-  border-radius: var(--radius-xs);
+.step:focus-visible {
+  outline: none;
   box-shadow: var(--focus-shadow);
-  pointer-events: none;
 }
 
 .caption {
   display: none;
-  margin: var(--s-2) 0 0;
+  margin: var(--s-1) 0 0;
   color: var(--text-secondary);
   font-size: var(--text-sm);
+  text-align: center;
 }
 
 .caption strong {
   color: var(--text);
 }
 
-@media (max-width: 1279px) {
+/* medium width (e.g. the case page with the assistant panel open): smaller names, still two lines at most */
+@container (max-width: 62rem) {
   .step {
-    padding-right: calc(var(--chev) + var(--s-1));
-    padding-left: calc(var(--chev) + var(--s-2));
-  }
-}
-
-@media (max-width: 1100px) {
-  .step {
-    flex-direction: column;
-    gap: var(--s-1);
     font-size: var(--text-xs);
   }
 }
 
-/* Phones: numbered dots joined by a line, the name of the shown step under them */
-@media (max-width: 767px) {
-  .list {
-    justify-content: space-between;
-    position: relative;
-  }
-
-  .list::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: var(--s-5);
-    left: var(--s-5);
-    height: 2px;
-    background: var(--border-strong);
-  }
-
-  .item {
-    flex: none;
-  }
-
-  .item + .item {
-    margin-left: 0;
-  }
-
-  /* 44px dots in px, not rem: the row must hold every stage even with enlarged text (/ustawienia) */
-  .step,
-  .item:first-child .step,
-  .item:last-child .step {
+/* narrow (phones, or a squeezed case page): circles on the line only, the shown step's name under the line */
+@container (max-width: 53rem) {
+  .step {
+    /* 44px touch target around the 32px circle */
     width: 44px;
+    min-width: 44px;
     height: 44px;
-    min-height: 44px;
-    padding: 0;
-    border-radius: 50%;
-    background: transparent;
-    clip-path: none;
+    margin: 0 auto;
+    padding: calc((44px - var(--dot)) / 2);
   }
 
-  .step::before {
-    inset: 3px;
-    border: var(--border-w) solid var(--border-strong);
-    border-radius: 50%;
-    clip-path: none;
-  }
-
-  .done::before {
-    border-color: var(--ok);
-  }
-
-  .current::before {
-    border-color: var(--accent);
-  }
-
-  .active::before {
-    box-shadow: 0 0 0 2px var(--bg-surface), 0 0 0 4px var(--accent);
+  .item + .item::before {
+    top: calc(22px - var(--line) / 2);
   }
 
   .label {
@@ -243,22 +179,6 @@ a.step:visited .label {
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
-  }
-
-  .marker {
-    border: 0;
-    background: transparent;
-    color: inherit;
-  }
-
-  .done .marker {
-    background: transparent;
-    color: inherit;
-  }
-
-  .step:focus-visible::after {
-    inset: 0;
-    border-radius: 50%;
   }
 
   .caption {
