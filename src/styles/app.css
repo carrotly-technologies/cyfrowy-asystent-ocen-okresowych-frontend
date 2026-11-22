@@ -1495,8 +1495,8 @@
 /* =========================================================
    Document stage
    ========================================================= */
-/* The four steps (rozmowa → podpis → przekazanie → zapoznanie) as a StageStepper like the stage bar of the case file,
-   without a box around them, and the action of the current step right under it.
+/* The four steps (rozmowa → podpis → przekazanie → zapoznanie) as a vertical StageStepper (same circles, ✓, colours
+   and line as the stage bar of the case file), without a box; the current step is expanded with its action inside it.
    Same edges as the stage status above it: .stage-status is --content-narrow wide including its side padding (the
    same as .stage-pad's), so the block inside .stage-pad is narrower by both paddings. */
 .doc-flow {
@@ -1509,7 +1509,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s-2);
-  margin-top: var(--s-4);
 }
 
 .doc-flow__action > .formal {
@@ -1518,7 +1517,7 @@
 }
 
 .doc-flow__title {
-  margin: 0;
+  margin: 0 0 var(--s-4);
   font-size: var(--text-md);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
