@@ -6,7 +6,7 @@ import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
 import { ResultTable, ResultTableRow, type ResultTableColumn, type ResultTone } from '../components/ui'
 import { useMe } from '../lib/useAuth'
-import { countLabel, fmtDate } from '../lib/format'
+import { countLabel } from '../lib/format'
 import { CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 
 export function TeamPage() {
@@ -43,12 +43,10 @@ export function TeamPage() {
 }
 
 const COLUMNS: ResultTableColumn[] = [
-  { label: 'Pracownik', width: 'minmax(0, 1.4fr)' },
-  { label: 'Stanowisko', width: 'minmax(0, 1.2fr)' },
-  { label: 'Ocena', width: 'minmax(0, 1fr)' },
-  { label: 'Etap', width: 'minmax(0, 1fr)' },
-  { label: 'Termin', width: 'minmax(0, 1.1fr)' },
-  { label: 'Następna ocena', width: 'minmax(0, 0.9fr)' },
+  { label: 'Pracownik', width: 'minmax(0, 1.6fr)' },
+  { label: 'Stanowisko', width: 'minmax(0, 1.4fr)' },
+  { label: 'Etap', width: 'minmax(0, 1.2fr)' },
+  { label: 'Termin', width: 'minmax(0, 1.2fr)' },
   { label: 'Status', width: '7.5rem' },
 ]
 
@@ -64,10 +62,9 @@ function statusOf(c: CaseSummary): { label: string; sub?: string; tone: ResultTo
 function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
   const current = c.stages.find((s) => s.id === c.currentStage)
   const idx = c.stages.findIndex((s) => s.id === c.currentStage)
-  const sheet = c.sheetId ? `arkusz ${c.sheetId}` : 'arkusz do ustalenia'
   const stageName = current ? STAGE_SHORT[current.id] : '—'
   const name = `${c.person.firstName} ${c.person.lastName}`
-  const [title, position, assessment, stage, deadline, next, status] = COLUMNS.map((col) => col.label)
+  const [title, position, stage, deadline, status] = COLUMNS.map((col) => col.label)
   return (
     <ResultTableRow
       to={`/zespol/${encodeURIComponent(c.person.id)}`}
@@ -79,7 +76,6 @@ function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
       statusLabel={status}
       cells={[
         { label: position, value: c.person.position },
-        { label: assessment, value: `okresowa, ${sheet}` },
         {
           label: stage,
           value: (
@@ -100,7 +96,6 @@ function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
             <span className="faint">—</span>
           ),
         },
-        { label: next, value: <span className="num">{fmtDate(c.nextEvaluationDueOn)}</span> },
       ]}
     />
   )

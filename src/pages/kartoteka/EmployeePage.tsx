@@ -140,11 +140,17 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
       )}
     </section>
   )
+  const nextEvaluation = (
+    <>
+      <dt>Następna ocena okresowa (przewidywana)</dt>
+      <dd className="num">{fmtDate(e.nextEvaluationDueOn)}</dd>
+    </>
+  )
   const cycleSection = (
     <section className="panel panel__body" aria-labelledby="cycle-h">
       <h2 id="cycle-h" className="h-section">Bieżąca ocena</h2>
       {e.currentCase ? (
-        <dl className="dl">
+        <dl className="dl emp-cycle-dl">
           <dt>Etap</dt><dd>{e.currentCase.stageName}</dd>
           <dt>Status</dt><dd>{CASE_STATUS_LABEL[e.currentCase.status]}</dd>
           {e.currentCase.nextDeadline && (
@@ -180,10 +186,14 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
               <dd className="emp-dl-text small">pierwotnie {fmtDate(due.baseDate)}, przedłużony o nieobecność dłuższą niż miesiąc (art. 81 ust. 7)</dd>
             </>
           )}
+          {nextEvaluation}
           {e.currentCase.sheetId && (<><dt>Arkusz</dt><dd><Link to={`/teczka/${e.currentCase.id}/arkusz`}>Podgląd arkusza {e.currentCase.sheetId}</Link></dd></>)}
         </dl>
       ) : (
-        <p className="muted">Brak teczki oceny w systemie.</p>
+        <>
+          <p className="muted">Brak teczki oceny w systemie.</p>
+          <dl className="dl emp-cycle-dl">{nextEvaluation}</dl>
+        </>
       )}
       {team && e.currentCase && (
         <CaseActionLink caseId={e.currentCase.id} status={e.currentCase.status} role={me.role} className="emp-open-case" />

@@ -33,6 +33,14 @@ export async function apiPost(request: APIRequestContext, login: string, path: s
   expect(res.ok(), `POST /api${path}: ${await res.text()}`).toBeTruthy()
 }
 
+/** Test setup through the API (not what the test checks): a GET as `login`, parsed as JSON. */
+export async function apiGet<T>(request: APIRequestContext, login: string, path: string): Promise<T> {
+  const token = await apiLogin(request, login)
+  const res = await request.get(`${API_URL}/api${path}`, { headers: { Authorization: `Bearer ${token}` } })
+  expect(res.ok(), `GET /api${path}: ${await res.text()}`).toBeTruthy()
+  return (await res.json()) as T
+}
+
 /** Signs in through the form on /logowanie, as a real user would. */
 export async function signIn(page: Page, login: string): Promise<void> {
   await page.goto('/logowanie')
