@@ -68,12 +68,6 @@
   font-weight: 600;
 }
 
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-1);
-}
-
 .muted {
   color: var(--text-secondary);
   font-size: var(--text-sm);
@@ -175,7 +169,7 @@
   transform: translate(-50%, -100%);
 }
 
-/* "Puls pracowników": one trend per row (sparkline + label, the last index with its date underneath). */
+/* "Puls pracowników": one trend per row (sparkline, one small line underneath: index · trend · date). */
 .trend {
   display: flex;
   flex-direction: column;
@@ -197,6 +191,55 @@
 .trendMeta {
   color: var(--text-secondary);
   font-size: var(--text-xs);
+}
+
+.trendWarn {
+  margin-right: 0.2em;
+  color: var(--danger);
+  vertical-align: -1px;
+}
+
+/* "Puls pracowników", „Sygnały”: the top signal as icon + plain text (like the "dot + name" status), the rest as "+N". */
+.signalCell {
+  display: block;
+  min-width: 0;
+}
+
+.signalTop {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.signalIcon {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+.lvDanger {
+  color: var(--danger);
+}
+
+.lvWarn {
+  color: var(--warn);
+}
+
+.lvOk {
+  color: var(--ok);
+}
+
+.signalName {
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.signalMore {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.7;
 }
 
 @media (max-width: 767px) {

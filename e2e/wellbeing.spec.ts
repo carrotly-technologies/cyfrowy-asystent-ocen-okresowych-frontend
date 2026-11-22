@@ -137,23 +137,56 @@ test('Karta pracownika w Dobrostanie: sygnały i wykres pulsu dopasowują się d
   await expect.poll(async () => Math.abs((await left()) - wellbeingLeft)).toBeLessThanOrEqual(1)
 })
 
-test('Dobrostan: jedna kolumna „Trend” z wykresem, etykietą i ostatnim wskaźnikiem', async ({ page }) => {
+test('Dobrostan: jedna kolumna „Trend” z wykresem i jedną linią: wskaźnik · trend · data, bez etykiety', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/dobrostan')
   const table = page.getByRole('table', { name: 'Puls pracowników' })
   const row = table.getByRole('row').filter({ hasText: 'Michał Lewandowski' })
   const trend = row.getByRole('cell').nth(1)
-  await expect(trend.locator('svg')).toHaveCount(1)
-  await expect(trend).toContainText('nagły spadek')
-  await expect(trend).toContainText(/\d(,\d)? · ostatni \d{2}\.\d{2}\.\d{4}/)
-  // One text for a screen reader: name, trend, last index and date; the sparkline and the badge are hidden.
+  // Only the sparkline and the small warning icon of a sudden drop; no coloured trend badge.
+  await expect(trend.locator('svg')).toHaveCount(2)
+  await expect(trend.locator('.status-badge, [class*="badge"]')).toHaveCount(0)
+  const meta = trend.locator('[class*="trendMeta"]')
+  await expect(meta).toHaveText(/^\d(,\d)? · nagły spadek · ostatni \d{2}\.\d{2}\.\d{4}$/)
+  await expect(meta.locator('svg')).toHaveCount(1)
+  // One text for a screen reader: name, trend, last index and date; the sparkline and the icon are hidden.
   await expect(trend.locator('.visually-hidden')).toHaveText(/^Puls: Michał Lewandowski, nagły spadek, ostatni wskaźnik \d(,\d)?, \d{2}\.\d{2}\.\d{4}$/)
   await expect(trend.getByRole('img')).toHaveCount(0)
+
+  // Other trends: the name in the same line, no warning icon.
+  const stable = table.getByRole('row').filter({ hasText: 'Anna Nowak' }).getByRole('cell').nth(1)
+  await expect(stable.locator('[class*="trendMeta"]')).toHaveText(/^\d(,\d)? · stabilnie · ostatni \d{2}\.\d{2}\.\d{4}$/)
+  await expect(stable.locator('svg')).toHaveCount(1)
 
   // No pulse: just the note, no chart and no label.
   const none = table.getByRole('row').filter({ hasText: 'Katarzyna Michalska' }).getByRole('cell').nth(1)
   await expect(none).toHaveText('Trend:nie wypełnia pulsu')
   await expect(none.locator('svg')).toHaveCount(0)
+})
+
+test('Dobrostan: w kolumnie „Sygnały” jeden najważniejszy sygnał zwykłym tekstem i „+N”', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/dobrostan')
+  const table = page.getByRole('table', { name: 'Puls pracowników' })
+  const cell = (name: string) => table.getByRole('row').filter({ hasText: name }).getByRole('cell').nth(2)
+
+  // Two alerts: the first one in the order of kinds, the other as "+1" with a tooltip; a screen reader hears both.
+  const piotr = cell('Piotr Wójcik')
+  const visible = piotr.locator('[class*="signalTop"]')
+  await expect(visible).toHaveText('Sygnał z pulsu+1')
+  await expect(piotr.locator('[class*="badge"]')).toHaveCount(0)
+  await expect(piotr.locator('svg')).toHaveCount(1)
+  await expect(piotr.getByText('+1', { exact: true })).toHaveAttribute('title', 'Także: Spadek motywacji')
+  await expect(piotr.locator('.visually-hidden')).toHaveText('Sygnały: Sygnał z pulsu (wymaga uwagi), Spadek motywacji (wymaga uwagi)')
+
+  // An alert goes before a signal to watch.
+  await expect(cell('Tomasz Kowalczyk').getByText('+1', { exact: true })).toHaveAttribute('title', 'Także: Przeciążenie')
+  await expect(cell('Tomasz Kowalczyk').locator('.visually-hidden')).toHaveText('Sygnały: Sygnał z pulsu (wymaga uwagi), Przeciążenie (do obserwacji)')
+
+  // One signal: no "+N"; none: "brak".
+  await expect(cell('Anna Nowak').locator('[class*="signalTop"]')).toHaveText('Do docenienia')
+  await expect(cell('Anna Nowak').locator('.visually-hidden')).toHaveText('Sygnały: Do docenienia (pozytywny)')
+  await expect(cell('Paweł Szymański')).toHaveText('Sygnały:brak')
 })
 
 test('Dobrostan: wykres „Puls zespołu” liniowy na całą szerokość, wyróżniony ostatni punkt, tooltip', async ({ page }) => {
