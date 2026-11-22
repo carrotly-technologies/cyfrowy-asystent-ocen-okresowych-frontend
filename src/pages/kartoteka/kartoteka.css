@@ -51,8 +51,18 @@
   margin: var(--s-4) 0;
 }
 
-.emp-open-case {
-  margin-top: var(--s-3);
+/* „Przeprowadź ocenę” at the right of „Historia ocen”; the reason or result sits under the button. */
+.emp-assess {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-1);
+  max-width: 32rem;
+  text-align: right;
+}
+
+.emp-assess > p {
+  margin: 0;
 }
 
 .emp-form {
@@ -224,7 +234,7 @@
   margin-top: var(--s-0);
 }
 
-/* „Bieżąca ocena”: a long label (next periodic assessment) wraps instead of squeezing the values on a phone. */
+/* „Bieżąca ocena” and „Dane w kartotece” on /zespol/:id: a long label (next periodic assessment) wraps instead of squeezing the values on a phone. */
 .dl.emp-cycle-dl {
   grid-template-columns: fit-content(40%) minmax(0, 1fr);
 }

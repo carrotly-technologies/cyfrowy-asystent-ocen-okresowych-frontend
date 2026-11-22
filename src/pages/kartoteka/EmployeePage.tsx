@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlayCircle, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { ClipboardPen, PlayCircle, Trash2 } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   addAbsence,
@@ -17,7 +17,6 @@ import {
   type EmployeeFields,
   type EmployeeView,
 } from '../../api/employees'
-import { CaseActionLink } from '../../components/CaseActionLink'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
 import { BackLink, Button, ConfirmDialog, DateInput, Dialog, InlineAlert } from '../../components/ui'
@@ -25,7 +24,7 @@ import { errorMessage } from '../../api/client'
 import { MutationError } from '../../case/stages/common'
 import { days, DEMO_TODAY, fmtDate, fmtDaysLeft } from '../../lib/format'
 import { evaluatorLabel } from '../../lib/evaluator'
-import { CASE_STATUS_LABEL } from '../../lib/stages'
+import { CASE_STATUS_LABEL, caseUrl } from '../../lib/stages'
 import { useMe } from '../../lib/useAuth'
 import { EmployeeForm } from './EmployeeForm'
 import './kartoteka.css'
@@ -51,8 +50,9 @@ function fieldsOf(e: EmployeeView): EmployeeFields {
 
 /**
  * One employee: the HR register card (`/kartoteka/:id`, variant `register`) or the supervisor's person page in
- * „Oceny zespołu” (`/zespol/:id`, variant `team`). The team variant orders the sections for the evaluator (current
- * assessment with „Prowadź ocenę” for the supervisor of a running case, „Zobacz ocenę” otherwise; history, absences, register data); permissions are the same in both.
+ * „Oceny zespołu” (`/zespol/:id`, variant `team`). The team variant has no „Bieżąca ocena” card: register data first
+ * (with the current deadline and the predicted next periodic assessment), then the history with „Przeprowadź ocenę”
+ * (opens the running case, or starts a new cycle, or is disabled with the reason), then absences.
  */
 export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 'team' }) {
   const { id = '' } = useParams()
@@ -87,7 +87,14 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
       refresh()
     },
   })
-  const cycle = useMutation({ mutationFn: () => startCycle(id), onSuccess: refresh })
+  const cycle = useMutation({
+    mutationFn: () => startCycle(id),
+    onSuccess: (res) => {
+      refresh()
+      // The supervisor goes straight to the new case; HR stays on the register card.
+      if (variant === 'team') navigate(caseUrl(res.caseId))
+    },
+  })
   const remove = useMutation({
     mutationFn: () => deleteEmployee(id, archiveReason.trim() || undefined),
     onSuccess: () => {
@@ -107,12 +114,20 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
   const due = e.currentCase?.assessmentDue ?? null
   const beforeOpeningTalk = !!e.currentCase && ['SHEET_SELECTION', 'OPENING_TALK', 'PART_I_ACK'].includes(e.currentCase.stage)
   const team = variant === 'team'
+  // An assessment in progress for „Przeprowadź ocenę” and „Bieżący termin” (everything but a closed case).
+  const running = e.currentCase && e.currentCase.status !== 'ZAKONCZONA' ? e.currentCase : null
   const archive = e.archive
   const retentionRunning = !!archive?.retentionUntil && archive.retentionUntil > DEMO_TODAY
   // HR cannot archive before the retention ends; an ADMIN can, with a reason. Nobody while an assessment runs.
   const archiveBlocked = !!archive?.inProgress || (retentionRunning && me.role !== 'ADMIN')
   const archiveNeedsReason = me.role === 'ADMIN' && (retentionRunning || !archive)
 
+  const nextEvaluation = (
+    <>
+      <dt>Następna ocena okresowa (przewidywana)</dt>
+      <dd className="num">{fmtDate(e.nextEvaluationDueOn)}</dd>
+    </>
+  )
   const dataSection = (
     <section className="panel panel__body" aria-labelledby="data-h">
       <h2 id="data-h" className="h-section">Dane w kartotece</h2>
@@ -123,7 +138,7 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
           <MutationError error={save.error} />
         </>
       ) : (
-        <dl className="dl">
+        <dl className={team ? 'dl emp-cycle-dl' : 'dl'}>
           <dt>Status</dt><dd>{e.employment === 'URZEDNIK' ? 'urzędnik służby cywilnej' : 'pracownik służby cywilnej'}</dd>
           {e.employment === 'URZEDNIK' && (
             <>
@@ -141,15 +156,27 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
           <dd className="emp-dl-text">
             {e.sheetId} {!e.currentCase?.sheetId && <span className="faint">— sugestia: {e.sheetSuggestion.reason} ({e.sheetSuggestion.legalBasis}); decyduje oceniający</span>}
           </dd>
+          {team && (
+            <>
+              <dt>Bieżący termin</dt>
+              <dd className="emp-dl-text">
+                {running && running.nextDeadline ? (
+                  <>
+                    <span className="block small">
+                      {due && due.date !== running.nextDeadline.date ? 'Najbliższy termin' : 'Termin'}: {running.nextDeadline.label}
+                    </span>
+                    <DeadlineText deadline={running.nextDeadline} />
+                  </>
+                ) : (
+                  '—'
+                )}
+              </dd>
+              {nextEvaluation}
+            </>
+          )}
         </dl>
       )}
     </section>
-  )
-  const nextEvaluation = (
-    <>
-      <dt>Następna ocena okresowa (przewidywana)</dt>
-      <dd className="num">{fmtDate(e.nextEvaluationDueOn)}</dd>
-    </>
   )
   const cycleSection = (
     <section className="panel panel__body" aria-labelledby="cycle-h">
@@ -200,9 +227,6 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
           <dl className="dl emp-cycle-dl">{nextEvaluation}</dl>
         </>
       )}
-      {team && e.currentCase && (
-        <CaseActionLink caseId={e.currentCase.id} status={e.currentCase.status} role={me.role} className="emp-open-case" />
-      )}
       {canEdit && !open && (
         <>
           <button type="button" className="btn btn--primary" disabled={cycle.isPending || preview?.ok === false} onClick={onStartCycle}>
@@ -224,6 +248,24 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
       {cycle.isSuccess && <p className="notice notice--ok" role="status">Rozpoczęto cykl oceny. {cycle.data.reason}</p>}
       <MutationError error={cycle.error} />
     </section>
+  )
+
+  // „Przeprowadź ocenę” next to „Historia ocen” (team variant): open the running case, start a new cycle, or say why not.
+  const assessAction = (
+    <div className="emp-assess">
+      {running ? (
+        <Link to={caseUrl(running.id)} className="btn btn--primary">
+          <ClipboardPen size={15} aria-hidden="true" /> Przeprowadź ocenę
+        </Link>
+      ) : (
+        <button type="button" className="btn btn--primary" disabled={cycle.isPending || preview?.ok === false} onClick={onStartCycle}>
+          <PlayCircle size={15} aria-hidden="true" /> Przeprowadź ocenę
+        </button>
+      )}
+      {!running && preview?.ok === false && <p className="small" role="note">{preview.reason}</p>}
+      {cycle.isSuccess && <p className="notice notice--ok" role="status">Rozpoczęto cykl oceny. {cycle.data.reason}</p>}
+      <MutationError error={cycle.error} />
+    </div>
   )
 
   return (
@@ -253,10 +295,9 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
 
       {team ? (
         <>
-          <div className="emp-grid">{cycleSection}</div>
-          <History employeeId={id} />
-          <Absences employeeId={id} canEdit={canEdit} onChange={refresh} />
           <div className="section">{dataSection}</div>
+          <History employeeId={id} action={assessAction} />
+          <Absences employeeId={id} canEdit={canEdit} onChange={refresh} dueShownIn="„Bieżący termin” w „Dane w kartotece”" />
         </>
       ) : (
         <>
@@ -269,7 +310,7 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
         </>
       )}
 
-      {canEdit && (
+      {(canEdit || team) && (
         <ConfirmDialog
           open={confirmLateCycle}
           title="Termin rozmowy rozpoczynającej już minął"
@@ -337,7 +378,18 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
   )
 }
 
-function Absences({ employeeId, canEdit, onChange }: { employeeId: string; canEdit: boolean; onChange: () => void }) {
+function Absences({
+  employeeId,
+  canEdit,
+  onChange,
+  dueShownIn = 'karta „Bieżąca ocena”',
+}: {
+  employeeId: string
+  canEdit: boolean
+  onChange: () => void
+  /** Where the page shows the extended assessment term. */
+  dueShownIn?: string
+}) {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['absences', employeeId], queryFn: ({ signal }) => getAbsences(employeeId, signal) })
   const types = useQuery({ queryKey: ['absence-types'], queryFn: ({ signal }) => getAbsenceTypes(signal) })
@@ -369,7 +421,7 @@ function Absences({ employeeId, canEdit, onChange }: { employeeId: string; canEd
             <span key={p.from} className="block">
               {fmtDate(p.from)} – {fmtDate(p.to)} ({days(p.days)}): termin sporządzenia oceny przedłuża się o czas tej
               nieobecności (dni wolne między nieobecnościami nie przerywają ciągłości). Termin rozmowy rozpoczynającej się nie
-              zmienia. Przedłużony termin oceny (gdy jest już ustalony) pokazuje karta „Bieżąca ocena”.
+              zmienia. Przedłużony termin oceny (gdy jest już ustalony) pokazuje {dueShownIn}.
             </span>
           ))}
         </InlineAlert>
@@ -429,7 +481,7 @@ function Absences({ employeeId, canEdit, onChange }: { employeeId: string; canEd
   )
 }
 
-function History({ employeeId }: { employeeId: string }) {
+function History({ employeeId, action }: { employeeId: string; action?: ReactNode }) {
   const q = useQuery({ queryKey: ['history', employeeId], queryFn: ({ signal }) => getHistory(employeeId, signal) })
   if (q.isError) return <ErrorState error={q.error} what="historia ocen" />
   const rows = [
@@ -455,7 +507,10 @@ function History({ employeeId }: { employeeId: string }) {
 
   return (
     <section className="section" aria-labelledby="hist-h">
-      <div className="section__head"><h2 id="hist-h" className="h-section">Historia ocen</h2></div>
+      <div className="section__head">
+        <h2 id="hist-h" className="h-section">Historia ocen</h2>
+        {action}
+      </div>
       <div className="panel table-scroll">
         <table className="table">
           <thead><tr><th>Data sporządzenia</th><th>Ocena</th><th>Wynik</th><th>Poziom</th><th>Stan</th></tr></thead>
