@@ -25,10 +25,12 @@ export function SignalCard({ signal }: { signal: Signal }) {
   const levelClass = signal.level === 'ALERT' ? s.alert : signal.level === 'WATCH' ? s.watch : s.positive
   return (
     <Card className={`${s.signal} ${levelClass}`}>
-      <div className={s.row}>
+      <div className={s.signalHead}>
         <h3 className={s.signalTitle}>{signal.title}</h3>
-        <SignalBadge kind={signal.kind} level={signal.level} />
-        <span className={s.muted}>({LEVEL_LABEL[signal.level]})</span>
+        <span className={s.signalMeta}>
+          <SignalBadge kind={signal.kind} level={signal.level} />
+          <span className={s.muted}>({LEVEL_LABEL[signal.level]})</span>
+        </span>
       </div>
       <p className={s.muted} style={{ marginTop: 'var(--s-2)' }}>Dlaczego:</p>
       <ul className={s.reasons}>

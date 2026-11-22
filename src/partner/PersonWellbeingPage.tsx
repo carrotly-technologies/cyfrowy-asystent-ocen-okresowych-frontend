@@ -7,7 +7,8 @@ import { BackLink, ButtonLink, Card, InlineAlert } from '../components/ui'
 import { fmtDate, fmtNumber } from '../lib/format'
 import { caseUrl } from '../lib/stages'
 import { AskPartner } from './AskPartner'
-import { PrivacyNote, SignalCard, Sparkline, TrendBadge } from './common'
+import { PrivacyNote, SignalCard, TrendBadge } from './common'
+import { PulseChart } from './PulseChart'
 import { ASSISTANT_INTRO } from './labels'
 import s from './Partner.module.css'
 
@@ -18,12 +19,12 @@ import s from './Partner.module.css'
 export function PersonWellbeingPage() {
   const { personId = '' } = useParams()
   const q = useQuery({ queryKey: ['partner-person', personId], queryFn: ({ signal }) => getPersonCard(personId, signal) })
-  if (q.isPending) return <div className="page"><LoadingState /></div>
-  if (q.isError) return <div className="page"><ErrorState error={q.error} what="karta pracownika" onRetry={() => q.refetch()} /></div>
+  if (q.isPending) return <div className="page page--wide"><LoadingState /></div>
+  if (q.isError) return <div className="page page--wide"><ErrorState error={q.error} what="karta pracownika" onRetry={() => q.refetch()} /></div>
   const c = q.data
   const shared = c.points.filter((p) => p.sharedComment)
   return (
-    <div className="page">
+    <div className="page page--wide">
       <BackLink to="/dobrostan">Dobrostan zespołu</BackLink>
       <header className="page-head">
         <div>
@@ -50,7 +51,7 @@ export function PersonWellbeingPage() {
             <p>Brak sygnałów. Utrzymuj regularne rozmowy 1:1 i bieżącą informację zwrotną.</p>
           </Card>
         ) : (
-          <div className={s.grid}>
+          <div className={s.signals}>
             {c.signals.map((sg) => (
               <SignalCard key={sg.kind} signal={sg} />
             ))}
@@ -66,7 +67,7 @@ export function PersonWellbeingPage() {
               <div className={s.row}>
                 <TrendBadge kind={c.trend.kind} /> <span>{c.trend.description}</span>
               </div>
-              <Sparkline points={c.points} width={480} height={90} label={`Indeks pulsu: ${c.name}`} />
+              <PulseChart points={c.points} label={`Indeks pulsu: ${c.name}`} />
               <p className={s.muted}>
                 Widzisz tylko ogólny wskaźnik i trend. Odpowiedzi na poszczególne pytania widzi wyłącznie pracownik; średnie dla
                 pytań są tylko w widoku zespołu, gdy odpowiedziało wystarczająco wiele osób.
