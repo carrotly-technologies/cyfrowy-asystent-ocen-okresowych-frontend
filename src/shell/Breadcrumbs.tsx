@@ -6,8 +6,8 @@ type Crumb = { to: string; label: string }
 
 /** Parent and current page for detail routes (depth ≥ 2); list pages get no breadcrumbs. */
 function trail(path: string, personName: string | null): { parents: Crumb[]; current: string } | null {
-  if (/^\/zespol\/[^/]+/.test(path)) return { parents: [{ to: '/zespol', label: 'Mój zespół' }], current: personName ?? 'Pracownik' }
-  if (/^\/teczka\/[^/]+/.test(path)) return { parents: [{ to: '/zespol', label: 'Mój zespół' }], current: 'Teczka oceny' }
+  if (/^\/zespol\/[^/]+/.test(path)) return { parents: [{ to: '/zespol', label: 'Oceny zespołu' }], current: personName ?? 'Pracownik' }
+  if (/^\/teczka\/[^/]+/.test(path)) return { parents: [{ to: '/zespol', label: 'Oceny zespołu' }], current: 'Teczka oceny' }
   if (/^\/dobrostan\/.+/.test(path)) return { parents: [{ to: '/dobrostan', label: 'Dobrostan zespołu' }], current: 'Pracownik' }
   if (/^\/moje-oceny\/.+/.test(path)) return { parents: [{ to: '/moje-oceny', label: 'Moje oceny' }], current: 'Ocena okresowa' }
   if (/^\/sprzeciwy\/.+/.test(path)) return { parents: [{ to: '/sprzeciwy', label: 'Sprzeciwy' }], current: 'Sprzeciw' }

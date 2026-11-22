@@ -51,7 +51,7 @@ function fieldsOf(e: EmployeeView): EmployeeFields {
 
 /**
  * One employee: the HR register card (`/kartoteka/:id`, variant `register`) or the supervisor's person page in
- * „Mój zespół” (`/zespol/:id`, variant `team`). The team variant orders the sections for the evaluator (current
+ * „Oceny zespołu” (`/zespol/:id`, variant `team`). The team variant orders the sections for the evaluator (current
  * assessment with „Prowadź ocenę” for the supervisor of a running case, „Zobacz ocenę” otherwise; history, absences, register data); permissions are the same in both.
  */
 export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 'team' }) {
@@ -213,7 +213,7 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
 
   return (
     <div className="page page--wide">
-      {team ? <BackLink to="/zespol">Mój zespół</BackLink> : <BackLink to="/kartoteka">Kartoteka pracowników</BackLink>}
+      {team ? <BackLink to="/zespol">Oceny zespołu</BackLink> : <BackLink to="/kartoteka">Kartoteka pracowników</BackLink>}
       <header className="page-head">
         <div>
           <h1 className="h-page">{e.firstName} {e.lastName}</h1>

@@ -11,7 +11,7 @@ import s from './Partner.module.css'
 
 const KINDS: SignalKind[] = ['BURNOUT_RISK', 'OVERLOAD', 'MOTIVATION_DROP', 'APPRECIATION']
 
-/** "Dobrostan zespołu" (/dobrostan): the supervisor's HR partner panel. Headings avoid other menu labels ("Mój zespół", "Pracownicy"). */
+/** "Dobrostan zespołu" (/dobrostan): the supervisor's HR partner panel. Headings avoid other menu labels ("Oceny zespołu", "Pracownicy"). */
 export function TeamWellbeingPage() {
   const navigate = useNavigate()
   const q = useQuery({ queryKey: ['partner-team'], queryFn: ({ signal }) => getPartnerTeam(signal) })
