@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { FolderOpen } from 'lucide-react'
 import { useParams } from 'react-router'
-import { getPersonCard } from '../api/partner'
+import { getPersonCard, type PersonCard } from '../api/partner'
+import { CaseActionLink } from '../components/CaseActionLink'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { BackLink, ButtonLink, Card, InlineAlert } from '../components/ui'
+import { BackLink, Card, InfoTip, InlineAlert } from '../components/ui'
 import { fmtDate, fmtNumber } from '../lib/format'
-import { caseUrl } from '../lib/stages'
+import { useMe } from '../lib/useAuth'
 import { AskPartner } from './AskPartner'
 import { PrivacyNote, SignalCard, TrendBadge } from './common'
 import { PulseChart } from './PulseChart'
@@ -18,6 +18,7 @@ import s from './Partner.module.css'
  */
 export function PersonWellbeingPage() {
   const { personId = '' } = useParams()
+  const me = useMe()
   const q = useQuery({ queryKey: ['partner-person', personId], queryFn: ({ signal }) => getPersonCard(personId, signal) })
   if (q.isPending) return <div className="page page--wide"><LoadingState /></div>
   if (q.isError) return <div className="page page--wide"><ErrorState error={q.error} what="karta pracownika" onRetry={() => q.refetch()} /></div>
@@ -31,11 +32,17 @@ export function PersonWellbeingPage() {
           <h1 className="h-page">{c.name}</h1>
           <p className="page-head__meta">{c.position}</p>
         </div>
-        <div className="btn-row">
-          <ButtonLink to={caseUrl(c.caseId)} variant="secondary" icon={<FolderOpen size={16} aria-hidden="true" />}>
-            Teczka oceny
-          </ButtonLink>
-        </div>
+        {c.caseId && (
+          <div className={s.caseLink}>
+            <div className={s.row}>
+              <CaseActionLink caseId={c.caseId} status={c.caseStatus} role={me.role} variant="secondary" />
+              <InfoTip label="Czy dane dobrostanu trafiają do oceny?">
+                Dane dobrostanu nie trafiają do oceny okresowej.
+              </InfoTip>
+            </div>
+            <p className={s.caseContext}>{caseContext(c)}</p>
+          </div>
+        )}
       </header>
       <InlineAlert tone="info" title={ASSISTANT_INTRO}>
         {c.disclaimer}
@@ -146,4 +153,17 @@ export function PersonWellbeingPage() {
       </section>
     </div>
   )
+}
+
+/** „Ocena okresowa · etap: … · termin …” under the case button, or the date a closed assessment ended. */
+function caseContext(c: PersonCard): string {
+  if (c.caseStatus === 'ZAKONCZONA')
+    return ['Ocena okresowa zakończona', c.completedOn && fmtDate(c.completedOn)].filter(Boolean).join(' ')
+  return [
+    'Ocena okresowa',
+    `etap: ${c.stageName}`,
+    c.nextDeadline?.date && `termin ${fmtDate(c.nextDeadline.date)}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
