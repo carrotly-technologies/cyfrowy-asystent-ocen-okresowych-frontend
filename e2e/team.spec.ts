@@ -31,8 +31,14 @@ test('Mój zespół: nagłówki kolumn, następna ocena i status w ostatniej kol
   const cellBoxes = await nowakCells.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().left))
   cellBoxes.forEach((left, i) => expect(Math.abs(left - headerBoxes[i])).toBeLessThan(2))
 
-  // The „Teczka” shortcut in the row goes straight to the case.
-  await nowak.getByRole('link', { name: 'Teczka oceny: Anna Nowak' }).click()
+  // The row button says what the click does: the supervisor runs an assessment in progress, a closed one is only viewed.
+  await expect(table.getByRole('link', { name: /^(Teczka|Otwórz teczkę)/ })).toHaveCount(0)
+  const run = nowak.getByRole('link', { name: 'Prowadź ocenę: Anna Nowak' })
+  await expect(run).toHaveText('Prowadź ocenę')
+  await expect(run).toHaveClass(/btn--primary/)
+  // Objection period (c-006) still counts as in progress: the supervisor has deadlines there.
+  await expect(table.getByRole('link', { name: 'Prowadź ocenę: Ewa Dąbrowska' })).toBeVisible()
+  await run.click()
   await expect(page).toHaveURL(/\/teczka\/c-001/)
   await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Mój zespół' })).toHaveAttribute('aria-current', 'page')
 })
@@ -55,7 +61,8 @@ test('Mój zespół: wiersz otwiera stronę osoby z bieżącą oceną, historią
   await expect(page).toHaveTitle(/^Anna Nowak — Mój zespół/)
   await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Mój zespół' })).toHaveAttribute('aria-current', 'page')
 
-  await page.getByRole('link', { name: 'Otwórz teczkę' }).click()
+  await expect(page.getByRole('link', { name: 'Otwórz teczkę' })).toHaveCount(0)
+  await page.getByRole('link', { name: 'Prowadź ocenę' }).click()
   await expect(page).toHaveURL(/\/teczka\/c-001$/)
 })
 

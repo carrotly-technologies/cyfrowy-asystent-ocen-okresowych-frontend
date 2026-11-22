@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FolderOpen, PlayCircle, Trash2 } from 'lucide-react'
+import { PlayCircle, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
@@ -17,6 +17,7 @@ import {
   type EmployeeFields,
   type EmployeeView,
 } from '../../api/employees'
+import { CaseActionLink } from '../../components/CaseActionLink'
 import { DeadlineText } from '../../components/Deadline'
 import { ErrorState, LoadingState } from '../../components/QueryState'
 import { BackLink, ConfirmDialog, DateInput, Dialog, InlineAlert } from '../../components/ui'
@@ -51,7 +52,7 @@ function fieldsOf(e: EmployeeView): EmployeeFields {
 /**
  * One employee: the HR register card (`/kartoteka/:id`, variant `register`) or the supervisor's person page in
  * „Mój zespół” (`/zespol/:id`, variant `team`). The team variant orders the sections for the evaluator (current
- * assessment with „Otwórz teczkę”, history, absences, register data); permissions are the same in both.
+ * assessment with „Prowadź ocenę” for the supervisor of a running case, „Zobacz ocenę” otherwise; history, absences, register data); permissions are the same in both.
  */
 export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 'team' }) {
   const { id = '' } = useParams()
@@ -185,9 +186,7 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
         <p className="muted">Brak teczki oceny w systemie.</p>
       )}
       {team && e.currentCase && (
-        <Link to={`/teczka/${e.currentCase.id}`} className="btn btn--primary emp-open-case">
-          <FolderOpen size={15} aria-hidden="true" /> Otwórz teczkę
-        </Link>
+        <CaseActionLink caseId={e.currentCase.id} status={e.currentCase.status} role={me.role} className="emp-open-case" />
       )}
       {canEdit && !open && (
         <>
