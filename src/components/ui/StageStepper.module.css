@@ -190,12 +190,12 @@ a.step:visited {
   color: var(--text);
 }
 
-/* The thresholds depend on the number of steps: seven names need far more room than four (.few, e.g. the steps of
-   „Podpis i przekazanie”), so a short stepper keeps its names down to a much narrower width. */
+/* The thresholds depend on the number of steps: seven names need far more room (.many) than four (.few), so a short
+   stepper keeps its names down to a much narrower width. The vertical variant has neither class and never collapses. */
 
 /* medium width (e.g. the case page with the assistant panel open): smaller names, still two lines at most */
 @container (max-width: 62rem) {
-  .root:not(.few) .step {
+  .many .step {
     font-size: var(--text-xs);
   }
 }
@@ -208,7 +208,7 @@ a.step:visited {
 
 /* narrow (phones, or a squeezed case page): circles on the line only, the shown step's name under the line */
 @container (max-width: 53rem) {
-  .root:not(.few) .step {
+  .many .step {
     /* 44px touch target around the 32px circle */
     width: 44px;
     min-width: 44px;
@@ -217,12 +217,12 @@ a.step:visited {
     padding: calc((44px - var(--dot)) / 2);
   }
 
-  .root:not(.few) .item + .item::before {
+  .many .item + .item::before {
     top: calc(22px - var(--line) / 2);
   }
 
-  .root:not(.few) .label,
-  .root:not(.few) .sublabel {
+  .many .label,
+  .many .sublabel {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -231,7 +231,7 @@ a.step:visited {
     white-space: nowrap;
   }
 
-  .root:not(.few) .caption {
+  .many .caption {
     display: block;
   }
 }
@@ -263,4 +263,72 @@ a.step:visited {
   .few .caption {
     display: block;
   }
+}
+
+/* Vertical variant (the steps of „Podpis i przekazanie” and „Zapoznanie z oceną”): the same circles, check, colours
+   and line as above, running down. The name and its date sit next to each circle, the body of a step (the current
+   step's action) is expanded under it, indented next to the line. No container-query collapsing: a column of four
+   steps fits at any width. */
+.vertical .list {
+  flex-direction: column;
+}
+
+.vertical .item {
+  flex: none;
+  padding-bottom: var(--s-4);
+}
+
+.vertical .item:last-child {
+  padding-bottom: 0;
+}
+
+/* the line from this circle down to the next one; green once the next step has been reached */
+.vertical .item + .item::before {
+  content: none;
+}
+
+.vertical .item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: var(--dot);
+  bottom: 0;
+  left: calc(var(--dot) / 2 - var(--line) / 2);
+  width: var(--line);
+  background: var(--border-strong);
+}
+
+.vertical .item.reached::after {
+  background: var(--ok);
+}
+
+.vertical .step {
+  display: grid;
+  grid-template-columns: var(--dot) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  column-gap: var(--s-3);
+  row-gap: 0;
+  min-height: var(--dot);
+  height: auto;
+  padding: 0;
+  text-align: left;
+}
+
+.vertical .marker {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+}
+
+.vertical .label,
+.vertical .sublabel {
+  grid-column: 2;
+  text-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.body {
+  min-width: 0;
+  margin-top: var(--s-3);
+  margin-left: calc(var(--dot) + var(--s-3));
 }

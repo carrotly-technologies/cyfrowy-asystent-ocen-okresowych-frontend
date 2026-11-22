@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { errorMessage } from '../../api/client'
 import { DeadlineText } from '../../components/Deadline'
-import { ConfirmDialog, InlineAlert, StageStepper } from '../../components/ui'
+import { ConfirmDialog, InlineAlert, StageStepper, type StageStep } from '../../components/ui'
 import { useCaseAction } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { SheetDocument } from '../../sheet/SheetDocument'
@@ -20,9 +20,9 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
   const info = detail.stages.find((s) => s.id === stage)!
   const act = useCaseAction(detail.id)
   const [confirmSend, setConfirmSend] = useState(false)
-  const flowRef = useRef<HTMLDivElement>(null)
+  const flowRef = useRef<HTMLElement>(null)
   // After signing the check disappears: keep the user at the steps (not the sheet preview) and focus the next action,
-  // which is now the hand-over of step 3 under the stepper.
+  // which is now the hand-over expanded inside step 3.
   const afterSign = () =>
     requestAnimationFrame(() => {
       flowRef.current?.scrollIntoView({ block: 'nearest' })
@@ -31,14 +31,14 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
   const signed = !!detail.signedByEvaluatorOn
   const sent = !!detail.sentForAckOn
   const acked = !!detail.acknowledgedOn
-  // Short names in the stepper; the full description of the current step is the heading of its action under it.
+  // Short names on the axis; the full description of the current step is the heading above it.
   const steps = [
     { key: 'talk', label: 'Rozmowa', action: 'Rozmowa oceniająca', date: detail.assessmentTalkOn },
     { key: 'sign', label: 'Podpis', action: 'Podpisz ocenę', date: detail.signedByEvaluatorOn },
     { key: 'send', label: 'Przekazanie', action: 'Przekaż ocenianemu', date: detail.sentForAckOn },
     { key: 'ack', label: 'Zapoznanie', action: 'Czeka na zapoznanie', date: detail.acknowledgedOn },
   ]
-  // The current step is the first one without a date; once all four have a date there is no action left.
+  // The current step is the first one without a date and the only one expanded; once all four have a date nothing is.
   const currentIndex = steps.findIndex((s) => !s.date)
   const nextCycle = detail.history.filter((h) => h.text.startsWith('Nowy cykl')).at(-1)
   const status = acked ? (
@@ -59,7 +59,7 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
     </InlineAlert>
   ) : null
 
-  /** The action of a step, shown under the stepper while it is the current step. */
+  /** The action of a step, expanded inside it on the axis while it is the current step. */
   const stepAction = (i: number) => {
     if (i === 1 && !signed && stage === 'SIGNATURE') {
       return (
@@ -122,25 +122,31 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
     <div className="stage">
       <StageHeader title={info.name} status={status} />
       <div className="stage-pad">
-        <div className="doc-flow" ref={flowRef}>
-          <StageStepper
-            label="Kroki podpisu i przekazania"
-            steps={steps.map((st, i) => ({
-              key: st.key,
-              label: st.label,
-              sublabel: st.date ? fmtDate(st.date) : '—',
-              status: st.date ? 'done' : i === currentIndex ? 'current' : 'todo',
-            }))}
-          />
-          {currentIndex >= 0 && (
-            <section className="doc-flow__action" aria-labelledby="doc-flow-h">
-              <h3 id="doc-flow-h" className="doc-flow__title">
+        <section className="doc-flow" ref={flowRef} aria-labelledby="doc-flow-h">
+          <h3 id="doc-flow-h" className="doc-flow__title">
+            {currentIndex >= 0 ? (
+              <>
                 Krok {currentIndex + 1} z {steps.length}: {steps[currentIndex].action}
-              </h3>
-              {stepAction(currentIndex)}
-            </section>
-          )}
-        </div>
+              </>
+            ) : (
+              <>Wszystkie {steps.length} kroki zakończone</>
+            )}
+          </h3>
+          <StageStepper
+            orientation="vertical"
+            label="Kroki podpisu i zapoznania"
+            steps={steps.map((st, i): StageStep => {
+              const action = i === currentIndex ? stepAction(i) : null
+              return {
+                key: st.key,
+                label: st.label,
+                sublabel: st.date ? fmtDate(st.date) : '—',
+                status: st.date ? 'done' : i === currentIndex ? 'current' : 'todo',
+                body: action && <div className="doc-flow__action">{action}</div>,
+              }
+            })}
+          />
+        </section>
 
         <div className="paper-preview" aria-label="Podgląd arkusza">
           <SheetDocument detail={detail} model={model} criteria={criteria} />
