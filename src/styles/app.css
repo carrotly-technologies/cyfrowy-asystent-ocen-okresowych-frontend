@@ -89,7 +89,7 @@
 
 .topbar {
   position: relative;
-  z-index: var(--z-sticky);
+  z-index: var(--z-header);
   display: flex;
   align-items: center;
   gap: var(--s-4);
@@ -686,7 +686,7 @@
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: var(--z-sticky);
+    z-index: var(--z-bottom-nav);
     display: block;
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid var(--border);
@@ -1546,7 +1546,7 @@
   top: var(--chrome-h);
   right: 0;
   bottom: 0;
-  z-index: var(--z-overlay);
+  z-index: var(--z-panel);
   width: min(var(--assistant-w), 100vw);
   border-left: 1px solid var(--border);
   box-shadow: var(--shadow-dialog);

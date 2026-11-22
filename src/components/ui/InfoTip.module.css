@@ -32,7 +32,7 @@
   position: absolute;
   top: calc(100% + var(--s-1));
   right: 0;
-  z-index: 20;
+  z-index: var(--z-dropdown);
   display: block;
   width: max-content;
   max-width: min(22rem, calc(100vw - 2 * var(--s-4)));
