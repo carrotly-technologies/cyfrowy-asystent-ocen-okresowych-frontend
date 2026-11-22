@@ -89,6 +89,12 @@
   min-height: calc(var(--tap) + var(--s-4));
   padding: var(--s-2);
   cursor: pointer;
+  --choice-box: 1.5rem;
+}
+
+/* The cell centres its radio; the first-line offset from Choice.module.css does not apply here. */
+.cellTarget > input {
+  margin-top: 0;
 }
 
 .cell:hover {
