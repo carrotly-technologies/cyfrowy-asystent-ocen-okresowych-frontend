@@ -11,6 +11,8 @@ export type StageStep = {
   status: StageStepStatus
   /** Link target; without it the step is plain text. */
   to?: string
+  /** Secondary line under the name in smaller, muted text (e.g. the date of the step). */
+  sublabel?: string
 }
 
 type Props = {
@@ -33,13 +35,14 @@ const STATUS_TEXT: Record<StageStepStatus, string> = {
  * outline with its number, future steps are grey outlines. The step on screen carries aria-current="step"
  * and a ring around its circle. Each step is a link, so the whole stepper works with Tab / Enter.
  * When the stepper itself is narrow (phone, or the assistant panel open next to it) only the circles stay,
- * with the name of the shown step under the line, without horizontal scrolling.
+ * with the name of the shown step under the line, without horizontal scrolling. A stepper of four steps or fewer
+ * keeps the names down to a much smaller width than one of seven.
  */
 export function StageStepper({ steps, activeKey, label }: Props) {
   const active = activeKey ?? steps.find((st) => st.status === 'current')?.key
   const activeIndex = steps.findIndex((st) => st.key === active)
   return (
-    <nav className={s.root} aria-label={label}>
+    <nav className={cx(s.root, steps.length <= 4 && s.few)} aria-label={label}>
       <ol className={s.list}>
         {steps.map((st, i) => {
           const isActive = st.key === active
@@ -51,20 +54,22 @@ export function StageStepper({ steps, activeKey, label }: Props) {
                 {st.status === 'done' ? <Check size={18} strokeWidth={3} /> : i + 1}
               </span>
               <span className={s.label}>{st.label}</span>
+              {st.sublabel && <span className={cx(s.sublabel, 'num')}>{st.sublabel}</span>}
               <span className="visually-hidden">
                 {`, krok ${i + 1} z ${steps.length}, ${STATUS_TEXT[st.status]}`}
               </span>
             </>
           )
+          const title = st.sublabel ? `${st.label}: ${st.sublabel}` : st.label
           const cls = cx(s.step, s[st.status], isActive && s.active)
           return (
             <li key={st.key} className={cx(s.item, reached && s.reached)}>
               {st.to ? (
-                <Link to={st.to} className={cls} aria-current={isActive ? 'step' : undefined} title={st.label}>
+                <Link to={st.to} className={cls} aria-current={isActive ? 'step' : undefined} title={title}>
                   {content}
                 </Link>
               ) : (
-                <span className={cls} aria-current={isActive ? 'step' : undefined} title={st.label}>
+                <span className={cls} aria-current={isActive ? 'step' : undefined} title={title}>
                   {content}
                 </span>
               )}
