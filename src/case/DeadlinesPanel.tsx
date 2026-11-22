@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import type { CaseDetail, TalkInvitation } from '../api/cases'
 import { apiDownload, errorMessage } from '../api/client'
 import { changeDueDate, getDeadlineRules, invitationIcsPath, inviteToTalk } from '../api/notifications'
-import { Button, Dialog, Field, InlineAlert, Select, TextArea, TextInput } from '../components/ui'
+import { Button, Dialog, Disclosure, Field, InlineAlert, Select, TextArea, TextInput } from '../components/ui'
 import { legalErrorText, useLegalMutation } from '../lib/legalQueries'
 import { DEMO_TODAY, fmtDate } from '../lib/format'
 import { invitationState } from './invitations'
@@ -59,10 +59,9 @@ export function InvitationList({ detail }: { detail: CaseDetail }) {
     <>
       {current.length > 0 ? <ul className="bullets">{current.map(row)}</ul> : <p className="small muted">Brak aktualnych zaproszeń.</p>}
       {stale.length > 0 && (
-        <details className="small">
-          <summary>Wcześniejsze zaproszenia ({stale.length})</summary>
+        <Disclosure compact title={`Wcześniejsze zaproszenia (${stale.length})`}>
           <ul className="bullets">{stale.map(row)}</ul>
-        </details>
+        </Disclosure>
       )}
     </>
   )
@@ -75,13 +74,18 @@ export function DueDateNotices({ detail }: { detail: CaseDetail }) {
   return (
     <div className="legal-panel">
       {withNotice.map((c, i) => (
-        <details key={c.id ?? i} className="panel legal-form">
-          <summary>
-            {fmtDate(c.changedOn)}: zawiadomienie o zmianie terminu oceny na <strong className="num">{fmtDate(c.to)}</strong>{' '}
-            <span className="legal">{c.legalBasis}</span>
-          </summary>
+        <Disclosure
+          key={c.id ?? i}
+          compact
+          title={
+            <span>
+              {fmtDate(c.changedOn)}: zawiadomienie o zmianie terminu oceny na <strong className="num">{fmtDate(c.to)}</strong>{' '}
+              <span className="legal">{c.legalBasis}</span>
+            </span>
+          }
+        >
           <p className="small" style={{ whiteSpace: 'pre-line' }}>{c.notice!.text}</p>
-        </details>
+        </Disclosure>
       ))}
     </div>
   )

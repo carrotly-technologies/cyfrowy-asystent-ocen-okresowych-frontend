@@ -2459,18 +2459,9 @@
   font-size: 0.875rem;
 }
 
-.case-history {
-  margin: var(--s-4, 16px) 0;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-surface);
-  font-size: var(--text-sm, 0.875rem);
-}
-
-.case-history summary {
-  cursor: pointer;
-  font-weight: 600;
+/* Case history (src/case/CaseHistory.tsx); the frame comes from the shared Disclosure. */
+.corr-page .case-history {
+  margin-top: var(--s-4);
 }
 
 .case-history__locks {
