@@ -60,7 +60,7 @@ export function StageStepper({ steps, activeKey, label, orientation = 'horizonta
         const content = (
           <>
             <span className={s.marker} aria-hidden="true">
-              {st.status === 'done' ? <Check size={18} strokeWidth={3} /> : i + 1}
+              {st.status === 'done' ? <Check size={20} strokeWidth={3} /> : i + 1}
             </span>
             <span className={s.label}>{st.label}</span>
             {st.sublabel && <span className={cx(s.sublabel, 'num')}>{st.sublabel}</span>}

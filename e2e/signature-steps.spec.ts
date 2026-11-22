@@ -50,6 +50,21 @@ test('podpis to krok 2 z 4, a każdy następny krok rozwija się na osi ze swoj�
   const b2 = (await step(page, 2).boundingBox())!
   expect(b2.y).toBeGreaterThanOrEqual(b1.y + b1.height - 1)
   expect(Math.abs(b2.x - b1.x)).toBeLessThanOrEqual(1)
+  // Same sizes as the stage bar (#74): 40px circles, 16px names, 14px dates, 8px circle ↔ name, ≥ 24px between steps,
+  // the line down through the centres of the circles.
+  const dot1 = (await step(page, 1).locator('[aria-hidden="true"]').first().boundingBox())!
+  expect(dot1.width).toBe(40)
+  await expect(step(page, 1).getByText('Rozmowa', { exact: true })).toHaveCSS('font-size', '16px')
+  await expect(step(page, 1).getByText(/\d{2}\.\d{2}\.\d{4}/)).toHaveCSS('font-size', '14px')
+  const name1 = (await step(page, 1).getByText('Rozmowa', { exact: true }).boundingBox())!
+  expect(Math.round(name1.x - (dot1.x + dot1.width))).toBe(8)
+  const dot2 = (await step(page, 2).locator('[aria-hidden="true"]').first().boundingBox())!
+  expect(dot2.y - (dot1.y + dot1.height)).toBeGreaterThanOrEqual(24)
+  const line = await step(page, 1).evaluate((li) => {
+    const after = getComputedStyle(li, '::after')
+    return li.getBoundingClientRect().left + parseFloat(after.left) + parseFloat(after.width) / 2
+  })
+  expect(Math.abs(line - (dot1.x + dot1.width / 2))).toBeLessThanOrEqual(1)
 
   // Before signing: step 1 done, step 2 current and expanded with the formal check, steps 3–4 collapsed.
   await expect(flow(page).getByRole('heading', { name: 'Krok 2 z 4: Podpisz ocenę' })).toBeVisible()
@@ -67,6 +82,10 @@ test('podpis to krok 2 z 4, a każdy następny krok rozwija się na osi ze swoj�
   const marker = (await current(page).locator('[aria-hidden="true"]').first().boundingBox())!
   const signBox = (await sign.boundingBox())!
   expect(signBox.x).toBeGreaterThan(marker.x + marker.width)
+  // ≥ 16px between the name and date of the current step and its expanded action.
+  const head = (await current(page).boundingBox())!
+  const body = (await step(page, 2).locator(':scope > div').boundingBox())!
+  expect(body.y - (head.y + head.height)).toBeGreaterThanOrEqual(16)
 
   // After signing: step 2 done, step 3 expanded with the hand-over, and the focus is on its button.
   await sign.click()
