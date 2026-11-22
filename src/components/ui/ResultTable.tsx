@@ -49,6 +49,23 @@ export function ClampText({ children, className }: { children: string; className
   )
 }
 
+/**
+ * Status as plain information: a coloured dot and the name in normal text (danger also with an icon, never colour
+ * alone). Used by the status cell of `ResultTableRow`, and inside a regular cell when the status is not the last column.
+ */
+export function ResultStatus({ label, sub, tone }: { label: string; sub?: string; tone: ResultTone }) {
+  return (
+    <span className={s.status}>
+      <span className={s.statusMain}>
+        <span className={cx(s.dot, s[tone])} aria-hidden="true" />
+        {tone === 'danger' && <AlertCircle size={14} className={s.statusIcon} aria-hidden="true" />}
+        <span className={s.statusLabel}>{label}</span>
+      </span>
+      {sub && <span className={s.statusSub}>{sub}</span>}
+    </span>
+  )
+}
+
 export type ResultCell = {
   /** Column label, shown next to the value on narrow screens. */
   label: string
@@ -101,14 +118,7 @@ export function ResultTableRow({ title, subtitle, titleLabel, to, linkLabel, cel
       {status && (
         <div role="cell" className={cx(s.cell, s.statusCell)}>
           <span className={s.cellLabel} aria-hidden="true">{statusLabel}:</span>
-          <span className={s.status}>
-            <span className={s.statusMain}>
-              <span className={cx(s.dot, s[status.tone])} aria-hidden="true" />
-              {status.tone === 'danger' && <AlertCircle size={14} className={s.statusIcon} aria-hidden="true" />}
-              <span className={s.statusLabel}>{status.label}</span>
-            </span>
-            {status.sub && <span className={s.statusSub}>{status.sub}</span>}
-          </span>
+          <ResultStatus {...status} />
         </div>
       )}
       {action && (

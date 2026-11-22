@@ -1,3 +1,4 @@
+import type { ResultTone } from '../components/ui'
 import type { ReasonSource, SignalKind, SignalLevel, TrendKind } from '../api/partner'
 
 export const TREND_LABEL: Record<TrendKind, string> = {
@@ -29,11 +30,18 @@ export const LEVEL_TONE: Record<SignalLevel, 'warning' | 'error' | 'success'> = 
   POSITIVE: 'success',
 }
 
-/** Short level label next to a person in the team signal tiles (shown with the badge colour, never colour alone). */
+/** Short level label in the „Sygnały w zespole” table (next to the coloured dot, never colour alone). */
 export const LEVEL_SHORT: Record<SignalLevel, string> = {
   ALERT: 'Alert',
   WATCH: 'Do obserwacji',
-  POSITIVE: 'Pozytywny',
+  POSITIVE: 'Do docenienia',
+}
+
+/** Dot colour of the level in a `ResultTable` (same meaning as `LEVEL_TONE`). */
+export const LEVEL_DOT: Record<SignalLevel, ResultTone> = {
+  ALERT: 'danger',
+  WATCH: 'warn',
+  POSITIVE: 'ok',
 }
 
 /**
@@ -66,7 +74,7 @@ export const ASSISTANT_INTRO = 'Wirtualny asystent HR to funkcja aplikacji, nie 
 export const ASSISTANT_SCOPE =
   'Widzisz tylko ogólny wskaźnik pulsu i sygnały; pojedynczych odpowiedzi nie widzi nikt poza pracownikiem. Nic tutaj nie wpływa na ocenę okresową.'
 
-/** Where the reason of a flag comes from (the employee card and the team signal tiles). */
+/** Where the reason of a flag comes from (the employee card and the team signal table). */
 export const SOURCE_LABEL: Record<ReasonSource, string> = {
   PULSE: 'Puls',
   JOURNAL: 'Obserwacje',

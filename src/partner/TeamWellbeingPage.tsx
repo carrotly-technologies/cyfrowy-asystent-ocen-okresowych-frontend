@@ -1,24 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { Award, ChevronRight, Flame, Gauge, TrendingDown, type LucideIcon } from 'lucide-react'
-import { useId, useState } from 'react'
-import { Link } from 'react-router'
 import { getPartnerTeam, type PartnerTeam, type SignalKind, type SignalLevel, type TeamMember, type TeamPeriod } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { ButtonLink, Card, InlineAlert, ResultTable, ResultTableRow, StatusBadge, type ResultTableColumn } from '../components/ui'
+import { ButtonLink, Card, ClampText, InlineAlert, ResultStatus, ResultTable, ResultTableRow, type ResultTableColumn } from '../components/ui'
 import { countLabel, fmtDate, fmtNumber } from '../lib/format'
-import { useMedia, useWidth } from './chartHooks'
 import { PrivacyNote, SignalBadge, Sparkline, TrendBadge } from './common'
 import {
   ASSISTANT_INTRO,
   ASSISTANT_NAME,
   ASSISTANT_SCOPE,
+  LEVEL_DOT,
   LEVEL_SHORT,
-  LEVEL_TONE,
   SIGNAL_DESCRIPTION,
   SIGNAL_SHORT,
   SOURCE_LABEL,
   TREND_LABEL,
 } from './labels'
+import { PulseChart } from './PulseChart'
 import s from './Partner.module.css'
 
 const KINDS: SignalKind[] = ['BURNOUT_RISK', 'OVERLOAD', 'MOTIVATION_DROP', 'APPRECIATION']
@@ -52,13 +50,7 @@ export function TeamWellbeingPage() {
           <h2 id="sig-h" className="h-section">Sygnały w zespole</h2>
           <span className="faint small">{countLabel(flagged, 'osoba z sygnałami', 'osoby z sygnałami', 'osób z sygnałami')}</span>
         </div>
-        <ul className={s.counters} aria-label="Liczba sygnałów według rodzaju">
-          {KINDS.map((k) => (
-            <li key={k}>
-              <SignalTile kind={k} members={t.members} />
-            </li>
-          ))}
-        </ul>
+        <TeamSignals members={t.members} />
       </section>
 
       <section className="section" aria-labelledby="agg-h">
@@ -159,67 +151,99 @@ const SIGNAL_ICON: Record<SignalKind, LucideIcon> = {
 }
 
 const LEVEL_ORDER: Record<SignalLevel, number> = { ALERT: 0, WATCH: 1, POSITIVE: 2 }
-const VISIBLE_PEOPLE = 3
 
-/** A tile per kind of signal: what it means, how many people and who (with the level and the first reason). */
-function SignalTile({ kind, members }: { kind: SignalKind; members: TeamMember[] }) {
-  const [expanded, setExpanded] = useState(false)
-  const listId = useId()
-  const people = members
-    .flatMap((m) => m.signals.filter((sg) => sg.kind === kind).map((sg) => ({ m, sg })))
-    .sort((a, b) => LEVEL_ORDER[a.sg.level] - LEVEL_ORDER[b.sg.level])
-  const Icon = SIGNAL_ICON[kind]
-  const count = countLabel(people.length, 'osoba', 'osoby', 'osób')
-  const shown = expanded ? people : people.slice(0, VISIBLE_PEOPLE)
-  const more = people.length - VISIBLE_PEOPLE
+const surname = (name: string) => name.trim().split(/\s+/).at(-1) ?? name
+
+const SIGNAL_COLUMNS: ResultTableColumn[] = [
+  { label: 'Pracownik', width: 'minmax(0, 1.2fr)' },
+  { label: 'Sygnał', width: 'minmax(0, 1fr)' },
+  { label: 'Poziom', width: 'minmax(0, 0.9fr)' },
+  { label: 'Dlaczego', width: 'minmax(0, 2fr)' },
+]
+
+type MemberSignal = { m: TeamMember; sg: TeamMember['signals'][number] }
+
+/**
+ * „Sygnały w zespole”: a legend (what each kind means and how many people have it) and one table row per
+ * person – signal pair, alerts first, then by surname.
+ */
+function TeamSignals({ members }: { members: TeamMember[] }) {
+  const rows: MemberSignal[] = members
+    .flatMap((m) => m.signals.map((sg) => ({ m, sg })))
+    .sort(
+      (a, b) =>
+        LEVEL_ORDER[a.sg.level] - LEVEL_ORDER[b.sg.level] ||
+        surname(a.m.name).localeCompare(surname(b.m.name), 'pl') ||
+        a.m.name.localeCompare(b.m.name, 'pl'),
+    )
+  const count = (k: SignalKind) => new Set(rows.filter((r) => r.sg.kind === k).map((r) => r.m.personId)).size
   return (
-    <Card
-      className={`${s.counter} ${people.length === 0 ? s.counterEmpty : ''}`}
-      title={
-        <span className={s.tileHead}>
-          <Icon size={20} aria-hidden="true" className={s.tileIcon} />
-          <span>
-            {SIGNAL_SHORT[kind]}
-            <span className="visually-hidden">: </span>
-          </span>
-          <span className={s.tileCount}>{people.length === 0 ? 'Brak w zespole' : count}</span>
-        </span>
-      }
-    >
-      <p className={s.tileDesc}>{SIGNAL_DESCRIPTION[kind]}</p>
-      {people.length > 0 && (
-        <>
-          <ul id={listId} className={s.people} aria-label={`${SIGNAL_SHORT[kind]}: kogo dotyczy`}>
-            {shown.map(({ m, sg }) => {
-              const reason = sg.reasons[0]
-              return (
-                <li key={m.personId}>
-                  <span className={s.personHead}>
-                    <Link to={`/dobrostan/${encodeURIComponent(m.personId)}`}>{m.name}</Link>
-                    <StatusBadge tone={LEVEL_TONE[sg.level]}>{LEVEL_SHORT[sg.level]}</StatusBadge>
-                  </span>
-                  {reason && (
-                    <span className={s.personWhy}>
-                      <span className={s.src}>{SOURCE_LABEL[reason.source]}</span>
-                      {reason.text}
-                    </span>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-          {more > 0 && (
-            <button type="button" className={s.moreBtn} aria-expanded={expanded} aria-controls={listId} onClick={() => setExpanded((v) => !v)}>
-              {expanded ? 'Pokaż mniej' : `+${more} więcej`}
-            </button>
-          )}
-        </>
+    <div className={s.stack}>
+      <ul className={s.legend} aria-label="Rodzaje sygnałów">
+        {KINDS.map((k) => {
+          const Icon = SIGNAL_ICON[k]
+          return (
+            <li key={k}>
+              <span className={s.legendHead}>
+                <Icon size={16} aria-hidden="true" className={s.legendIcon} />
+                {SIGNAL_SHORT[k]}: {count(k)}
+              </span>{' '}
+              <span className={s.legendDesc}>{SIGNAL_DESCRIPTION[k]}</span>
+            </li>
+          )
+        })}
+      </ul>
+      {rows.length === 0 ? (
+        <p className={s.muted}>Brak sygnałów w zespole.</p>
+      ) : (
+        <ResultTable label="Sygnały w zespole" columns={SIGNAL_COLUMNS}>
+          {rows.map((r) => (
+            <SignalRow key={`${r.m.personId}-${r.sg.kind}`} {...r} />
+          ))}
+        </ResultTable>
       )}
-    </Card>
+    </div>
   )
 }
 
-const PHONE = '(max-width: 767px)'
+function SignalRow({ m, sg }: MemberSignal) {
+  const [title, kind, level, why] = SIGNAL_COLUMNS.map((c) => c.label)
+  const Icon = SIGNAL_ICON[sg.kind]
+  const reason = sg.reasons[0]
+  return (
+    <ResultTableRow
+      to={`/dobrostan/${encodeURIComponent(m.personId)}`}
+      title={m.name}
+      subtitle={m.position}
+      titleLabel={title}
+      cells={[
+        {
+          label: kind,
+          value: (
+            <span className={s.signalKind}>
+              <Icon size={16} aria-hidden="true" className={s.legendIcon} />
+              {SIGNAL_SHORT[sg.kind]}
+            </span>
+          ),
+        },
+        { label: level, value: <ResultStatus label={LEVEL_SHORT[sg.level]} tone={LEVEL_DOT[sg.level]} /> },
+        {
+          label: why,
+          value: reason ? (
+            <>
+              <span>
+                <span className={s.src}>{SOURCE_LABEL[reason.source]}</span>
+              </span>
+              <ClampText>{reason.text}</ClampText>
+            </>
+          ) : (
+            <span className={s.muted}>brak szczegółów</span>
+          ),
+        },
+      ]}
+    />
+  )
+}
 
 const shortDate = (iso: string) => fmtDate(iso).slice(0, 5)
 
@@ -230,112 +254,28 @@ function periodText(p: TeamPeriod, minGroupSize: number) {
     : `${range}: indeks ${fmtNumber(p.index)}, odpowiedzi: ${p.respondents}`
 }
 
-/** Rounded top corners only (the bar stands on the axis). */
-function barPath(x: number, y: number, w: number, h: number, r = 4) {
-  const rr = Math.min(r, w / 2, h)
-  return `M${x},${y + h} V${y + rr} Q${x},${y} ${x + rr},${y} H${x + w - rr} Q${x + w},${y} ${x + w},${y + rr} V${y + h} Z`
-}
-
 /**
- * Bars of the team index (1–5) per period, full width of the card. The last period is highlighted, every bar has
- * its value above it and a tooltip on hover and keyboard focus; a hidden period (fewer than minGroupSize
- * respondents) is a low hatched bar labelled "ukryte". Screen readers also get the list of values.
+ * Line of the team index (1–5) per period (`PulseChart`, interactive), full width of the card: the end of each
+ * period under the X axis, the latest value highlighted, a tooltip on hover and keyboard focus. A hidden period
+ * (fewer than minGroupSize respondents) is a gap in the line marked "ukryte". Screen readers also get the list of values.
  */
 function TeamChart({ team }: { team: PartnerTeam }) {
   const periods = team.aggregate
-  const [box, width] = useWidth<HTMLDivElement>(0)
-  const wide = !useMedia(PHONE)
-  const [active, setActive] = useState<number | null>(null)
-  const patternId = `hatch-${useId().replace(/:/g, '')}`
-  const w = Math.max(width, 240)
-  const h = wide ? 220 : 160
-  const pad = { left: 28, right: 4, top: 22, bottom: 24 }
-  const plotH = h - pad.top - pad.bottom
-  const slot = (w - pad.left - pad.right) / Math.max(periods.length, 1)
-  const bw = Math.min(slot * 0.6, 72)
-  const y = (v: number) => pad.top + ((5 - v) * plotH) / 4
-  const base = y(1)
-  const hiddenH = Math.min(18, plotH / 4)
-  const last = periods.length - 1
-  const tip = active == null ? null : periods[active]
   return (
     <Card title="Średni indeks pulsu zespołu (1–5) w okresach 2-tygodniowych">
       <div className={s.stack}>
-        <div ref={box} className={s.chartBox} style={{ height: h }}>
-          {width > 0 && (
-            <svg
-              className={s.teamChart}
-              width={w}
-              height={h}
-              viewBox={`0 0 ${w} ${h}`}
-              role="group"
-              aria-label="Średni indeks pulsu zespołu w kolejnych okresach"
-            >
-              <defs>
-                <pattern id={patternId} width={6} height={6} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                  <rect className={s.hatchBg} width={6} height={6} />
-                  <line className={s.hatchLine} x1={0} y1={0} x2={0} y2={6} />
-                </pattern>
-              </defs>
-              <g aria-hidden="true">
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <g key={v}>
-                    <line className={s.chartGrid} x1={pad.left} x2={w - pad.right} y1={y(v)} y2={y(v)} />
-                    <text className={s.chartLabel} x={pad.left - 8} y={y(v)} textAnchor="end" dominantBaseline="middle">
-                      {v}
-                    </text>
-                  </g>
-                ))}
-              </g>
-              {periods.map((p, i) => {
-                const cx = pad.left + i * slot + slot / 2
-                const x = cx - bw / 2
-                const hidden = p.index == null
-                const top = hidden ? base - hiddenH : y(p.index!)
-                const latest = i === last
-                return (
-                  <g
-                    key={p.from}
-                    className={s.barGroup}
-                    tabIndex={0}
-                    role="img"
-                    aria-label={periodText(p, team.minGroupSize)}
-                    onMouseEnter={() => setActive(i)}
-                    onMouseLeave={() => setActive((a) => (a === i ? null : a))}
-                    onFocus={() => setActive(i)}
-                    onBlur={() => setActive((a) => (a === i ? null : a))}
-                  >
-                    {/* invisible hit area: the whole slot reacts to the pointer */}
-                    <rect className={s.barHit} x={pad.left + i * slot} y={pad.top} width={slot} height={plotH} />
-                    <path
-                      className={`${s.barShape} ${hidden ? s.barHidden : latest ? s.barLatest : s.bar}`}
-                      d={barPath(x, top, bw, base - top)}
-                      fill={hidden ? `url(#${patternId})` : undefined}
-                    />
-                    <text className={`${s.barValue} ${latest ? s.strong : ''}`} x={cx} y={top - 6} textAnchor="middle" aria-hidden="true">
-                      {hidden ? 'ukryte' : fmtNumber(p.index)}
-                    </text>
-                    <text className={`${s.chartLabel} ${latest ? s.strong : ''}`} x={cx} y={h - 6} textAnchor="middle" aria-hidden="true">
-                      {shortDate(p.to)}
-                    </text>
-                  </g>
-                )
-              })}
-            </svg>
-          )}
-          {tip && active != null && (
-            <div
-              className={s.tooltip}
-              aria-hidden="true"
-              style={{
-                left: Math.min(Math.max(pad.left + active * slot + slot / 2, 80), w - 80),
-                top: (tip.index == null ? base - hiddenH : y(tip.index)) - 24,
-              }}
-            >
-              {periodText(tip, team.minGroupSize)}
-            </div>
-          )}
-        </div>
+        <PulseChart
+          interactive
+          label="Średni indeks pulsu zespołu w kolejnych okresach"
+          ticks={[1, 2, 3, 4, 5]}
+          height={{ wide: 220, phone: 160 }}
+          points={periods.map((p) => ({
+            date: p.from,
+            index: p.index,
+            xLabel: shortDate(p.to),
+            tip: periodText(p, team.minGroupSize),
+          }))}
+        />
         <ul className="visually-hidden">
           {periods.map((p) => (
             <li key={p.from}>
@@ -344,8 +284,8 @@ function TeamChart({ team }: { team: PartnerTeam }) {
           ))}
         </ul>
         <p className={s.muted}>
-          Ostatni okres jest wyróżniony. Średnie pokazujemy tylko wtedy, gdy w okresie są odpowiedzi co najmniej{' '}
-          {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}.
+          Ostatni okres z wynikiem jest wyróżniony. Średnie pokazujemy tylko wtedy, gdy w okresie są odpowiedzi co najmniej{' '}
+          {countLabel(team.minGroupSize, 'osoby', 'osób', 'osób')}; okres z mniejszą liczbą odpowiedzi jest przerwą w linii („ukryte”).
         </p>
       </div>
     </Card>

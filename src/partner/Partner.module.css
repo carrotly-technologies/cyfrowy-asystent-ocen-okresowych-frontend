@@ -112,88 +112,49 @@
   font-size: 11px;
 }
 
-/* "Puls zespołu" (TeamChart): drawn 1:1 in CSS pixels at the width of the card. */
-.chartBox {
-  position: relative;
-  width: 100%;
-}
-
-.teamChart {
-  display: block;
-  overflow: visible;
-}
-
-.teamChart .chartLabel,
-.barValue {
-  font-size: var(--text-xs);
-}
-
-.barValue {
-  fill: var(--text);
-}
-
+/* "Puls zespołu" (interactive PulseChart): points reachable with Tab, the latest one highlighted with its value. */
 .strong {
   font-weight: var(--weight-bold);
 }
 
-.barHit {
-  fill: transparent;
-}
-
-.bar {
-  fill: var(--accent-border);
-  stroke: var(--accent);
-  stroke-width: 1;
-}
-
-.barLatest {
-  fill: var(--accent);
-}
-
-.barHidden {
-  stroke: var(--border-strong);
-  stroke-width: 1;
-}
-
-.hatchBg {
-  fill: var(--bg-muted);
-}
-
-.hatchLine {
-  stroke: var(--border-strong);
-  stroke-width: 2;
-}
-
-.barGroup {
+.point {
   cursor: default;
   outline: none;
 }
 
-.barGroup:hover .bar {
-  fill: var(--accent-subtle);
+.pointHit {
+  fill: transparent;
 }
 
-.barGroup:focus-visible .barShape {
+.point:focus-visible .pointHit {
   stroke: var(--focus);
+  stroke-width: 2;
+}
+
+.point:hover .chartDot,
+.point:focus-visible .chartDot {
+  stroke: var(--accent);
   stroke-width: 3;
 }
 
-.barShape {
-  transform-box: fill-box;
-  transform-origin: bottom;
-  animation: barIn 0.4s ease-out both;
+.chartDotLatest {
+  fill: var(--accent);
+  stroke: var(--bg-surface);
+  stroke-width: 2;
 }
 
-@keyframes barIn {
-  from {
-    transform: scaleY(0);
-  }
+/* A hidden period: a dashed line where the gap in the index is, labelled „ukryte”. */
+.chartGap {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .barShape {
-    animation: none;
-  }
+.pointValue {
+  fill: var(--text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
 }
 
 .tooltip {
@@ -277,102 +238,45 @@
   font-size: var(--text-sm);
 }
 
-/* Signal tiles on /dobrostan: shared `Card`s, two in a row from 768px, one on a phone. */
-.counters {
+/* „Sygnały w zespole”: legend over the table, two columns from 768 px. */
+.legend {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-3);
+  gap: var(--s-2) var(--s-4);
   margin: 0;
   padding: 0;
   list-style: none;
+  font-size: var(--text-sm);
 }
 
 @media (min-width: 768px) {
-  .counters {
+  .legend {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.counter {
-  height: 100%;
+.legendHead {
+  font-weight: var(--weight-bold);
 }
 
-/* No one with this signal: greyed, but text keeps its contrast (no opacity). */
-.counterEmpty {
-  background: var(--bg-subtle);
-  box-shadow: none;
-}
-
-.counterEmpty .tileIcon,
-.counterEmpty .tileCount {
-  color: var(--text-secondary);
-}
-
-.tileHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-1) var(--s-2);
-}
-
-.tileIcon {
+.legendIcon {
   flex: none;
+  margin-right: var(--s-1);
   color: var(--accent);
+  vertical-align: -3px;
 }
 
-.tileCount {
-  margin-left: auto;
-  color: var(--text);
-  font-size: var(--text-md);
-  font-weight: var(--weight-bold);
-}
-
-.tileDesc {
-  margin: 0;
-  font-size: var(--text-sm);
-}
-
-.people {
-  margin: var(--s-3) 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--text-sm);
-}
-
-.people li {
-  padding: var(--s-2) 0;
-  border-top: var(--border-w) solid var(--border);
-}
-
-.personHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-1) var(--s-2);
-}
-
-.personHead a {
-  font-weight: var(--weight-bold);
-}
-
-.personWhy {
-  display: block;
-  margin-top: var(--s-1);
+.legendDesc {
   color: var(--text-secondary);
 }
 
-.moreBtn {
-  min-height: var(--tap);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--link);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
+.signalKind {
+  display: flex;
+  align-items: center;
+}
+
+.signalKind .legendIcon {
+  vertical-align: baseline;
 }
 
 /* "i" next to the title of the hints disclosure: outside the <summary> (no button inside a button), on its right edge. */
@@ -445,6 +349,7 @@
 
 /* Pulse chart of one person: drawn in the container's own pixels, so it fills the card without stretching. */
 .pulseChart {
+  position: relative;
   width: 100%;
   min-width: 0;
 }
@@ -460,6 +365,7 @@
 }
 
 .pulseSvg .chartLine,
-.pulseSvg .chartGrid {
+.pulseSvg .chartGrid,
+.pulseSvg .pointHit {
   vector-effect: non-scaling-stroke;
 }

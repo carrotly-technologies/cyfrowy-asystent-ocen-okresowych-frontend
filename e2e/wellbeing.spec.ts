@@ -47,18 +47,12 @@ test('Dobrostan: lista jak w „Oceny zespołu”, karty, wyjaśnienie, że wirt
   expect(await rows.count()).toBeGreaterThan(1)
   await expect(table.getByRole('link', { name: /^Zobacz kartę: / }).first()).toBeVisible()
 
-  // Counters, chart and averages sit in the shared cards; sections have the "Oceny zespołu" head.
+  // Chart and averages sit in the shared cards; sections have the "Oceny zespołu" head.
   for (const region of ['Sygnały w zespole', 'Puls zespołu']) {
     const r = page.getByRole('region', { name: region })
     await expect(r.locator('.section__head')).toHaveCount(1)
   }
-  const cardLook = (el: Element) => {
-    const d = getComputedStyle(el)
-    return [d.borderTopColor, d.borderRadius, d.backgroundColor].join('|')
-  }
-  const counter = page.getByRole('list', { name: 'Liczba sygnałów według rodzaju' }).getByRole('listitem').first().locator('> *')
   const chartCard = page.getByRole('region', { name: 'Puls zespołu' }).locator('section').first()
-  expect(await counter.evaluate(cardLook)).toBe(await chartCard.evaluate(cardLook))
   await expect(chartCard.getByRole('group', { name: /Średni indeks pulsu zespołu/ })).toBeVisible()
 
   // Phone: no horizontal scroll.
@@ -162,7 +156,7 @@ test('Dobrostan: jedna kolumna „Trend” z wykresem, etykietą i ostatnim wska
   await expect(none.locator('svg')).toHaveCount(0)
 })
 
-test('Dobrostan: wykres „Puls zespołu” na całą szerokość, wartości, wyróżniony ostatni okres, tooltip', async ({ page }) => {
+test('Dobrostan: wykres „Puls zespołu” liniowy na całą szerokość, wyróżniony ostatni punkt, tooltip', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/dobrostan')
   const card = page.getByRole('region', { name: 'Puls zespołu' }).locator('section').first()
@@ -179,30 +173,36 @@ test('Dobrostan: wykres „Puls zespołu” na całą szerokość, wartości, wy
   }
   expect(Math.round((await chart.boundingBox())!.height)).toBe(220)
 
-  const bars = chart.getByRole('img')
-  const n = await bars.count()
+  // A line (not bars), Y axis 1–5, the end of every period under the X axis.
+  await expect(chart.locator('path')).toHaveCount(1)
+  await expect(chart.locator('rect[class*="bar"]')).toHaveCount(0)
+  await expect(chart.locator('> g').first().locator('text')).toHaveText(['1', '2', '3', '4', '5'])
+  const points = chart.getByRole('img')
+  const n = await points.count()
   expect(n).toBeGreaterThan(1)
-  // A value above every visible bar, the last period highlighted (accent), earlier ones in accent-border.
-  await expect(bars.last()).toHaveAccessibleName(/^\d{2}\.\d{2}–\d{2}\.\d{2}: indeks \d(,\d)?, odpowiedzi: \d+$/)
-  const fills = await bars.evaluateAll((els) => els.map((el) => getComputedStyle(el.querySelector('path')!).fill))
+  await expect(points.last()).toHaveAccessibleName(/^\d{2}\.\d{2}–\d{2}\.\d{2}: indeks \d(,\d)?, odpowiedzi: \d+$/)
+  await expect(points.last()).toContainText(/^\d(,\d)?\d{2}\.\d{2}$/)
+
+  // The latest point is bigger and in the accent colour; the line too.
   const tokens = await page.evaluate(() => {
     const probe = document.createElement('div')
     document.body.append(probe)
-    const read = (v: string) => ((probe.style.color = `var(${v})`), getComputedStyle(probe).color)
-    const out = { accent: read('--accent'), border: read('--accent-border') }
+    probe.style.color = 'var(--accent)'
+    const accent = getComputedStyle(probe).color
     probe.remove()
-    return out
+    return { accent }
   })
-  expect(fills.at(-1)).toBe(tokens.accent)
-  expect(fills.slice(0, -1).every((f) => f === tokens.border)).toBe(true)
+  const radii = await points.locator('circle').evaluateAll((els) => els.map((el) => Number(el.getAttribute('r'))))
+  expect(radii.at(-1)).toBeGreaterThan(Math.max(...radii.slice(0, -1)))
+  expect(await points.last().locator('circle').evaluate((el) => getComputedStyle(el).fill)).toBe(tokens.accent)
+  expect(await chart.locator('path').evaluate((el) => getComputedStyle(el).stroke)).toBe(tokens.accent)
 
-  // Keyboard focus shows the tooltip.
-  await bars.last().focus()
+  // Keyboard focus shows the tooltip; hover on another point moves it.
+  await points.last().focus()
   const tooltip = card.locator('[class*="tooltip"]')
   await expect(tooltip).toHaveText(/^\d{2}\.\d{2}–\d{2}\.\d{2}: indeks \d(,\d)?, odpowiedzi: \d+$/)
   const focused = await tooltip.textContent()
-  // Hover on another bar moves it.
-  await bars.first().hover()
+  await points.first().hover()
   await expect(tooltip).toHaveCount(1)
   await expect(tooltip).not.toHaveText(focused!)
 
@@ -215,40 +215,60 @@ test('Dobrostan: wykres „Puls zespołu” na całą szerokość, wartości, wy
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
 
-test('Dobrostan: okres z za małą liczbą odpowiedzi to niski kreskowany słupek „ukryte”', async ({ page }) => {
+test('Dobrostan: okres z za małą liczbą odpowiedzi to przerwa w linii „ukryte”', async ({ page }) => {
   // r.sikora's team is small, so every period is hidden.
   await signIn(page, 'r.sikora')
   await page.goto('/dobrostan')
   const chart = page.getByRole('group', { name: /Średni indeks pulsu zespołu/ })
-  const bars = chart.getByRole('img')
-  await expect(bars.first()).toHaveAccessibleName(/: za mało odpowiedzi \(min\. \d+ os(oba|oby|ób)\)$/)
-  await expect(bars.first()).toContainText('ukryte')
-  expect(await bars.first().locator('path').getAttribute('fill')).toMatch(/^url\(#/)
+  const points = chart.getByRole('img')
+  await expect(points.first()).toHaveAccessibleName(/: za mało odpowiedzi \(min\. \d+ os(oba|oby|ób)\)$/)
+  await expect(chart).toContainText('ukryte')
+  // No value: no dot and no line drawn across the gap.
+  await expect(chart.locator('circle')).toHaveCount(0)
+  await expect(chart.locator('path')).toHaveCount(0)
+  await points.first().focus()
+  await expect(page.locator('[class*="tooltip"]')).toHaveText(/: za mało odpowiedzi \(min\. \d+ os(oba|oby|ób)\)$/)
 })
 
-test('Dobrostan: kafelki sygnałów mówią, co oznacza sygnał, kogo dotyczy i dlaczego', async ({ page }) => {
+test('Dobrostan: „Sygnały w zespole” to tabela z legendą, od alertów, z linkiem do karty', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/dobrostan')
-  const tiles = page.getByRole('list', { name: 'Liczba sygnałów według rodzaju' })
-  const overload = tiles.getByRole('listitem').filter({ has: page.getByRole('heading', { name: /^Przeciążenie\s*: \d+ os(oba|oby|ób)$/ }) })
-  await expect(overload).toHaveCount(1)
-  await expect(overload).toContainText('Za dużo pracy')
-  const people = overload.getByRole('list', { name: 'Przeciążenie: kogo dotyczy' }).getByRole('listitem')
-  expect(await people.count()).toBeGreaterThan(0)
-  // Alert first, a level as text (not only colour), a reason with its source, a link to the card.
-  await expect(people.first()).toContainText('Alert')
-  await expect(people.first()).toContainText(/Puls|Zadania|Zakres obowiązków|Nieobecności|Obserwacje/)
-  const link = people.first().getByRole('link')
+  const region = page.getByRole('region', { name: 'Sygnały w zespole' })
+
+  // Legend: every kind with its count and meaning; no tiles.
+  const legend = region.getByRole('list', { name: 'Rodzaje sygnałów' }).getByRole('listitem')
+  await expect(legend).toHaveCount(4)
+  await expect(legend.filter({ hasText: /^Przeciążenie: \d+/ })).toContainText('Za dużo pracy')
+  await expect(page.getByRole('list', { name: 'Liczba sygnałów według rodzaju' })).toHaveCount(0)
+
+  const table = region.getByRole('table', { name: 'Sygnały w zespole' })
+  for (const name of ['Pracownik', 'Sygnał', 'Poziom', 'Dlaczego']) {
+    await expect(table.getByRole('columnheader', { name, exact: true })).toHaveCount(1)
+  }
+  const rows = table.getByRole('rowgroup').last().getByRole('row')
+  const n = await rows.count()
+  expect(n).toBeGreaterThan(1)
+
+  // Sorted by level: Alert, then Do obserwacji, then Do docenienia.
+  const order = { Alert: 0, 'Do obserwacji': 1, 'Do docenienia': 2 } as Record<string, number>
+  const levels = (await rows.evaluateAll((els) => els.map((el) => el.children[2].textContent ?? ''))).map((t) =>
+    t.replace(/^Poziom:/, '').trim(),
+  )
+  expect(levels.every((l) => l in order)).toBe(true)
+  expect(levels.map((l) => order[l])).toEqual([...levels.map((l) => order[l])].sort((a, b) => a - b))
+  await expect(rows.first().getByRole('cell').nth(3)).toContainText(/Puls|Zadania|Zakres obowiązków|Nieobecności|Obserwacje/)
+
+  // The name leads to the person's card.
+  const link = rows.first().getByRole('link')
   const name = await link.textContent()
   await link.click()
   await expect(page).toHaveURL(/\/dobrostan\/p-/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(name!)
 
-  // Phone: one tile per row and no horizontal scroll.
+  // Phone: no horizontal scroll.
   await page.goBack()
   await page.setViewportSize({ width: 375, height: 800 })
-  const boxes = await tiles.locator('> li').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().left))
-  expect(new Set(boxes.map(Math.round)).size).toBe(1)
+  await expect(table).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
 
