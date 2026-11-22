@@ -473,6 +473,8 @@
   --tap: 2.75rem; /* minimum touch target */
   --duration: 0.15s;
   --content-max: 1200px;
+  /* Narrow column of a case stage: the stage status alert, .stage-pad--narrow and the signature steps (.doc-flow) */
+  --content-narrow: 880px;
   --form-max: 640px;
   /* Wider form column (step 4 "Formularz oceny kompetencji"): wider tiles, text inside kept at --measure */
   --form-wide-max: 60rem;
