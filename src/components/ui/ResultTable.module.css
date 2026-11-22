@@ -28,7 +28,6 @@
 }
 
 .bodyRow {
-  position: relative;
   padding-top: var(--s-4);
   padding-bottom: var(--s-4);
   border-top: var(--border-w) solid var(--border);
@@ -38,14 +37,15 @@
   border-top: 0;
 }
 
-.clickable:hover {
+/* Only the name link and the action button are clickable; hovering the row just tints its background. */
+.bodyRow:hover {
   background: var(--bg-hover);
 }
 
 .cell {
   min-width: 0;
   font-size: var(--text-sm);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .cellLabel {
@@ -59,84 +59,100 @@
   min-width: 0;
 }
 
+/* At most 3 lines of text, then „…”; breaks only between words. The full text stays in the DOM and in `title`. */
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.titleBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
 .title {
-  color: var(--sc-blue);
   font-size: var(--text-lg);
   line-height: var(--leading-tight);
+  min-width: 0;
 }
 
+.subtitle {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* The name: an underlined text link to the person's profile (high contrast: fully underlined, see base.css). */
 .link {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* the title link covers the whole row */
-.link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.clickable:hover .link {
+  color: var(--link);
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 50%, transparent);
   text-underline-offset: 3px;
+  border-radius: var(--radius-badge);
 }
 
-.actions {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap-actions);
-  margin-top: var(--s-2);
+.link:hover {
+  color: var(--link-hover);
+  text-decoration-color: currentColor;
 }
 
-/* Action column: the control sits above the row link, right-aligned on wide screens. */
+/* Action column: one control, right-aligned on wide screens; never clamped. */
 .actionCell {
-  position: relative;
-  z-index: 1;
   display: flex;
   justify-content: flex-end;
 }
 
-.link:focus-visible {
-  box-shadow: none;
-}
-
-.link:focus-visible::after {
-  box-shadow: inset 0 0 0 2px var(--focus-inner), inset 0 0 0 4px var(--focus);
-}
-
+/* Status: plain information, a coloured dot and the name in normal text (no fill, frame or capitals). */
 .status {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: var(--s-0);
-  min-height: 3.25rem;
-  padding: var(--s-2);
-  border-radius: var(--radius-badge);
-  text-align: center;
-  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.statusMain {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  /* the dot keeps its colour in forced-colors mode too */
+  forced-color-adjust: none;
+}
+
+.statusIcon {
+  flex: none;
+  color: var(--danger);
 }
 
 .statusLabel {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.03em;
+  color: var(--text);
+  font-size: var(--text-sm);
   line-height: var(--leading-tight);
-  text-transform: uppercase;
 }
 
 .statusSub {
+  color: var(--text-secondary);
   font-size: var(--text-xs);
   line-height: var(--leading-tight);
 }
 
-.ok { background: var(--ok); color: var(--on-ok); }
-.accent { background: var(--accent); color: var(--on-accent); }
-.warn { background: var(--warn); color: var(--on-warn); }
-.danger { background: var(--danger); color: var(--on-danger); }
-.neutral { background: var(--text-secondary); color: var(--bg-surface); }
+.ok { background: var(--ok); }
+.accent { background: var(--accent); }
+.warn { background: var(--warn); }
+.danger { background: var(--danger); }
+.neutral { background: var(--text-muted); }
 
 /* Narrow screens: header hidden (still read by screen readers), each row a stack of "LABEL: value" pairs. */
 @media (max-width: 640px) {
@@ -183,18 +199,5 @@
 
   .actionCell {
     justify-content: flex-start;
-  }
-
-  .titleCell {
-    flex-wrap: wrap;
-  }
-
-  .actions {
-    flex-basis: 100%;
-    margin-top: 0;
-  }
-
-  .status {
-    min-height: 0;
   }
 }

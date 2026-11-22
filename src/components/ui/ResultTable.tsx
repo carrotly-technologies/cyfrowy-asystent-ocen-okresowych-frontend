@@ -1,3 +1,4 @@
+import { AlertCircle } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { cx } from './cx'
@@ -14,8 +15,9 @@ export type ResultTableColumn = {
 
 /**
  * Result list with column headers (ARIA table: a screen reader reads the header with each cell). Header and rows
- * share one CSS grid; at ≤ 640px the header is visually hidden and every cell shows its own label. The last column
- * is either the status tile or an action (a button link such as „Zobacz kartę”).
+ * share one CSS grid; at ≤ 640px the header is visually hidden and every cell shows its own label. Only the
+ * underlined title (link to the person) and the action button at the end of the row are clickable; the status is
+ * plain information (dot + name).
  */
 export function ResultTable({ label, columns, children }: { label: string; columns: ResultTableColumn[]; children: ReactNode }) {
   const style = { '--result-table-cols': columns.map((c) => c.width).join(' ') } as CSSProperties
@@ -35,57 +37,76 @@ export function ResultTable({ label, columns, children }: { label: string; colum
   )
 }
 
+/**
+ * Text cut to at most 3 lines with „…”. The cut is visual only: the full text stays in the DOM (screen readers read it)
+ * and in `title` (tooltip on hover).
+ */
+export function ClampText({ children, className }: { children: string; className?: string }) {
+  return (
+    <span className={cx(s.clamp, className)} title={children}>
+      {children}
+    </span>
+  )
+}
+
 export type ResultCell = {
   /** Column label, shown next to the value on narrow screens. */
   label: string
+  /** A string is clamped to 3 lines (`ClampText`); a node is shown as is (use `ClampText` inside it for its text). */
   value: ReactNode
 }
 
 type RowProps = {
-  /** First cell: the row title; with `to` it is the link whose hit area covers the whole row. */
-  title: ReactNode
+  /** First cell: the row title (person's name); with `to` it is an underlined link (only the name, not the row). */
+  title: string
+  /** Second line under the title (e.g. the position), plain text. */
+  subtitle?: string
   /** Label of the title column (for narrow screens). */
   titleLabel: string
   to?: string
-  /** Accessible name of the row link when the title alone is not enough. */
+  /** Accessible name of the title link when the title alone is not enough (must start with or contain the title). */
   linkLabel?: string
   cells: ResultCell[]
-  /** Last cell: filled tile with an UPPERCASE label (text, never colour alone). */
+  /** Status cell: a coloured dot and the status name in plain text (danger also with an icon, never colour alone). */
   status?: { label: string; sub?: string; tone: ResultTone }
   statusLabel?: string
-  /** Last cell instead of the status: one control (e.g. „Zobacz kartę”), kept above the row link and clickable. */
+  /** Last cell: one control (e.g. „Prowadź ocenę”, „Zobacz kartę”), right-aligned on wide screens. */
   action?: ReactNode
-  /** Extra controls under the title (e.g. a shortcut link); they sit above the row link and stay clickable. */
-  actions?: ReactNode
 }
 
-export function ResultTableRow({ title, titleLabel, to, linkLabel, cells, status, statusLabel, actions, action }: RowProps) {
+export function ResultTableRow({ title, subtitle, titleLabel, to, linkLabel, cells, status, statusLabel, action }: RowProps) {
   return (
-    <div role="row" className={cx(s.row, s.bodyRow, to && s.clickable)}>
+    <div role="row" className={cx(s.row, s.bodyRow)}>
       <div role="cell" className={cx(s.cell, s.titleCell)}>
         <span className={s.cellLabel} aria-hidden="true">{titleLabel}:</span>
-        <span className={s.title}>
-          {to ? (
-            <Link to={to} className={s.link} aria-label={linkLabel}>
-              {title}
-            </Link>
-          ) : (
-            title
-          )}
+        <span className={s.titleBox}>
+          <span className={s.title}>
+            {to ? (
+              <Link to={to} className={cx(s.link, s.clamp)} aria-label={linkLabel} title={title}>
+                {title}
+              </Link>
+            ) : (
+              <ClampText>{title}</ClampText>
+            )}
+          </span>
+          {subtitle && <ClampText className={s.subtitle}>{subtitle}</ClampText>}
         </span>
-        {actions && <span className={s.actions}>{actions}</span>}
       </div>
       {cells.map((c) => (
         <div key={c.label} role="cell" className={s.cell}>
           <span className={s.cellLabel} aria-hidden="true">{c.label}:</span>
-          <span className={s.value}>{c.value}</span>
+          <span className={s.value}>{typeof c.value === 'string' ? <ClampText>{c.value}</ClampText> : c.value}</span>
         </div>
       ))}
       {status && (
         <div role="cell" className={cx(s.cell, s.statusCell)}>
           <span className={s.cellLabel} aria-hidden="true">{statusLabel}:</span>
-          <span className={cx(s.status, s[status.tone])}>
-            <span className={s.statusLabel}>{status.label}</span>
+          <span className={s.status}>
+            <span className={s.statusMain}>
+              <span className={cx(s.dot, s[status.tone])} aria-hidden="true" />
+              {status.tone === 'danger' && <AlertCircle size={14} className={s.statusIcon} aria-hidden="true" />}
+              <span className={s.statusLabel}>{status.label}</span>
+            </span>
             {status.sub && <span className={s.statusSub}>{status.sub}</span>}
           </span>
         </div>
