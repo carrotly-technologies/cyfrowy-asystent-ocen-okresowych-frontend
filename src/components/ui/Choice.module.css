@@ -27,14 +27,16 @@
 
 .input {
   position: relative;
-  width: var(--choice-box);
-  height: var(--choice-box);
+  flex: none;
+  /* Fallback so a Choice radio/checkbox used outside .item (e.g. a RadioMatrix cell) never collapses. */
+  width: var(--choice-box, 1.5rem);
+  height: var(--choice-box, 1.5rem);
   margin: 0;
   /* Same font metrics as .label, so 1lh here is the label's line height. */
   font-size: var(--text-body);
   line-height: var(--leading);
-  margin-top: calc((var(--text-body) * var(--leading) - var(--choice-box)) / 2); /* browsers without lh */
-  margin-top: calc((1lh - var(--choice-box)) / 2);
+  margin-top: calc((var(--text-body) * var(--leading) - var(--choice-box, 1.5rem)) / 2); /* browsers without lh */
+  margin-top: calc((1lh - var(--choice-box, 1.5rem)) / 2);
   border: var(--border-w-strong) solid var(--border-input);
   border-radius: var(--radius-xs);
   background: var(--bg-surface);
