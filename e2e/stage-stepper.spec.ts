@@ -45,6 +45,18 @@ test('Teczka: pasek etapów to okręgi na linii z nazwami pod spodem, dostępny 
   const dot = await links.nth(0).locator('span').first().boundingBox()
   const name = await links.nth(0).locator('span').nth(1).boundingBox()
   expect(name!.y).toBeGreaterThan(dot!.y + dot!.height - 1)
+  // 40px circles with a 16px number, 8px between the circle and the name (#74).
+  expect(dot!.width).toBe(40)
+  expect(dot!.height).toBe(40)
+  expect(Math.round(name!.y - (dot!.y + dot!.height))).toBe(8)
+  await expect(links.nth(4).locator('span').first()).toHaveCSS('font-size', '16px')
+  // The line between two circles runs through their centres.
+  const lineY = await links.nth(1).evaluate((a) => {
+    const li = a.parentElement!
+    const before = getComputedStyle(li, '::before')
+    return li.getBoundingClientRect().top + parseFloat(before.top) + parseFloat(before.height) / 2
+  })
+  expect(Math.abs(lineY - (dot!.y + dot!.height / 2))).toBeLessThanOrEqual(1)
 
   // Tab + Enter opens a step; it becomes the shown one.
   await links.nth(1).focus()
