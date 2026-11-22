@@ -97,7 +97,7 @@ function deadlineName(d: Deadline): string {
 /** A deadline; once the matter is closed a passed date is shown neutrally (no red "po terminie"). */
 function EmployeeDeadline({ deadline, closed, showLegal }: { deadline: Deadline | null; closed: boolean; showLegal?: boolean }) {
   if (deadline && closed && isStalePast(deadline)) return <span className="faint num">{fmtDate(deadline.date)} · minął</span>
-  return <DeadlineText deadline={deadline} showLegal={showLegal} />
+  return <DeadlineText deadline={deadline} showLegal={showLegal} plain />
 }
 
 /** Status block of a row: "your action needed" first, then the case status. */
@@ -175,7 +175,7 @@ export function MyCasePage() {
           {detail.partI.assessmentDue && !dueIsNext && !detail.signedByEvaluatorOn && !ackPartI && (
             <InfoRow label="Termin sporządzenia oceny" value={<span className="num">{fmtDate(detail.partI.assessmentDue)}</span>} />
           )}
-          {showObjectionTerm && <InfoRow label="Termin na sprzeciw" value={<DeadlineText deadline={detail.objectionDeadline} showLegal />} />}
+          {showObjectionTerm && <InfoRow label="Termin na sprzeciw" value={<DeadlineText deadline={detail.objectionDeadline} showLegal plain />} />}
         </InfoList>
       </section>
 
@@ -297,7 +297,7 @@ function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: R
           <p>Termin na wniesienie sprzeciwu minął {fmtDate(d.date)}.</p>
         ) : d ? (
           <p>
-            Termin na sprzeciw: <DeadlineText deadline={d} />
+            Termin na sprzeciw: <DeadlineText deadline={d} plain />
           </p>
         ) : null}
       </InlineAlert>

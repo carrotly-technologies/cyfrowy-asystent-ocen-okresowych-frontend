@@ -13,6 +13,8 @@ export function CasePanels({ detail, supervisor }: { detail: CaseDetail; supervi
   const actions = detail.legalActions ?? []
   const decide = actions.includes('DECIDE_DUE_DATE_REQUEST')
   const fiction = actions.includes('RECORD_ACK_FICTION')
+  // Sheet A: the evaluator decides the sprzeciw (art. 83 ust. 2), so it waits for them here.
+  const decideObjection = actions.includes('DECIDE_OBJECTION')
   const pendingObjections = detail.objections.filter((o) => !o.decision).length
   const invitations = (detail.talkInvitations ?? []).filter((i) => !invitationState(detail, i).stale).length
   const hasLegal = decide || fiction || !!detail.ackFiction || detail.objections.length > 0
@@ -20,13 +22,14 @@ export function CasePanels({ detail, supervisor }: { detail: CaseDetail; supervi
 
   const chips: { text: string; warn?: boolean }[] = []
   if (decide) chips.push({ text: 'wniosek ocenianego czeka na decyzję', warn: true })
-  if (pendingObjections > 0) chips.push({ text: 'sprzeciw w rozpatrzeniu', warn: true })
+  if (decideObjection) chips.push({ text: 'sprzeciw czeka na Twoje rozstrzygnięcie', warn: true })
+  else if (pendingObjections > 0) chips.push({ text: 'sprzeciw w rozpatrzeniu', warn: true })
   if (fiction) chips.push({ text: 'oczekuje na zapoznanie' })
   if (supervisor && invitations > 0) chips.push({ text: `aktualne zaproszenia: ${invitations}` })
 
   return (
     <Disclosure
-      open={decide}
+      open={decide || decideObjection}
       title={
         <>
           <span>{supervisor ? 'Termin oceny, zaproszenia i wnioski' : 'Wnioski i sprzeciwy'}</span>

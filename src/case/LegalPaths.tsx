@@ -64,13 +64,13 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
       {showForm && (
         <form className="panel legal-form" onSubmit={submit} noValidate>
           <p>
-            Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} showLegal />
+            Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} showLegal plain />
           </p>
           <Field label="Treść sprzeciwu" hint={`Wskaż kryteria lub ustalenia, z którymi się nie zgadzasz, i uzasadnij to. Sprzeciw trafi do ${to}.`} error={error}>
             {(c) => <TextArea {...c} rows={5} value={text} onChange={(e) => setText(e.target.value)} />}
           </Field>
           <Button type="submit" loading={m.isPending}>Wnieś sprzeciw</Button>
-          {detail.objectionAddressee && <p className="small muted">Adresat sprzeciwu: {to} <span className="legal">{detail.objectionAddressee.legalBasis}</span></p>}
+          {detail.objectionAddressee && <p className="small muted">Sprzeciw trafi do: {to} <span className="legal">{detail.objectionAddressee.legalBasis}</span></p>}
         </form>
       )}
       <ConfirmDialog
@@ -82,7 +82,7 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
         errorText={legalErrorText}
       >
         <ul className="bullets">
-          <li>Sprzeciw trafi do {to}.{detail.objectionAddressee?.decider === 'EVALUATOR' ? '' : ' Oceniający zostanie o nim powiadomiony.'}</li>
+          <li>Sprzeciw trafi do {to}.{detail.objectionAddressee?.decider === 'EVALUATOR' ? '' : ' Osoba oceniająca zostanie o nim powiadomiona.'}</li>
           <li>Po wysłaniu nie można go wycofać ani zmienić jego treści.</li>
           {detail.objectionNextSteps?.[1] && <li>{detail.objectionNextSteps[1].text}</li>}
           <li>O rozstrzygnięciu dowiesz się w aplikacji.</li>
@@ -132,7 +132,7 @@ export function ObjectionStatus({ objection: o, who = 'Dyrektor generalny urzęd
       </p>
       {!d && (
         <p className="small">
-          {who} rozpatruje sprzeciw do: <DeadlineText deadline={o.decisionDeadline} showLegal />
+          {who} rozpatruje sprzeciw do: <DeadlineText deadline={o.decisionDeadline} showLegal plain />
         </p>
       )}
       {d && (
@@ -145,7 +145,7 @@ export function ObjectionStatus({ objection: o, who = 'Dyrektor generalny urzęd
       {d?.outcome === 'REDO' && <p className="small">Dotychczasowa ocena została anulowana; oceniający sporządza ją ponownie (etap „Rozmowa oceniająca i ocena”). Od nowej oceny przysługuje sprzeciw.</p>}
       {o.courtAppealDeadline && (
         <p className="small">
-          Możliwość odwołania do sądu pracy: <DeadlineText deadline={o.courtAppealDeadline} showLegal />
+          Możliwość odwołania do sądu pracy: <DeadlineText deadline={o.courtAppealDeadline} showLegal plain />
         </p>
       )}
     </InlineAlert>

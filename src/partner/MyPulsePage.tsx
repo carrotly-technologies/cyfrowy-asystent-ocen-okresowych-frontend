@@ -62,9 +62,6 @@ function PulsePrivacy({ minGroupSize }: { minGroupSize: number }) {
   )
 }
 
-/** Plain words for each point of the 1–5 scale (5 is always the best). */
-const SCALE_WORDS = ['bardzo źle', 'raczej źle', 'średnio', 'raczej dobrze', 'bardzo dobrze']
-
 function PulseForm({ info }: { info: MyPulse }) {
   const qc = useQueryClient()
   const [values, setValues] = useState<Partial<Record<string, string>>>({})
@@ -76,9 +73,10 @@ function PulseForm({ info }: { info: MyPulse }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['my-pulse'] }),
   })
   const count = info.scale.max - info.scale.min + 1
+  // One convention: the columns are only numbers; what the ends mean is said by each question (its own low/high words).
   const columns = Array.from({ length: count }, (_, i) => {
-    const v = info.scale.min + i
-    return { value: String(v), label: count === SCALE_WORDS.length ? SCALE_WORDS[i] : String(v), sublabel: String(v) }
+    const v = String(info.scale.min + i)
+    return { value: v, label: v }
   })
   const onSubmit = () => {
     const missing = info.questions.filter((q) => !values[q.id])
