@@ -1,6 +1,6 @@
 /* Horizontal stage stepper: circles on a line, stage names under the circles. Tokens only.
    The layout follows the width of the stepper itself (container query), not the viewport, so it also adapts when
-   the assistant panel narrows the case page: below 53rem only the circles stay, with the shown step's name under them. */
+   the assistant panel narrows the case page: below 44rem only the circles stay (the names under the circles are one word each), with the shown step's name under them. */
 .root {
   /* The sizes of both variants (horizontal bar and vertical axis) in one place, so they stay in sync. */
   --dot: 40px; /* circle; px, so the row of circles always fits, also with enlarged text (/ustawienia) */
@@ -84,7 +84,7 @@
   /* whole words only ("Potwierdzenie" is never split mid-word); the names fit in two lines at the widths below */
   word-break: normal;
   overflow-wrap: normal;
-  hyphens: manual;
+  hyphens: none;
   text-wrap: balance;
 }
 
@@ -198,9 +198,10 @@ a.step:visited {
    stepper keeps its names down to a much narrower width. The vertical variant has neither class and never collapses. */
 
 /* Medium widths (e.g. the case page at 1280px, or with the assistant panel open): smaller names and almost no side
-   padding, still two lines at most. Seven 16px names need ~75rem (the longest, bold „Rozmowa oceniająca i ocena”, is
-   ~146px wide in two lines, plus the side padding), 14px ones ~58rem; below that 12px, down to the collapse at 53rem. */
-@container (max-width: 75rem) {
+   padding. The names under the circles are one word each (the full name is in the tooltip and for screen readers):
+   seven 16px names need ~60rem (the longest, bold „Potwierdzenie”), 14px ones ~50rem; below that 12px, down to the
+   collapse at 44rem. */
+@container (max-width: 60rem) {
   /* on the list: a container query styles only what is inside the container (.root) */
   .many .list {
     --step-pad-x: var(--s-0);
@@ -211,7 +212,7 @@ a.step:visited {
   }
 }
 
-@container (max-width: 58rem) {
+@container (max-width: 50rem) {
   .many .step {
     font-size: var(--text-xs);
   }
@@ -235,7 +236,7 @@ a.step:visited {
 }
 
 /* narrow (phones, or a squeezed case page): circles on the line only, the shown step's name under the line */
-@container (max-width: 53rem) {
+@container (max-width: 44rem) {
   .many .step {
     /* touch target (--tap, at least 44px) around the circle */
     --hit: max(var(--tap), var(--dot));

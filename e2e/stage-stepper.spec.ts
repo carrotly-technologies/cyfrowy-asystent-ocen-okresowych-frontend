@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { resetDemo, signIn } from './helpers.ts'
+import { resetDemo, signIn, openAssistant } from './helpers.ts'
 
 /** The stage stepper (circles on a line) of the case file /teczka/c-001 (supervisor j.kaminska, demo seed: steps 1–4 done, step 5 in progress). */
 const SUPERVISOR = 'j.kaminska'
@@ -79,9 +79,9 @@ test('Teczka przy 375 px: same okręgi i nazwa pokazanego etapu, bez przewijania
 
 test('Teczka z otwartym asystentem: nazwy etapów nie łamią się litera po literze', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.addInitScript(() => localStorage.setItem('ocena.assistant', '1'))
   await signIn(page, SUPERVISOR)
   await page.goto('/teczka/c-001')
+  await openAssistant(page)
 
   await expect(stepper(page).getByRole('link')).toHaveCount(7)
   // Either the names fit in two lines, or (a narrow stepper) only the shown step's name is visible under the circles.

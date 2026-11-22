@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { confirmDialog, resetDemo, signIn } from './helpers.ts'
+import { confirmDialog, resetDemo, signIn, openAssistant } from './helpers.ts'
 
 /**
  * „Podpis i przekazanie” and „Zapoznanie z oceną”: the four steps (rozmowa → podpis → przekazanie → zapoznanie) are
@@ -123,10 +123,10 @@ test('po zapoznaniu wszystkie 4 kroki są zakończone i zwinięte', async ({ pag
 
 for (const assistant of [false, true]) {
   test(`oś kroków mieści się na telefonie bez przewijania w poziomie${assistant ? ' (z panelem Asystenta)' : ''}`, async ({ page }) => {
-    await page.addInitScript((on) => localStorage.setItem('ocena.assistant', on ? '1' : '0'), assistant)
     await page.setViewportSize({ width: 375, height: 800 })
     await signIn(page, SUPERVISOR)
     await page.goto('/teczka/c-007/podpis')
+    if (assistant) await openAssistant(page)
     await expect(step(page, 2).getByRole('button', { name: 'Podpisz ocenę' })).toBeVisible()
     // On a phone the names stay visible next to the circles.
     await expect(step(page, 3).getByText('Przekazanie', { exact: true })).toBeVisible()
@@ -135,10 +135,10 @@ for (const assistant of [false, true]) {
   })
 
   test(`oś kroków ma te same krawędzie co komunikat etapu nad nią (1440 px${assistant ? ', z panelem Asystenta' : ''})`, async ({ page }) => {
-    await page.addInitScript((on) => localStorage.setItem('ocena.assistant', on ? '1' : '0'), assistant)
     await page.setViewportSize({ width: 1440, height: 900 })
     await signIn(page, SUPERVISOR)
     await page.goto('/teczka/c-006/zapoznanie')
+    if (assistant) await openAssistant(page)
     // The visible edges of the status are those of its alert; .stage-status itself also holds the side padding.
     const alert = page.locator('.stage-status > *').first()
     await expect(alert).toBeVisible()

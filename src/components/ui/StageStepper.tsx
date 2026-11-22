@@ -9,6 +9,8 @@ export type StageStepStatus = 'done' | 'current' | 'todo'
 export type StageStep = {
   key: string
   label: string
+  /** Shorter name shown under the circle (e.g. one word); the full `label` stays in the tooltip and for screen readers. */
+  shortLabel?: string
   status: StageStepStatus
   /** Link target; without it the step is plain text. */
   to?: string
@@ -62,7 +64,14 @@ export function StageStepper({ steps, activeKey, label, orientation = 'horizonta
             <span className={s.marker} aria-hidden="true">
               {st.status === 'done' ? <Check size={20} strokeWidth={3} /> : i + 1}
             </span>
-            <span className={s.label}>{st.label}</span>
+            {st.shortLabel && st.shortLabel !== st.label ? (
+              <span className={s.label}>
+                <span aria-hidden="true">{st.shortLabel}</span>
+                <span className="visually-hidden">{st.label}</span>
+              </span>
+            ) : (
+              <span className={s.label}>{st.label}</span>
+            )}
             {st.sublabel && <span className={cx(s.sublabel, 'num')}>{st.sublabel}</span>}
             <span className="visually-hidden">
               {`, krok ${i + 1} z ${steps.length}, ${STATUS_TEXT[st.status]}`}

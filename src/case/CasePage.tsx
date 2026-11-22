@@ -32,14 +32,6 @@ export interface StageProps {
   stage: StageId
 }
 
-function readAssistantPref(): boolean {
-  try {
-    return localStorage.getItem('ocena.assistant') === '1'
-  } catch {
-    return false
-  }
-}
-
 const STATUS_TONE = {
   W_TOKU: 'info',
   DO_ZAPOZNANIA: 'warning',
@@ -55,7 +47,7 @@ export function CasePage() {
   const model = useCriteria()
   const sheets = useSheets()
   const features = useFeatures()
-  const [assistantPref, setAssistantOpen] = useState(readAssistantPref)
+  const [assistantPref, setAssistantOpen] = useState(false) // closed on entering a case file: it would cover the stepper
   const [pdfError, setPdfError] = useState<string | null>(null)
   const assistantOpen = features.assistant && assistantPref
   const rootRef = useRef<HTMLDivElement>(null)
@@ -82,14 +74,7 @@ export function CasePage() {
     return () => document.removeEventListener('keydown', onKey)
   })
 
-  const setAssistant = (open: boolean) => {
-    try {
-      localStorage.setItem('ocena.assistant', open ? '1' : '0')
-    } catch {
-      // ignore
-    }
-    setAssistantOpen(open)
-  }
+  const setAssistant = (open: boolean) => setAssistantOpen(open)
   const toggleAssistant = () => setAssistant(!assistantPref)
   function closeAssistant() {
     setAssistant(false)
@@ -166,7 +151,7 @@ export function CasePage() {
         <StageStepper
           label="Etapy oceny okresowej"
           activeKey={activeStep?.key}
-          steps={steps.map((st) => ({ key: st.key, label: st.label, status: st.status, to: caseUrl(detail.id, stepTarget(st)) }))}
+          steps={steps.map((st) => ({ key: st.key, label: st.label, shortLabel: st.shortLabel, status: st.status, to: caseUrl(detail.id, stepTarget(st)) }))}
         />
       </div>
       <div className={s.panels}>

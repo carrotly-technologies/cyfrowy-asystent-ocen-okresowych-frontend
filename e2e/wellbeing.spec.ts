@@ -251,3 +251,18 @@ test('Dobrostan: kafelki sygnałów mówią, co oznacza sygnał, kogo dotyczy i 
   expect(new Set(boxes.map(Math.round)).size).toBe(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
+
+test('Dobrostan: powody sygnałów z pulsu nie zdradzają odpowiedzi na pojedyncze pytania', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/dobrostan/p-lewandowski')
+
+  const signals = page.getByRole('region', { name: 'Sygnały wirtualnego asystenta HR' })
+  await expect(signals.getByText(/spadek wskaźnika dobrostanu|wskaźnik dobrostanu/).first()).toBeVisible()
+  // Titles and the „Dlaczego” reasons (the suggested actions are a generic catalogue).
+  const said = [
+    ...(await signals.getByRole('heading', { level: 3 }).allInnerTexts()),
+    ...(await signals.getByRole('listitem').filter({ hasText: /^Puls/ }).allInnerTexts()),
+  ].join('\n')
+  expect(said).toContain('sygnał z pulsu')
+  expect(said).not.toMatch(/obciążeni|energi|wsparci|satysfakc|priorytet/i)
+})
