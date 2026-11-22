@@ -319,3 +319,33 @@ test('Dobrostan: powody sygnałów z pulsu nie zdradzają odpowiedzi na pojedync
   expect(said).toContain('sygnał z pulsu')
   expect(said).not.toMatch(/obciążeni|energi|wsparci|satysfakc|priorytet/i)
 })
+
+test('Dobrostan: przycisk na karcie osoby mówi, dokąd prowadzi („Prowadź ocenę” + etap i termin)', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/dobrostan/p-nowak')
+
+  const head = page.locator('.page-head')
+  await expect(head.getByRole('link', { name: 'Teczka oceny' })).toHaveCount(0)
+  const run = head.getByRole('link', { name: 'Prowadź ocenę' })
+  await expect(run).toBeVisible()
+  // Secondary style: the wellbeing card is not the assessment itself.
+  await expect(run).not.toHaveClass(/btn--primary/)
+  await expect(head.getByText(/^Ocena okresowa · etap: Rozmowa oceniająca i ocena · termin \d{2}\.\d{2}\.\d{4}$/)).toBeVisible()
+
+  // The „i” works from the keyboard.
+  const info = head.getByRole('button', { name: 'Czy dane dobrostanu trafiają do oceny?' })
+  await info.focus()
+  await page.keyboard.press('Enter')
+  await expect(head.getByText('Dane dobrostanu nie trafiają do oceny okresowej.')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(head.getByText('Dane dobrostanu nie trafiają do oceny okresowej.')).toHaveCount(0)
+
+  await run.click()
+  await expect(page).toHaveURL(/\/teczka\//)
+
+  // Phone: no horizontal scroll.
+  await page.goBack()
+  await page.setViewportSize({ width: 375, height: 800 })
+  await expect(head.getByRole('link', { name: 'Prowadź ocenę' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})

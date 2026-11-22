@@ -1,3 +1,4 @@
+import type { CaseStatus, Deadline } from './cases'
 import { apiGet, apiPatch, apiPost } from './client'
 
 // Virtual HR partner and pulse survey: backend README, "Virtual HR partner and pulse survey".
@@ -111,6 +112,14 @@ export interface PersonCard {
   name: string
   position: string
   caseId: string
+  /** Status of that case („Prowadź ocenę” / „Zobacz ocenę”). */
+  caseStatus: CaseStatus
+  /** Name of the current stage of the case. */
+  stageName: string
+  /** Next term of the case; null when it is ZAKONCZONA. */
+  nextDeadline: Deadline | null
+  /** `YYYY-MM-DD` the assessment ended; only when ZAKONCZONA. */
+  completedOn: string | null
   points: PulsePoint[]
   trend: { kind: TrendKind; delta: number; description: string }
   signals: Signal[]

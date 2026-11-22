@@ -7,6 +7,7 @@ import { caseUrl } from '../lib/stages'
  * The button to a case (`/teczka/:id`), labelled with what the click does: the supervisor runs an assessment in progress
  * („Prowadź ocenę”, primary), everyone else and every closed assessment only looks at it („Zobacz ocenę”, secondary).
  * DO_ZAPOZNANIA, OKRES_SPRZECIWU and SPRZECIW_W_ROZPATRZENIU count as in progress: the supervisor still has deadlines there.
+ * `variant="secondary"` keeps the label but always uses the secondary style (pages where the case is not the main task).
  */
 export function CaseActionLink({
   caseId,
@@ -14,6 +15,7 @@ export function CaseActionLink({
   role,
   name,
   small = false,
+  variant = 'auto',
   className,
 }: {
   caseId: string
@@ -22,12 +24,14 @@ export function CaseActionLink({
   /** Person's full name, added to the accessible name (rows of a list). */
   name?: string
   small?: boolean
+  /** `auto`: primary when the supervisor runs it; `secondary`: always secondary. */
+  variant?: 'auto' | 'secondary'
   className?: string
 }) {
   const runs = role === 'SUPERVISOR' && status !== 'ZAKONCZONA'
   const label = runs ? 'Prowadź ocenę' : 'Zobacz ocenę'
   const Icon = runs ? ClipboardPen : Eye
-  const classes = ['btn', runs && 'btn--primary', small && 'btn--sm', className].filter(Boolean).join(' ')
+  const classes = ['btn', runs && variant === 'auto' && 'btn--primary', small && 'btn--sm', className].filter(Boolean).join(' ')
   return (
     <Link to={caseUrl(caseId)} className={classes} aria-label={name ? `${label}: ${name}` : undefined}>
       <Icon size={15} aria-hidden="true" /> {label}
