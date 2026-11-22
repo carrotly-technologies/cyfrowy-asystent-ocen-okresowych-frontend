@@ -2576,3 +2576,45 @@
 .page-head {
   flex-wrap: wrap;
 }
+
+/* One fold-out marker everywhere: a chevron like the Disclosure/Accordion icon, never the native ▶. Fold-outs that
+   draw their own lucide chevron (an <svg> in the summary) are left alone. */
+details > summary:not(:has(svg)) {
+  list-style: none;
+}
+
+details > summary:not(:has(svg))::-webkit-details-marker {
+  display: none;
+}
+
+details > summary:not(:has(svg))::before {
+  content: '';
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  margin: 0 0.6em 0.15em 0.15em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+
+details[open] > summary:not(:has(svg))::before {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  details > summary:not(:has(svg))::before {
+    transition: none;
+  }
+}
+
+/* A legal form whose text fields take the full width (e.g. the decision of a sprzeciw). */
+.legal-form.legal-form--wide {
+  align-items: stretch;
+}
+
+.legal-form--wide .legal-form__buttons {
+  justify-content: flex-start;
+}

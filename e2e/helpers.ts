@@ -26,6 +26,13 @@ export async function patchCase(request: APIRequestContext, login: string, caseI
   expect(res.ok(), `PATCH /api/cases/${caseId}: ${await res.text()}`).toBeTruthy()
 }
 
+/** Test setup through the API (not what the test checks): a POST as `login`. */
+export async function apiPost(request: APIRequestContext, login: string, path: string, body: object): Promise<void> {
+  const token = await apiLogin(request, login)
+  const res = await request.post(`${API_URL}/api${path}`, { data: body, headers: { Authorization: `Bearer ${token}` } })
+  expect(res.ok(), `POST /api${path}: ${await res.text()}`).toBeTruthy()
+}
+
 /** Signs in through the form on /logowanie, as a real user would. */
 export async function signIn(page: Page, login: string): Promise<void> {
   await page.goto('/logowanie')
