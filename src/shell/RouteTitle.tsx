@@ -10,7 +10,7 @@ const TITLES: [RegExp, string][] = [
   [/^\/teczka\/[^/]+\/arkusz/, 'Arkusz oceny'],
   [/^\/teczka\//, 'Teczka oceny'],
   [/^\/zespol\/.+/, 'Pracownik'],
-  [/^\/zespol/, 'Mój zespół'],
+  [/^\/zespol/, 'Oceny zespołu'],
   [/^\/dobrostan\/.+/, 'Dobrostan pracownika'],
   [/^\/dobrostan/, 'Dobrostan zespołu'],
   [/^\/moje-oceny\/.+/, 'Moja ocena'],
@@ -29,7 +29,7 @@ const TITLES: [RegExp, string][] = [
 ]
 
 function routeTitle(path: string, personName: string | null): string {
-  if (personName) return `${personName} — Mój zespół — ${APP_NAME}`
+  if (personName) return `${personName} — Oceny zespołu — ${APP_NAME}`
   const hit = TITLES.find(([re]) => re.test(path))
   return hit ? `${hit[1]} — ${APP_NAME}` : APP_NAME
 }

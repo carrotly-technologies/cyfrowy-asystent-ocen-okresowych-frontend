@@ -288,13 +288,13 @@ type NavItem = {
 }
 
 /**
- * Main links for a role; `match` lists the paths that highlight the link (a person page and a case file belong to "Mój zespół").
+ * Main links for a role; `match` lists the paths that highlight the link (a person page and a case file belong to "Oceny zespołu").
  * `/ustawienia` is the gear icon in the header (and a row in the drawer).
  */
 function navItems(role: Role): NavItem[] {
   const byRole: Partial<Record<Role, NavItem[]>> = {
     SUPERVISOR: [
-      { to: '/zespol', label: 'Mój zespół', short: 'Zespół', Icon: Users, match: ['/zespol', '/teczka'], bottom: true },
+      { to: '/zespol', label: 'Oceny zespołu', short: 'Oceny', Icon: Users, match: ['/zespol', '/teczka'], bottom: true },
       { to: '/dobrostan', label: 'Dobrostan', Icon: HeartHandshake, match: ['/dobrostan'], bottom: true },
     ],
     EMPLOYEE: [
@@ -308,7 +308,7 @@ function navItems(role: Role): NavItem[] {
   return [
     ...(byRole[role] ?? []),
     ...(role === 'ADMIN' ? [{ to: '/admin/korekty', label: 'Tryb korekty', Icon: FilePen, match: ['/admin/korekty'] }] : []),
-    // The supervisor's people live in „Mój zespół” (/zespol/:id); /kartoteka redirects there.
+    // The supervisor's people live in „Oceny zespołu” (/zespol/:id); /kartoteka redirects there.
     ...(role === 'HR' || role === 'ADMIN' ? [{ to: '/kartoteka', label: 'Kartoteka', Icon: Contact, match: ['/kartoteka'] }] : []),
     ...(role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR' ? [{ to: '/statystyki', label: 'Statystyki', Icon: ChartColumn, match: ['/statystyki'] }] : []),
     { to: '/baza-wiedzy', label: 'Baza wiedzy', short: 'Wiedza', Icon: BookOpen, match: ['/baza-wiedzy'], group: true, bottom: role === 'EMPLOYEE' },

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { resetDemo, signIn } from './helpers.ts'
 
-/** "Mój zespół" (/zespol) of supervisor j.kaminska, against the backend demo seed. */
+/** "Oceny zespołu" (/zespol) of supervisor j.kaminska, against the backend demo seed. */
 const SUPERVISOR = 'j.kaminska'
 const HEADERS = ['Pracownik', 'Stanowisko', 'Ocena', 'Etap', 'Termin', 'Następna ocena', 'Status']
 
@@ -9,9 +9,11 @@ test.beforeEach(async ({ request }) => {
   await resetDemo(request)
 })
 
-test('Mój zespół: nagłówki kolumn, następna ocena i status w ostatniej kolumnie', async ({ page }) => {
+test('Oceny zespołu: nagłówki kolumn, następna ocena i status w ostatniej kolumnie', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Oceny zespołu')
+  await expect(page).toHaveTitle(/^Oceny zespołu — /)
 
   const table = page.getByRole('table', { name: 'Pracownicy i ich oceny okresowe' })
   await expect(table.getByRole('columnheader')).toHaveText(HEADERS)
@@ -40,10 +42,11 @@ test('Mój zespół: nagłówki kolumn, następna ocena i status w ostatniej kol
   await expect(table.getByRole('link', { name: 'Prowadź ocenę: Ewa Dąbrowska' })).toBeVisible()
   await run.click()
   await expect(page).toHaveURL(/\/teczka\/c-001/)
-  await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Mój zespół' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Oceny zespołu' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('navigation', { name: 'Okruszki' }).getByRole('link', { name: 'Oceny zespołu' })).toBeVisible()
 })
 
-test('Mój zespół: wiersz otwiera stronę osoby z bieżącą oceną, historią, nieobecnościami i kartoteką', async ({ page }) => {
+test('Oceny zespołu: wiersz otwiera stronę osoby z bieżącą oceną, historią, nieobecnościami i kartoteką', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')
 
@@ -56,21 +59,21 @@ test('Mój zespół: wiersz otwiera stronę osoby z bieżącą oceną, historią
   await expect(sections).toHaveText(['Bieżąca ocena', 'Historia ocen', 'Nieobecności', 'Dane w kartotece'])
 
   const crumbs = page.getByRole('navigation', { name: 'Okruszki' })
-  await expect(crumbs.getByRole('link', { name: 'Mój zespół' })).toBeVisible()
+  await expect(crumbs.getByRole('link', { name: 'Oceny zespołu' })).toBeVisible()
   await expect(crumbs.locator('[aria-current="page"]')).toHaveText('Anna Nowak')
-  await expect(page).toHaveTitle(/^Anna Nowak — Mój zespół/)
-  await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Mój zespół' })).toHaveAttribute('aria-current', 'page')
+  await expect(page).toHaveTitle(/^Anna Nowak — Oceny zespołu/)
+  await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Oceny zespołu' })).toHaveAttribute('aria-current', 'page')
 
   await expect(page.getByRole('link', { name: 'Otwórz teczkę' })).toHaveCount(0)
   await page.getByRole('link', { name: 'Prowadź ocenę' }).click()
   await expect(page).toHaveURL(/\/teczka\/c-001$/)
 })
 
-test('Kierownik: bez pozycji „Pracownicy” w menu, /kartoteka prowadzi do Mojego zespołu', async ({ page }) => {
+test('Kierownik: bez pozycji „Pracownicy” w menu, /kartoteka prowadzi do Ocen zespołu', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')
   const nav = page.getByRole('navigation', { name: 'Nawigacja główna' })
-  await expect(nav.getByRole('link', { name: 'Mój zespół' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Oceny zespołu' })).toBeVisible()
   await expect(nav.getByRole('link', { name: /Pracownicy|Kartoteka/ })).toHaveCount(0)
 
   await page.goto('/kartoteka')
@@ -85,7 +88,7 @@ test('Kierownik na telefonie: dolny pasek bez „Pracownicy”', async ({ page }
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')
   const bottom = page.getByRole('navigation', { name: 'Nawigacja na telefonie' })
-  await expect(bottom.getByRole('link', { name: 'Zespół' })).toBeVisible()
+  await expect(bottom.getByRole('link', { name: 'Oceny', exact: true })).toBeVisible()
   await expect(bottom.getByRole('link', { name: /Pracownicy/ })).toHaveCount(0)
 })
 
@@ -100,7 +103,7 @@ test('HR: Kartoteka w menu i /kartoteka/:id bez zmian', async ({ page }) => {
   await expect(page.locator('main').getByRole('heading', { level: 2 }).first()).toHaveText('Dane w kartotece')
 })
 
-test('Mój zespół na telefonie: bez przewijania w poziomie, nagłówki ukryte, wartości z etykietami', async ({ page }) => {
+test('Oceny zespołu na telefonie: bez przewijania w poziomie, nagłówki ukryte, wartości z etykietami', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')

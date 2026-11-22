@@ -22,7 +22,7 @@ export function TeamPage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1 className="h-page">Mój zespół</h1>
+          <h1 className="h-page">Oceny zespołu</h1>
           <p className="page-head__meta" title={me.unit}>{me.unit}</p>
         </div>
       </header>

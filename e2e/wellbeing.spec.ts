@@ -17,8 +17,8 @@ test('Dobrostan: nagłówki nie powtarzają innych pozycji menu', async ({ page 
   await expect(page.getByRole('region', { name: 'Puls pracowników' }).getByRole('table')).toBeVisible()
 
   const headings = await page.locator('main').getByRole('heading').allTextContents()
-  // No heading starts with another menu item's label ("Mój zespół", "Pracownicy").
-  expect(headings.filter((h) => /^(Mój zespół|Pracownicy)/.test(h.trim()))).toEqual([])
+  // No heading starts with another menu item's label ("Oceny zespołu", "Pracownicy").
+  expect(headings.filter((h) => /^(Oceny zespołu|Pracownicy)/.test(h.trim()))).toEqual([])
 
   // Breadcrumbs on a person's card lead back to the same name.
   await page.getByRole('link', { name: /^Karta: / }).first().click()

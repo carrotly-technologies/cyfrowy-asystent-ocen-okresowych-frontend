@@ -2543,7 +2543,7 @@
   overflow-wrap: break-word;
 }
 
-/* Mój zespół below ~900px (also 150% zoom): each person is a card, the whole card opens the case; nothing scrolls sideways. */
+/* Oceny zespołu below ~900px (also 150% zoom): each person is a card, the whole card opens the case; nothing scrolls sideways. */
 @media (max-width: 899px) {
   .panel:has(> .team-table) {
     overflow: visible;
