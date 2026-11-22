@@ -2,26 +2,21 @@ import { useEffect, type ReactNode } from 'react'
 import { CaseHintsPanel } from '../../partner/CaseHintsPanel'
 import { useNavigate, useSearchParams } from 'react-router'
 import type { CaseDetail } from '../../api/cases'
-import { FormProgress, InlineAlert } from '../../components/ui'
+import { InlineAlert } from '../../components/ui'
 import { useCaseAction } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { allows, caseUrl } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { SheetPartII } from './SheetPartII'
 import { SheetPartIII } from './SheetPartIII'
+import { readSheetPart } from './sheetParts'
+import { SheetPartsStepper } from './SheetPartsStepper'
 import { StageLayout } from './StageLayout'
 import { scrollToCaseWork } from '../scroll'
 
 /** Parts of the sheet filled at the assessment stage (part I is the opening talk). */
-const SHEET_PARTS = [
-  { mark: 'II', name: 'Część II – ocena okresowa' },
-  { mark: 'III', name: 'Część III – wniosek o kolejny stopień' },
-] as const
-
-function readPart(raw: string | null): number | null {
-  const n = Number(raw)
-  return Number.isInteger(n) && n >= 2 && n <= 3 ? n : null
-}
+const PARTS = [2, 3] as const
+const readPart = (raw: string | null) => readSheetPart(raw, PARTS)
 
 function status(detail: CaseDetail): ReactNode {
   if (detail.signedByEvaluatorOn) {
@@ -79,14 +74,7 @@ export function SheetWizard(props: StageProps) {
 
   return (
     <StageLayout info={info} title={title} status={status(detail)}>
-      <FormProgress
-        unit="Krok"
-        label="Części arkusza"
-        steps={SHEET_PARTS.map((p, i) => {
-          const n = i + 2
-          return { key: String(n), mark: p.mark, label: p.name, state: n < part ? 'done' : n === part ? 'current' : 'todo' }
-        })}
-      />
+      <SheetPartsStepper parts={PARTS} stateOf={(n) => (n < part ? 'done' : n === part ? 'current' : 'todo')} />
       <CaseHintsPanel caseId={detail.id} />
       {part === 2 && <SheetPartII {...props} onNext={() => goTo(3)} />}
       {part === 3 && (

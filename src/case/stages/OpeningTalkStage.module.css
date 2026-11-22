@@ -1,0 +1,38 @@
+/* "Rozmowa rozpoczynająca": the sheet parts stepper with the link to the whole sheet under it */
+.parts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.preview {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: var(--gap-icon);
+  min-height: var(--tap);
+  padding: 0 var(--s-1);
+  border-radius: var(--radius-xs);
+  color: var(--link);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.preview:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.preview:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+}
+
+@media (max-width: 767px) {
+  .preview {
+    justify-self: start;
+  }
+}
