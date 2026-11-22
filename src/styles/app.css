@@ -1416,124 +1416,6 @@
   background: var(--bg-subtle);
 }
 
-/* Vertical timeline of the document stage (rozmowa → podpis → przekazanie → zapoznanie), styled like the StageStepper:
-   done = green circle with a check, current = accent outline, bold name and its action expanded under it,
-   future = grey outline, collapsed. The line runs through the circles' centres. Tokens only. */
-.steps {
-  --dot: 28px; /* px like the StageStepper circles, so the line always meets their centres */
-  --line: 2px;
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.steps__item {
-  position: relative;
-  display: grid;
-  grid-template-columns: var(--dot) minmax(0, 1fr);
-  column-gap: var(--s-3);
-  padding-bottom: var(--s-4);
-  font-size: var(--text-sm);
-}
-
-.steps__item:last-child {
-  padding-bottom: 0;
-}
-
-/* the line down to the next circle; green once this step is done */
-.steps__item:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  top: var(--dot);
-  bottom: 0;
-  left: calc(var(--dot) / 2 - var(--line) / 2);
-  width: var(--line);
-  background: var(--border-strong);
-}
-
-.steps__item.is-done:not(:last-child)::before {
-  background: var(--ok);
-}
-
-.steps__marker {
-  display: inline-flex;
-  grid-row: 1 / span 2;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: var(--dot);
-  height: var(--dot);
-  border: var(--border-w-strong) solid var(--border-input);
-  border-radius: var(--radius-round);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: var(--weight-bold);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.steps__item.is-done .steps__marker {
-  border-color: var(--ok);
-  background: var(--ok);
-  color: var(--on-ok);
-}
-
-.steps__item.is-current .steps__marker {
-  border-color: var(--accent);
-  color: var(--accent);
-  outline: var(--border-w-strong) solid var(--accent);
-  outline-offset: 2px;
-}
-
-.steps__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-1) var(--s-2);
-  min-width: 0;
-  min-height: var(--dot);
-}
-
-.steps__label {
-  flex: 1 1 12rem;
-  min-width: 0;
-  color: var(--text-secondary);
-  overflow-wrap: anywhere;
-}
-
-.steps__item.is-done .steps__label {
-  color: var(--text);
-}
-
-.steps__item.is-current .steps__label {
-  color: var(--text);
-  font-weight: var(--weight-bold);
-}
-
-.steps__date {
-  margin-left: auto;
-  color: var(--text-secondary);
-}
-
-/* the current step's action, indented next to the line */
-.steps__body {
-  display: flex;
-  grid-column: 2;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s-2);
-  min-width: 0;
-  margin-top: var(--s-2);
-}
-
-.steps__body > .formal {
-  align-self: stretch;
-  margin-top: 0;
-}
-
 /* =========================================================
    Observations
    ========================================================= */
@@ -1613,18 +1495,30 @@
 /* =========================================================
    Document stage
    ========================================================= */
-/* Same edges as the stage status above it: .stage-status is --content-narrow wide including its side padding (the
-   same as .stage-pad's), so the box inside .stage-pad is narrower by both paddings. */
+/* The four steps (rozmowa → podpis → przekazanie → zapoznanie) as a StageStepper like the stage bar of the case file,
+   without a box around them, and the action of the current step right under it.
+   Same edges as the stage status above it: .stage-status is --content-narrow wide including its side padding (the
+   same as .stage-pad's), so the block inside .stage-pad is narrower by both paddings. */
 .doc-flow {
   max-width: calc(var(--content-narrow) - 2 * var(--s-6));
   margin-bottom: var(--s-6);
-  padding: var(--s-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+}
+
+.doc-flow__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+
+.doc-flow__action > .formal {
+  align-self: stretch;
+  margin-top: 0;
 }
 
 .doc-flow__title {
-  margin: 0 0 var(--s-4);
+  margin: 0;
   font-size: var(--text-md);
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
@@ -2266,7 +2160,6 @@
 }
 .timeline__meta strong,
 .timeline__date,
-.steps__date,
 .mini-table__name,
 .ctx-chip,
 .log li,
@@ -2290,8 +2183,7 @@
   flex: 0 1 auto;
 }
 
-.timeline__meta .tag,
-.steps__date {
+.timeline__meta .tag {
   flex: none;
 }
 
