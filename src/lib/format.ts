@@ -43,10 +43,14 @@ export function fmtDaysLeft(daysLeft: number | null): string {
   return `po terminie ${days(-daysLeft)}`
 }
 
-/** 4.2 → "4,20" (exact average, Polish decimal comma). */
+/**
+ * 4.2 → "4,20", 45/7 → "6,43": rounded half-up, Polish decimal comma. Same rounding as the API's
+ * `averageDisplay` (form, sheet, PDF). Level and result are always computed from the exact average.
+ */
 export function fmtAvg(n: number | null | undefined, digits = 2): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '—'
-  return n.toFixed(digits).replace('.', ',')
+  const factor = 10 ** digits
+  return (Math.round(n * factor + 1e-9) / factor).toFixed(digits).replace('.', ',')
 }
 
 export function plPoints(n: number): string {

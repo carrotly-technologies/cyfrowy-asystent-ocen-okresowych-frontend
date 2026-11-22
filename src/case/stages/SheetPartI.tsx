@@ -103,6 +103,12 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
     return e
   }
 
+  const [confirming, setConfirming] = useState(false)
+  const save = async () => {
+    const expectations = Object.fromEntries(criteria.all.map((c) => [c, expect[c] ?? '']))
+    await patch.mutateAsync({ partI: { topics, expectations, assessmentDue: due } })
+    if (canConfirm) await act.mutateAsync('CONFIRM_PART_I')
+  }
   const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault()
     // Errors of a mutation are shown by StageError under the form, and the user stays in part I.
@@ -111,9 +117,12 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
         const e = [...validate(), ...(canConfirm ? confirmErrors() : [])]
         setErrors(e)
         if (e.length) return
-        const expectations = Object.fromEntries(criteria.all.map((c) => [c, expect[c] ?? '']))
-        await patch.mutateAsync({ partI: { topics, expectations, assessmentDue: due } })
-        if (canConfirm) await act.mutateAsync('CONFIRM_PART_I')
+        // Approving part I locks the criteria and the due date: ask first, with a short summary.
+        if (canConfirm) {
+          setConfirming(true)
+          return
+        }
+        await save()
       }
       onNext?.()
     } catch {
@@ -275,6 +284,25 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
         <p>
           Kryterium „{removing ? criterionName(model, removing) : ''}” zniknie z części I razem z oczekiwaniami, które do niego wpisano.
         </p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={confirming}
+        title="Zatwierdzić część I?"
+        confirmLabel="Zatwierdź część I"
+        onConfirm={() => save().then(() => onNext?.())}
+        onCancel={() => setConfirming(false)}
+        errorText={errorMessage}
+      >
+        <ul className="bullets">
+          <li>
+            Kryteria oceny: <strong className="num">{criteria.all.length}</strong>
+            {criteria.additional.length > 0 ? ` (w tym dodatkowe: ${criteria.additional.length})` : ''}.
+          </li>
+          <li>
+            Termin sporządzenia oceny: <strong className="num">{due ? fmtDate(due) : '—'}</strong>.
+          </li>
+          <li>Po zatwierdzeniu kryteria i termin zostaną zablokowane, a oceniany dostanie prośbę o potwierdzenie części I.</li>
+        </ul>
       </ConfirmDialog>
       {editable && <WizardActions loading={patch.isPending || act.isPending} nextLabel={canConfirm ? 'Zatwierdź część I' : 'Zapisz'} />}
     </form>

@@ -57,6 +57,8 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   await expect(confirmations).toHaveCount(2)
   for (const box of await confirmations.all()) await box.check()
   await page.getByRole('button', { name: 'Zatwierdź część I' }).click()
+  await expect(page.getByRole('dialog', { name: 'Zatwierdzić część I?' })).toContainText('Kryteria oceny:')
+  await confirmDialog(page, 'Zatwierdzić część I?', 'Zatwierdź część I')
 
   // Krok 3: czeka na ocenianego.
   await expect(page).toHaveURL(new RegExp(`/teczka/${CASE}/potwierdzenie-czesci-i`))
@@ -70,12 +72,17 @@ test('przełożony i oceniany przechodzą całą ocenę okresową', async ({ pag
   await expect(employee).toHaveURL(new RegExp(`/moje-oceny/${CASE}`))
   await expect(employee.getByText('Wymaga Twojego działania: potwierdź rozmowę rozpoczynającą', { exact: true })).toBeVisible()
   await employee.getByRole('button', { name: 'Potwierdzam' }).click()
+  await expect(employee.getByRole('dialog', { name: 'Potwierdzić część I?' })).toContainText('Termin sporządzenia oceny:')
+  await confirmDialog(employee, 'Potwierdzić część I?', 'Potwierdzam')
+  await expect(employee.getByRole('status').getByText('Potwierdzono część I.', { exact: false })).toBeVisible()
   await expect(employee.getByText('Nie masz teraz nic do potwierdzenia')).toBeVisible()
 
   // Krok 4–5: przełożony kończy obserwacje i ocenia (część II i III).
   await page.goto(`/teczka/${CASE}`)
   await expect(page).toHaveURL(new RegExp(`/teczka/${CASE}/obserwacje`))
   await page.getByRole('button', { name: 'Zakończ obserwacje i przejdź do oceny' }).click()
+  await expect(page.getByRole('dialog', { name: 'Zakończyć okres obserwacji?' })).toContainText('do podpisania oceny')
+  await confirmDialog(page, 'Zakończyć okres obserwacji?', 'Zakończ i przejdź do oceny')
   await expect(page).toHaveURL(new RegExp(`/teczka/${CASE}/ocena\\?czesc=2`))
   await scoreAll(page, 7)
   await expect(page.getByText('Pozytywna', { exact: true })).toBeVisible()

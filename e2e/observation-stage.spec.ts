@@ -104,6 +104,14 @@ test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, dzienn
   // Journal: the timeline from before #38.
   await expectTimeline(page)
 
+  // Empty form: the app's own Polish messages, no browser validation.
+  await page.getByRole('main').getByRole('button', { name: 'Dodaj obserwację' }).first().click()
+  const form = page.getByRole('form', { name: 'Nowa obserwacja' })
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: 'Zapisz obserwację' }).click()
+  await expect(form.getByText('Wpisz: sytuacja.')).toBeVisible()
+  await form.getByRole('button', { name: 'Anuluj' }).click()
+
   // Adding an observation works as before.
   await journal(page).getByRole('button', { name: 'Dodaj obserwację' }).click()
   await page.getByLabel('Sytuacja').fill('Spotkanie z delegacją partnerską.')

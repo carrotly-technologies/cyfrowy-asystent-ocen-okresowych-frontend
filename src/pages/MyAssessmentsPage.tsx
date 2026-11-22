@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { getCases, type CaseAction, type CaseDetail, type CaseSummary, type Deadline } from '../api/cases'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { BackLink, Button, ConfirmDialog, InfoList, InfoRow, InlineAlert, ResultList, ResultRow, StageStepper, StatusBadge, type ResultTone } from '../components/ui'
+import { BackLink, Button, ConfirmDialog, InfoList, InfoRow, InlineAlert, ResultList, ResultRow, Snackbar, StageStepper, StatusBadge, type ResultTone } from '../components/ui'
 import { useCase, useCaseAction } from '../lib/caseQueries'
 import { DEMO_TODAY, fmtDate } from '../lib/format'
 import { caseCriteria, criterionName, findCriterion, useCriteria, useSheets } from '../lib/model'
@@ -161,7 +161,7 @@ export function MyCasePage() {
       <StageStepper label="Etapy oceny okresowej" steps={caseSteps(detail).map((s) => ({ key: s.key, label: s.label, shortLabel: s.shortLabel, status: s.status }))} />
 
       <section className="section">
-        <EmployeeActions detail={detail} criteria={ackPartI && detail.sheetId ? criteriaList : null} />
+        <EmployeeActions detail={detail} criteria={ackPartI && detail.sheetId ? criteriaList : null} criteriaCount={criteria.all.length} />
       </section>
 
       <section className="section" aria-labelledby="status-h">
@@ -221,9 +221,29 @@ const ACK_TEXT: Partial<Record<CaseAction, { title: string; text: string; button
   },
 }
 
-function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: ReactNode }) {
+type EmployeeActionsProps = { detail: CaseDetail; criteria: ReactNode; criteriaCount: number }
+
+/** The employee's pending action, plus a confirmation toast after part I is confirmed (the page scrolls back up). */
+function EmployeeActions(props: EmployeeActionsProps) {
+  const [toast, setToast] = useState(false)
+  const closeToast = useCallback(() => setToast(false), [])
+  const onPartIAcked = () => {
+    setToast(true)
+    document.getElementById('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  return (
+    <>
+      <EmployeeActionsBody {...props} onPartIAcked={onPartIAcked} />
+      <Snackbar open={toast} message="Potwierdzono część I. Od dziś biegnie okres oceny." onClose={closeToast} />
+    </>
+  )
+}
+
+function EmployeeActionsBody({ detail, criteria, criteriaCount, onPartIAcked }: EmployeeActionsProps & { onPartIAcked: () => void }) {
   const act = useCaseAction(detail.id, { follow: false })
   const [confirmAck, setConfirmAck] = useState(false)
+  const [confirmPartI, setConfirmPartI] = useState(false)
   const action = (['EMPLOYEE_ACK_PART_I', 'EMPLOYEE_ACK_ASSESSMENT'] as const).find((a) => allows(detail, a))
   const to = detail.objectionAddressee?.to ?? 'dyrektora generalnego urzędu'
   // art. 83 ust. 4: no further sprzeciw from an assessment changed after one (the API's rule, with its note).
@@ -250,10 +270,33 @@ function EmployeeActions({ detail, criteria }: { detail: CaseDetail; criteria: R
             )}
           </>
         )}
-        <Button loading={act.isPending} onClick={() => (action === 'EMPLOYEE_ACK_ASSESSMENT' ? setConfirmAck(true) : act.mutate(action))}>
+        <Button loading={act.isPending} onClick={() => (action === 'EMPLOYEE_ACK_ASSESSMENT' ? setConfirmAck(true) : setConfirmPartI(true))}>
           {t.button}
         </Button>
         {act.error ? <p role="alert">{legalErrorText(act.error)}</p> : null}
+        <ConfirmDialog
+          open={confirmPartI}
+          title="Potwierdzić część I?"
+          confirmLabel="Potwierdzam"
+          onCancel={() => setConfirmPartI(false)}
+          onConfirm={() => act.mutateAsync('EMPLOYEE_ACK_PART_I').then(onPartIAcked)}
+          errorText={legalErrorText}
+        >
+          <ul className="bullets">
+            <li>
+              Kryteria oceny: <strong className="num">{criteriaCount}</strong> (lista powyżej, z oczekiwaniami).
+            </li>
+            {detail.partI.assessmentDue && (
+              <li>
+                Termin sporządzenia oceny: <strong className="num">{fmtDate(detail.partI.assessmentDue)}</strong>.
+              </li>
+            )}
+            <li>
+              Data potwierdzenia: <strong className="num">{fmtDate(DEMO_TODAY)}</strong>; od niej biegnie okres oceny. Potwierdzenie nie
+              oznacza zgody z kryteriami.
+            </li>
+          </ul>
+        </ConfirmDialog>
         <ConfirmDialog
           open={confirmAck}
           title="Potwierdzić zapoznanie z oceną?"

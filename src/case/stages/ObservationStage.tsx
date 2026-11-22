@@ -9,7 +9,7 @@ import { allows, caseUrl, observationLockOf } from '../../lib/stages'
 import { useMe } from '../../lib/useAuth'
 import type { StageProps } from '../CasePage'
 import { MutationError, StageHeader } from './common'
-import { DateInput, Disclosure } from '../../components/ui'
+import { ConfirmDialog, DateInput, Disclosure, FieldError } from '../../components/ui'
 import css from './ObservationStage.module.css'
 
 const empty = (crit: string): Omit<Observation, 'id'> => ({
@@ -34,6 +34,17 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState(() => empty(criteria.all[0] ?? ''))
   const [filter, setFilter] = useState<string>('')
+  const [errors, setErrors] = useState<Partial<Record<SdrKey, string>>>({})
+  const [confirmStart, setConfirmStart] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  // The opened form is brought into view (it sits below the coverage table), its first field focused.
+  useEffect(() => {
+    if (!formOpen) return
+    const f = formRef.current
+    f?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    f?.querySelector<HTMLElement>('input, select, textarea')?.focus({ preventScroll: true })
+  }, [formOpen])
 
   const counts = Object.fromEntries(criteria.all.map((c) => [c, detail.observations.filter((o) => o.criterionId === c).length]))
   const thin = criteria.all.filter((c) => counts[c] < 2)
@@ -41,8 +52,16 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
+    const missing: Partial<Record<SdrKey, string>> = {}
+    for (const [k, label] of SDR) if (!form[k].trim()) missing[k] = `Wpisz: ${label.toLowerCase()}.`
+    setErrors(missing)
+    if (Object.keys(missing).length > 0) {
+      formRef.current?.querySelector<HTMLElement>(`#obs-${Object.keys(missing)[0]}`)?.focus()
+      return
+    }
     add.mutate(form, {
       onSuccess: () => {
+        setErrors({})
         setForm(empty(form.criterionId))
         setFormOpen(false)
       },
@@ -50,13 +69,21 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
   }
 
   const start = () =>
-    act.mutate('START_ASSESSMENT', { onSuccess: () => navigate(caseUrl(detail.id, 'ASSESSMENT')) })
+    act.mutateAsync('START_ASSESSMENT').then(() => navigate(caseUrl(detail.id, 'ASSESSMENT')))
 
   return (
     <div className="stage">
       <StageHeader title={info.name} />
 
       <div className={`stage-pad ${css.page}`}>
+        {canAdd && (
+          <div className={css.topAdd}>
+            <p className="small muted">Zapisuj przykłady zachowań na bieżąco: sytuacja, działanie, rezultat.</p>
+            <button type="button" className="btn btn--primary" onClick={() => setFormOpen(true)}>
+              <Plus size={15} aria-hidden="true" /> Dodaj obserwację
+            </button>
+          </div>
+        )}
         <section className={css.section} aria-labelledby="obs-coverage">
           <h3 id="obs-coverage" className="h-section">Pokrycie kryteriów dowodami</h3>
           <p className="small muted">Kliknij nazwę kryterium, żeby zobaczyć w dzienniku tylko jego obserwacje. Ponowne kliknięcie pokazuje wszystkie.</p>
@@ -134,13 +161,13 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           </div>
 
           {formOpen && canAdd && (
-            <form className="obs-form panel" onSubmit={submit}>
+            <form ref={formRef} className={`obs-form panel ${css.form}`} onSubmit={submit} noValidate aria-label="Nowa obserwacja">
               <div className="obs-form__row">
                 <label className="field">
                   <span className="field__label">Data</span>
                   <DateInput width="full" value={form.date} max={DEMO_TODAY} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
                 </label>
-                <label className="field" style={{ flex: 1 }}>
+                <label className="field obs-form__crit">
                   <span className="field__label">Kryterium</span>
                   <select className="select" value={form.criterionId} onChange={(e) => setForm({ ...form, criterionId: e.target.value })}>
                     {criteria.all.map((c) => (
@@ -162,15 +189,28 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
               </div>
               <div className="obs-form__sdr">
                 {SDR.map(([k, label, ph]) => (
-                  <label key={k} className="field">
-                    <span className="field__label">{label}</span>
-                    <textarea className="textarea" rows={3} required placeholder={ph} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
-                  </label>
+                  <div key={k} className="field">
+                    <label className="field__label" htmlFor={`obs-${k}`}>{label}</label>
+                    {errors[k] && <FieldError id={`obs-${k}-error`}>{errors[k]}</FieldError>}
+                    <textarea
+                      id={`obs-${k}`}
+                      className="textarea"
+                      rows={3}
+                      placeholder={ph}
+                      value={form[k]}
+                      aria-invalid={errors[k] ? true : undefined}
+                      aria-describedby={errors[k] ? `obs-${k}-error` : undefined}
+                      onChange={(e) => {
+                        setForm({ ...form, [k]: e.target.value })
+                        if (errors[k] && e.target.value.trim()) setErrors({ ...errors, [k]: undefined })
+                      }}
+                    />
+                  </div>
                 ))}
               </div>
               <div className="btn-row">
                 <button type="submit" className="btn btn--primary" disabled={add.isPending}>Zapisz obserwację</button>
-                <button type="button" className="btn btn--ghost" onClick={() => setFormOpen(false)}>Anuluj</button>
+                <button type="button" className="btn btn--ghost" onClick={() => { setFormOpen(false); setErrors({}) }}>Anuluj</button>
               </div>
               <MutationError error={add.error} />
             </form>
@@ -209,10 +249,22 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           <section className={css.next} aria-labelledby="obs-next">
             <h3 id="obs-next" className="h-section">Co dalej?</h3>
             <p className="small">Gdy zbliża się termin oceny, zakończ okres obserwacji i przejdź do rozmowy oceniającej.</p>
-            <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'START_ASSESSMENT')} onClick={start}>
+            <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'START_ASSESSMENT')} onClick={() => setConfirmStart(true)}>
               Zakończ obserwacje i przejdź do oceny
             </button>
-            <MutationError error={act.error} />
+            <ConfirmDialog
+              open={confirmStart}
+              title="Zakończyć okres obserwacji?"
+              confirmLabel="Zakończ i przejdź do oceny"
+              onConfirm={start}
+              onCancel={() => setConfirmStart(false)}
+            >
+              <p>
+                W dzienniku {obsWord(detail.observations.length) === 'obserwacje' ? 'są' : 'jest'} <strong>{detail.observations.length}</strong> {obsWord(detail.observations.length)}
+                {thin.length > 0 ? `, a ${thin.length} z ${criteria.all.length} kryteriów ma mniej niż 2 przykłady` : ''}.
+              </p>
+              <p>Obserwacje możesz dopisywać dalej, aż do podpisania oceny.</p>
+            </ConfirmDialog>
           </section>
         )}
       </div>
@@ -225,6 +277,8 @@ const SDR = [
   ['action', 'Działanie', 'Co konkretnie zrobił(a) oceniany?'],
   ['result', 'Rezultat', 'Jaki był skutek?'],
 ] as const
+
+type SdrKey = (typeof SDR)[number][0]
 
 /** Polish plural of „obserwacja” for a count (1 obserwacja, 2–4 obserwacje, 5+ obserwacji). */
 function obsWord(n: number): string {
