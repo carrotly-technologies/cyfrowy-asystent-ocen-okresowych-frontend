@@ -3,14 +3,15 @@ import { apiGet, resetDemo, sessionFor, signIn } from './helpers.ts'
 
 /** "Oceny zespołu" (/zespol) of supervisor j.kaminska, against the backend demo seed. */
 const SUPERVISOR = 'j.kaminska'
-const HEADERS = ['Pracownik', 'Stanowisko', 'Etap', 'Termin', 'Status']
+// „Akcje” is read by screen readers only (the column of „Prowadź ocenę” / „Zobacz ocenę” buttons).
+const HEADERS = ['Pracownik', 'Stanowisko', 'Etap', 'Termin', 'Status', 'Akcje']
 const NEXT_EVALUATION = 'Następna ocena okresowa (przewidywana)'
 
 test.beforeEach(async ({ request }) => {
   await resetDemo(request)
 })
 
-test('Oceny zespołu: nagłówki kolumn bez „Ocena” i „Następna ocena”, status w ostatniej kolumnie', async ({ page }) => {
+test('Oceny zespołu: nagłówki kolumn bez „Ocena” i „Następna ocena”, status przed przyciskiem oceny na końcu wiersza', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Oceny zespołu')
@@ -24,7 +25,8 @@ test('Oceny zespołu: nagłówki kolumn bez „Ocena” i „Następna ocena”,
   const nowak = table.getByRole('row').filter({ has: page.getByRole('link', { name: 'Pokaż pracownika: Anna Nowak' }) })
   const nowakCells = nowak.getByRole('cell')
   await expect(nowakCells).toHaveCount(HEADERS.length)
-  await expect(nowakCells.last()).toContainText(/w toku|po terminie/i)
+  await expect(nowakCells.nth(4)).toContainText(/w toku|po terminie/i)
+  await expect(nowakCells.last().getByRole('link', { name: 'Prowadź ocenę: Anna Nowak' })).toBeVisible()
   await expect(nowak).not.toContainText(/okresowa, arkusz/)
 
   // Header and cells share one grid: each header starts where its column starts.
@@ -67,6 +69,63 @@ test('Oceny zespołu: wiersz otwiera stronę osoby z bieżącą oceną, histori�
   await expect(page.getByRole('link', { name: 'Podgląd arkusza C' })).toBeVisible()
   await page.getByRole('link', { name: 'Prowadź ocenę' }).click()
   await expect(page).toHaveURL(/\/teczka\/c-001$/)
+})
+
+test('Oceny zespołu: imię to podkreślony link do profilu, status to kropka z nazwą, reszta wiersza nie jest linkiem', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol')
+  const table = page.getByRole('table', { name: 'Pracownicy i ich oceny okresowe' })
+  const nameLink = table.getByRole('link', { name: 'Pokaż pracownika: Anna Nowak' })
+  await expect(nameLink).toHaveText('Anna Nowak')
+  expect(await nameLink.evaluate((e) => getComputedStyle(e).textDecorationLine)).toContain('underline')
+  const nowak = table.getByRole('row').filter({ has: page.getByRole('link', { name: 'Pokaż pracownika: Anna Nowak' }) })
+
+  // Status: plain text (no fill, no capitals) after a 10px round dot; never a link or a button.
+  const status = nowak.getByRole('cell').nth(4)
+  const look = await status.evaluate((cell) => {
+    const shown = [...cell.querySelectorAll('*')].filter((e) => (e as HTMLElement).offsetParent !== null || e.tagName === 'svg')
+    const dots = shown.filter((e) => getComputedStyle(e).borderRadius === '50%')
+    return {
+      dot: dots.map((d) => Math.round(d.getBoundingClientRect().width)),
+      filled: shown.filter((e) => !dots.includes(e) && getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)').length,
+      upper: shown.filter((e) => getComputedStyle(e).textTransform === 'uppercase').length,
+    }
+  })
+  expect(look).toEqual({ dot: [10], filled: 0, upper: 0 })
+  await expect(status.getByRole('link')).toHaveCount(0)
+  await expect(status.getByRole('button')).toHaveCount(0)
+
+  // Each row has exactly two links: the name (profile) and the assessment button (case).
+  await expect(nowak.getByRole('link')).toHaveCount(2)
+  // Clicking elsewhere in the row (the position cell) opens nothing.
+  await nowak.getByRole('cell').nth(1).click()
+  await expect(page).toHaveURL(/\/zespol$/)
+  // Keyboard: the name link takes focus with a visible ring.
+  await nameLink.focus()
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Tab')
+  await expect(nameLink).toBeFocused()
+  expect(await nameLink.evaluate((e) => getComputedStyle(e).boxShadow)).not.toBe('none')
+  await nameLink.click()
+  await expect(page).toHaveURL(/\/zespol\/p-nowak$/)
+})
+
+test('Oceny zespołu: długi tekst w komórce ucięty do 3 linii, pełny tekst w title i w DOM', async ({ page }) => {
+  const long = Array.from({ length: 25 }, (_, i) => `stanowisko${i}`).join(' ').slice(0, 200)
+  await page.route('**/api/team', async (route) => {
+    const res = await route.fetch()
+    const body = await res.json()
+    body.cases[0].person.position = long
+    await route.fulfill({ response: res, json: body })
+  })
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol')
+  const table = page.getByRole('table', { name: 'Pracownicy i ich oceny okresowe' })
+  const cell = table.getByTitle(long)
+  await expect(cell).toHaveText(long)
+  const { height, lineHeight } = await cell.evaluate((e) => ({ height: e.getBoundingClientRect().height, lineHeight: parseFloat(getComputedStyle(e).lineHeight) }))
+  expect(height).toBeLessThanOrEqual(3 * lineHeight + 1)
+  expect(await cell.evaluate((e) => e.scrollHeight > e.clientHeight)).toBe(true)
 })
 
 test('Kierownik: bez pozycji „Pracownicy” w menu, /kartoteka prowadzi do Ocen zespołu', async ({ page }) => {

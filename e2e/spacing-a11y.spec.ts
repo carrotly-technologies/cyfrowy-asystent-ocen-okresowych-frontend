@@ -5,7 +5,8 @@ import { resetDemo, signIn } from './helpers.ts'
 /**
  * Spacing and target size on the key screens of the supervisor (docs/DESIGN.md, "Spacing"):
  * - WCAG 1.4.12 Text Spacing: with line height 1.5, paragraph spacing 2em, letter spacing 0.12em and word spacing
- *   0.16em nothing scrolls sideways and no text is cut off by a box with `overflow: hidden`;
+ *   0.16em nothing scrolls sideways and no text is cut off by a box with `overflow: hidden` (except a table cell
+ *   clamped to 3 lines whose full text is in its `title`);
  * - WCAG 2.5.8 Target Size (Minimum): axe `target-size` finds no target under 24 × 24 px without enough space around it;
  * - at 375, 768 and 1440 px nothing scrolls sideways.
  */
@@ -65,6 +66,9 @@ function clippedText(page: Page) {
       // Visually hidden text for screen readers (1 × 1 px with clip) is meant to be invisible.
       if (r.width <= 1 || r.height <= 1) continue
       if (!el.innerText?.trim()) continue
+      // A deliberate 3-line clamp in tables (ResultTable `ClampText`, #79): the full text stays in the DOM for screen
+      // readers and in `title` on hover, so nothing is lost.
+      if (el.title && el.title.trim() === el.textContent?.trim()) continue
       if (el.scrollHeight > el.clientHeight + 1) out.push(`${el.tagName.toLowerCase()}.${el.className}: "${el.innerText.trim().slice(0, 40)}"`)
     }
     return out

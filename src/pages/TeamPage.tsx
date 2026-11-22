@@ -4,7 +4,7 @@ import { CaseActionLink } from '../components/CaseActionLink'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
-import { ResultTable, ResultTableRow, type ResultTableColumn, type ResultTone } from '../components/ui'
+import { ClampText, ResultTable, ResultTableRow, type ResultTableColumn, type ResultTone } from '../components/ui'
 import { useMe } from '../lib/useAuth'
 import { countLabel } from '../lib/format'
 import { CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
@@ -47,10 +47,12 @@ const COLUMNS: ResultTableColumn[] = [
   { label: 'Stanowisko', width: 'minmax(0, 1.4fr)' },
   { label: 'Etap', width: 'minmax(0, 1.2fr)' },
   { label: 'Termin', width: 'minmax(0, 1.2fr)' },
-  { label: 'Status', width: '7.5rem' },
+  { label: 'Status', width: 'minmax(7.5rem, 0.9fr)' },
+  // Fixed track (not max-content): every row is its own grid, the header must line up with the buttons.
+  { label: 'Akcje', width: '10rem', hidden: true },
 ]
 
-/** Status block: overdue first (red), then the case status (closed = grey, waiting for others = blue, running = green). */
+/** Status (dot + name): overdue first (red), then the case status (closed = grey, waiting for others = blue, running = green). */
 function statusOf(c: CaseSummary): { label: string; sub?: string; tone: ResultTone } {
   const label = CASE_STATUS_LABEL[c.status]
   if (c.status === 'ZAKONCZONA') return { label, tone: 'neutral' }
@@ -69,7 +71,7 @@ function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
     <ResultTableRow
       to={`/zespol/${encodeURIComponent(c.person.id)}`}
       linkLabel={`Pokaż pracownika: ${name}`}
-      actions={<CaseActionLink caseId={c.id} status={c.status} role={role} name={name} small />}
+      action={<CaseActionLink caseId={c.id} status={c.status} role={role} name={name} small />}
       title={name}
       titleLabel={title}
       status={statusOf(c)}
@@ -80,7 +82,7 @@ function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
           label: stage,
           value: (
             <>
-              <span>{`${idx + 1}/${c.stages.length} ${stageName}`}</span>
+              <ClampText>{`${idx + 1}/${c.stages.length} ${stageName}`}</ClampText>
               <StageDots stages={c.stages} />
             </>
           ),
@@ -90,7 +92,7 @@ function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
           value: c.nextDeadline ? (
             <>
               <DeadlineText deadline={c.nextDeadline} />
-              <span className="small muted">{c.nextDeadline.label.replace(/,?\s+do$/, '')}</span>
+              <ClampText className="small muted">{c.nextDeadline.label.replace(/,?\s+do$/, '')}</ClampText>
             </>
           ) : (
             <span className="faint">—</span>

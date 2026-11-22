@@ -104,12 +104,8 @@ function MemberRow({ m }: { m: TeamMember }) {
     <ResultTableRow
       to={to}
       linkLabel={`Karta dobrostanu: ${m.name}`}
-      title={
-        <>
-          {m.name}
-          <span className={`${s.muted} block`}>{m.position}</span>
-        </>
-      }
+      title={m.name}
+      subtitle={m.position}
       titleLabel={title}
       cells={[
         { label: trend, value: <TrendCell m={m} /> },
