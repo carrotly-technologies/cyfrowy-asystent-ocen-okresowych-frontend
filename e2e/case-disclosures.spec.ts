@@ -43,12 +43,12 @@ test('Teczka: akordeony pod paskiem etapów wyglądają tak samo i otwierają si
   await expect(history).not.toHaveAttribute('open')
 })
 
-test('Rozmowa oceniająca: „Podpowiedzi HR partnera” w tym samym akordeonie i kartach co reszta teczki', async ({ page }) => {
+test('Rozmowa oceniająca: „Podpowiedzi wirtualnego asystenta HR” w tym samym akordeonie i kartach co reszta teczki', async ({ page }) => {
   // c-001 is at the assessment stage of supervisor j.kaminska, with observations quoted as feedback.
   await signIn(page, SUPERVISOR)
   await page.goto('/teczka/c-001/ocena?czesc=2')
 
-  const hints = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Podpowiedzi HR partnera' }) })
+  const hints = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Podpowiedzi wirtualnego asystenta HR' }) })
   const history = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Historia sprawy/ }) })
   await expect(hints).toHaveCount(1)
   const look = (el: HTMLElement) => {
@@ -67,9 +67,22 @@ test('Rozmowa oceniająca: „Podpowiedzi HR partnera” w tym samym akordeonie 
   const tags = hints.locator('blockquote .tag')
   expect(await tags.count()).toBeGreaterThan(0)
   for (const tag of await tags.all()) await expect(tag).toHaveClass(/tag--(ok|warn)/)
-  await expect(hints.getByRole('heading', { name: 'Zapytaj HR partnera' })).toBeVisible()
+  await expect(hints.getByRole('heading', { name: 'Zapytaj wirtualnego asystenta HR' })).toBeVisible()
 
-  // No horizontal scroll on a phone.
+  // The "i" next to the title explains, from the keyboard, that the assistant is a feature of the app.
+  const info = page.getByRole('button', { name: 'Co to jest wirtualny asystent HR?' })
+  await info.focus()
+  await page.keyboard.press('Enter')
+  await expect(info).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByText('Wirtualny asystent HR to funkcja aplikacji, nie osoba.')).toBeVisible()
+  await expect(hints).toHaveAttribute('open')
+  await page.keyboard.press('Escape')
+  await expect(info).toHaveAttribute('aria-expanded', 'false')
+  await expect(info).toBeFocused()
+
+  // No horizontal scroll on a phone, also with the explanation open.
   await page.setViewportSize({ width: 375, height: 800 })
+  await info.click()
+  await expect(page.getByText('Wirtualny asystent HR to funkcja aplikacji, nie osoba.')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })

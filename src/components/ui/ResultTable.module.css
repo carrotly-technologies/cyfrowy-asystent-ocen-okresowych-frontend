@@ -91,6 +91,14 @@
   margin-top: var(--s-2);
 }
 
+/* Action column: the control sits above the row link, right-aligned on wide screens. */
+.actionCell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .link:focus-visible {
   box-shadow: none;
 }
@@ -171,6 +179,10 @@
 
   .statusCell {
     align-items: center;
+  }
+
+  .actionCell {
+    justify-content: flex-start;
   }
 
   .titleCell {

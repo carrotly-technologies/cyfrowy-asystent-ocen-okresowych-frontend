@@ -3,25 +3,30 @@ import type { ReactNode } from 'react'
 import { HeartHandshake } from 'lucide-react'
 import { getCaseHints } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
-import { Card, Disclosure, InlineAlert } from '../components/ui'
+import { Card, Disclosure, InfoTip, InlineAlert } from '../components/ui'
 import { fmtDate } from '../lib/format'
 import { AskPartner } from './AskPartner'
+import { ASSISTANT_INTRO, ASSISTANT_SCOPE } from './labels'
 import s from './Partner.module.css'
 
-/** "Podpowiedzi HR partnera" in the assessment stage: help only, the supervisor sets every score. */
+/**
+ * "Podpowiedzi wirtualnego asystenta HR" in the assessment stage: help only, the supervisor sets every score. The "i"
+ * next to the title says the assistant is a feature of the app, not a person (the same text as under /dobrostan).
+ */
 export function CaseHintsPanel({ caseId }: { caseId: string }) {
   const q = useQuery({ queryKey: ['partner-hints', caseId], queryFn: ({ signal }) => getCaseHints(caseId, signal) })
   return (
+    <div className={s.hintsWrap}>
     <Disclosure
       className="case-hints"
       title={
         <>
-          <HeartHandshake size={16} strokeWidth={1.75} aria-hidden="true" /> Podpowiedzi HR partnera
+          <HeartHandshake size={16} strokeWidth={1.75} aria-hidden="true" /> Podpowiedzi wirtualnego asystenta HR
         </>
       }
     >
       {q.isPending && <LoadingState />}
-      {q.isError && <ErrorState error={q.error} what="podpowiedzi HR partnera" onRetry={() => q.refetch()} />}
+      {q.isError && <ErrorState error={q.error} what="podpowiedzi wirtualnego asystenta HR" onRetry={() => q.refetch()} />}
       {q.data && (
         <>
           <InlineAlert tone="info">{q.data.disclaimer}</InlineAlert>
@@ -94,6 +99,10 @@ export function CaseHintsPanel({ caseId }: { caseId: string }) {
         </>
       )}
     </Disclosure>
+    <InfoTip className={s.hintsInfo} label="Co to jest wirtualny asystent HR?">
+      <strong className="block">{ASSISTANT_INTRO}</strong> {ASSISTANT_SCOPE}
+    </InfoTip>
+    </div>
   )
 }
 

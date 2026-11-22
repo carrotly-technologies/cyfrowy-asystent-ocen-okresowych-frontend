@@ -28,7 +28,8 @@ the footer says the tool is not a gov.pl / KPRM / mObywatel service.
 - Lists: `ResultList` / `ResultRow` ("job-offer list": status block, SC-blue title, `LABEL: value` pairs, whole row
   is the link) on /moje-oceny, /kartoteka (with the "SORTUJ:" bar) and /sprzeciwy. `ResultTable` / `ResultTableRow`
   is the same list with column headers (ARIA table, one CSS grid, status in the last column, headers hidden and
-  `LABEL: value` per cell at ≤ 640px) on /zespol.
+  `LABEL: value` per cell at ≤ 640px) on /zespol and /dobrostan; instead of the status the last column can hold one
+  `action` (a `ButtonLink` such as „Zobacz kartę”, header `hidden: true` → read only by screen readers).
 
 The table below predates this section; where they differ, this section and `tokens.css` win.
 
@@ -74,6 +75,7 @@ may scroll sideways (WCAG 1.4.4, 1.4.10); on phones buttons wrap their label.
 | `RadioMatrix` | several questions on one scale (e.g. partial scores): from 768px a table (rows × columns, the whole cell clickable), below one row per question with the values as segments in one line and the chosen one spelled out; `groups` with headers, `readOnly`, `error` per row (linked from `ErrorSummary` via `${id}-${row.id}`), arrows move within a row. Columns come from the data, never hard-coded scales. |
 | `ErrorSummary` | errors at the top of the form, links to fields, takes focus after a failed submit. |
 | `InlineAlert` | info / success / warning / error, icon + text. |
+| `InfoTip` | 44px "i" button that opens a short explanation under it (click / Enter / Space; Esc and a click outside close it, focus back on the button). Never put it inside a `<summary>`: place it next to the `Disclosure` (see `CaseHintsPanel`). |
 | `StatusBadge` | short status with a dot and text. |
 | `Card` | content card; with `to` the whole card is a link (service tile). |
 | `InfoList` + `InfoRow` | label/value rows, optional action ("Zmień"). |

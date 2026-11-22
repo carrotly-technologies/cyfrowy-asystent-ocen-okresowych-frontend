@@ -26,6 +26,13 @@
   border-left-width: 4px;
 }
 
+.signal .signalTitle {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+
 .alert {
   border-left-color: var(--danger);
 }
@@ -106,8 +113,7 @@
 }
 
 .bar {
-  fill: var(--accent-subtle);
-  stroke: var(--accent);
+  fill: var(--accent);
 }
 
 .barHidden {
@@ -148,12 +154,48 @@
   font-size: var(--text-sm);
 }
 
+/* Signal counters on /dobrostan: a list of shared `Card`s. */
 .counters {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
   gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.block {
+.counter {
+  height: 100%;
+}
+
+.count {
   display: block;
+  margin-top: var(--s-1);
+  color: var(--text);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+/* "i" next to the title of the hints disclosure: outside the <summary> (no button inside a button), on its right edge. */
+.hintsWrap {
+  position: relative;
+}
+
+.hintsWrap > details > summary > :last-child {
+  padding-right: calc(var(--tap) - var(--s-2));
+}
+
+.hintsInfo {
+  position: absolute;
+  top: calc((1lh + 2 * var(--s-2) - var(--tap)) / 2);
+  right: 0;
+  font-size: var(--text-sm);
+}
+
+.askTitle {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
 }
