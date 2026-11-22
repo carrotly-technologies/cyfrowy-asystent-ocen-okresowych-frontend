@@ -51,6 +51,8 @@ export interface EmployeeView extends EmployeeFields {
     assessmentDue: (Deadline & { baseDate: string | null; extended: boolean }) | null
   } | null
   lastAssessment: PastAssessment | null
+  /** Predicted next periodic assessment (`YYYY-MM-DD`): last assessment + 24 months, computed by the backend (art. 81 ust. 1). */
+  nextEvaluationDueOn: string | null
   obligatoryPromotion: ObligatoryPromotion
 }
 

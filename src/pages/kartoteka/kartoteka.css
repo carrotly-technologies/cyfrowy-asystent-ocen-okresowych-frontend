@@ -224,6 +224,15 @@
   margin-top: var(--s-0);
 }
 
+/* „Bieżąca ocena”: a long label (next periodic assessment) wraps instead of squeezing the values on a phone. */
+.dl.emp-cycle-dl {
+  grid-template-columns: fit-content(40%) minmax(0, 1fr);
+}
+
+.dl.emp-cycle-dl dt {
+  white-space: normal;
+}
+
 .emp-dl-text {
   overflow-wrap: anywhere;
   white-space: normal;
