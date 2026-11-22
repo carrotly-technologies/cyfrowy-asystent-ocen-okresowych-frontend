@@ -81,6 +81,18 @@ export function FormalCheck({
                   <dd className="num">{ev?.averageDisplay ?? '—'}</dd>
                   <dt>Poziom</dt>
                   <dd>{ev?.level?.label.toLowerCase() ?? '—'}</dd>
+                  <dt>Wnioski do IPRZ</dt>
+                  <dd>{detail.iprz.trim() ? 'wpisane' : 'brak'}</dd>
+                  {detail.person.employment === 'URZEDNIK' && (
+                    <>
+                      <dt>Wniosek o kolejny stopień</dt>
+                      <dd>
+                        {detail.promotionRequest.attached === 'YES'
+                          ? `TAK${detail.promotionRequest.requestedGrade ? ` (${detail.promotionRequest.requestedGrade} stopień)` : ''}`
+                          : 'NIE'}
+                      </dd>
+                    </>
+                  )}
                   <dt>Kontrola formalna</dt>
                   <dd>bez uwag</dd>
                 </dl>

@@ -499,10 +499,11 @@
   margin: 0;
   padding: 0;
   border: 0;
+  border-right: var(--border-w) solid var(--border-strong);
   border-radius: 0;
   background: var(--bg-surface);
   color: var(--text);
-  box-shadow: var(--shadow-dialog);
+  box-shadow: none; /* flat style: a thin border, no shadow */
 }
 
 .drawer[open] {
@@ -1548,8 +1549,8 @@
   bottom: 0;
   z-index: var(--z-panel);
   width: min(var(--assistant-w), 100vw);
-  border-left: 1px solid var(--border);
-  box-shadow: var(--shadow-dialog);
+  border-left: var(--border-w) solid var(--border-strong);
+  box-shadow: none; /* flat style: a thin border, no shadow */
 }
 
 .assistant--page {

@@ -100,9 +100,9 @@
   --score-9-bg: #d6e4f6;
   --on-score: #ffffff;
 
-  /* Elevation: cards are flat (border only); shadows only for menus and dialogs */
+  /* Elevation: cards, menus and popovers are flat (thin border only); a shadow only for modal dialogs */
   --shadow-card: none;
-  --shadow-pop: 0 0 12px rgb(101 106 117 / 0.35);
+  --shadow-pop: none;
   --shadow-dialog: 0 0 24px rgb(16 19 23 / 0.35);
 }
 

@@ -143,7 +143,7 @@ export function KartotekaPage() {
       </header>
 
       {me.role === 'ADMIN' && (
-        <InlineAlert tone="info" title="Administrator widzi kartotekę tylko do odczytu">
+        <InlineAlert tone="info" title="Administrator widzi kartotekę tylko do odczytu (poza archiwizacją przed upływem okresu przechowywania)">
           Dane pracowników zmieniają kadry. Błąd w zablokowanym polu oceny poprawisz w <Link to="/admin/korekty">Trybie korekty</Link>.
         </InlineAlert>
       )}
@@ -388,7 +388,7 @@ function Substitutions({ canEdit }: { canEdit: boolean }) {
         <span className="faint small">W okresie zastępstwa osoba zastępująca widzi zespół zastępowanego</span>
       </div>
       <div className="panel table-scroll">
-        <table className="table">
+        <table className="table subs-table">
           <thead>
             <tr><th>Zastępowany</th><th>Zastępuje</th><th>Okres</th><th>Uwagi</th>{canEdit && <th><span className="visually-hidden">Akcje</span></th>}</tr>
           </thead>
@@ -407,9 +407,10 @@ function Substitutions({ canEdit }: { canEdit: boolean }) {
                 <td>{s.evaluatorName}</td>
                 <td>{s.substituteName}</td>
                 <td className="num">
-                  {fmtDate(s.from)} – {fmtDate(s.to)} {s.active && <span className="tag tag--accent">trwa</span>}
+                  <span className="nowrap">{fmtDate(s.from)} –</span> <span className="nowrap">{fmtDate(s.to)}</span>{' '}
+                  {s.active && <span className="tag tag--accent">trwa</span>}
                 </td>
-                <td>{s.note || <span className="faint">—</span>}</td>
+                <td className="subs-note">{s.note || <span className="faint">—</span>}</td>
                 {canEdit && (
                   <td className="cell-action">
                     <button type="button" className="btn btn--sm btn--ghost" onClick={() => remove.mutate(s.id)} aria-label={`Usuń zastępstwo: ${s.evaluatorName}`}>

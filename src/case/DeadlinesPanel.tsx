@@ -96,21 +96,24 @@ function DueDateChangeDialog({ detail, onClose }: { detail: CaseDetail; onClose:
   const [date, setDate] = useState('')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
-  const [errors, setErrors] = useState<{ reason?: string; date?: string }>({})
+  // After the first submit the messages follow every change (a fixed field loses its error at once).
+  const [attempted, setAttempted] = useState(false)
   const m = useLegalMutation(detail.id, (b: { date: string; reason: string; note?: string }) => changeDueDate(detail.id, b))
   const reasons = (rules.data?.reasons ?? []).filter((r) => r.selectable)
   const chosen = reasons.find((r) => r.id === reason)
+  const check = () => ({
+    reason: reason ? undefined : 'Wybierz przyczynę zmiany terminu.',
+    date: !date
+      ? 'Podaj nowy termin sporządzenia oceny (dd.mm.rrrr).'
+      : date <= DEMO_TODAY
+        ? 'Nowy termin musi przypadać po dniu dzisiejszym.'
+        : undefined,
+  })
+  const errors: { reason?: string; date?: string } = attempted ? check() : {}
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    const next = {
-      reason: reason ? undefined : 'Wybierz przyczynę zmiany terminu.',
-      date: !date
-        ? 'Podaj nowy termin sporządzenia oceny (dd.mm.rrrr).'
-        : date <= DEMO_TODAY
-          ? 'Nowy termin musi przypadać po dniu dzisiejszym.'
-          : undefined,
-    }
-    setErrors(next)
+    const next = check()
+    setAttempted(true)
     if (next.reason || next.date) return
     m.mutate({ date, reason, note: note.trim() || undefined }, { onSuccess: onClose })
   }
@@ -215,10 +218,13 @@ export function EvaluatorDeadlinesPanel({ detail }: { detail: CaseDetail }) {
   return (
     <div className="legal-panel">
       <div className="legal-form__buttons">
-        <button type="button" className="btn btn--sm" disabled={blocker !== null} title={blocker ?? undefined} onClick={() => setDialog('due')}>
-          <CalendarClock size={14} strokeWidth={1.75} aria-hidden="true" />
-          Zmień termin oceny
-        </button>
+        {/* after the signature the date can no longer change: the button is not shown at all */}
+        {!closed && (
+          <button type="button" className="btn btn--sm" disabled={blocker !== null} title={blocker ?? undefined} onClick={() => setDialog('due')}>
+            <CalendarClock size={14} strokeWidth={1.75} aria-hidden="true" />
+            Zmień termin oceny
+          </button>
+        )}
         {!closed && (
           <button type="button" className="btn btn--sm" onClick={() => setDialog('invite')}>
             <Send size={14} strokeWidth={1.75} aria-hidden="true" />

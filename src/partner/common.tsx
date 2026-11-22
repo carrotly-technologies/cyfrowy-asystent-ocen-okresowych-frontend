@@ -77,7 +77,7 @@ export function Sparkline({
 export function PrivacyNote({ items, title = 'Jak chronimy prywatność' }: { items: string[]; title?: string }) {
   return (
     <details className={s.box}>
-      <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{title}</summary>
+      <summary className="summary-chevron" style={{ fontWeight: 600 }}>{title}</summary>
       <ul className={s.privacy} style={{ marginTop: 'var(--s-2)' }}>
         {items.map((t) => (
           <li key={t}>{t}</li>

@@ -10,19 +10,26 @@ export type FormError = {
 type Props = {
   errors: ReadonlyArray<FormError>
   title?: string
+  /**
+   * When given, focus moves to the summary only when this changes (e.g. a submit counter), so a summary that is
+   * recomputed while the user types does not steal focus.
+   */
+  focusKey?: number
 }
 
 /**
  * List of all errors at the top of the form. Takes focus when it appears (after a submit),
  * so screen readers read it and keyboard users can jump to each field.
  */
-export function ErrorSummary({ errors, title = 'Popraw błędy w formularzu' }: Props) {
+export function ErrorSummary({ errors, title = 'Popraw błędy w formularzu', focusKey }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
   // Pass a new array on every failed submit: each one moves focus back to the summary.
+  const trigger = focusKey ?? errors
   useEffect(() => {
     if (errors.length) ref.current?.focus()
-  }, [errors])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger])
   if (errors.length === 0) return null
   return (
     <div ref={ref} className={s.summary} role="alert" aria-labelledby={titleId} tabIndex={-1}>

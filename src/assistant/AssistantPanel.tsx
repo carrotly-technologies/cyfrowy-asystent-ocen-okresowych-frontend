@@ -40,8 +40,18 @@ export function AssistantPanel({
   const msgs = threads[mode]
   const busy = msgs.some((m) => m.pending)
 
+  // While waiting: to the end (the question and "Szukam…"). Once answered: to the start of the answer, so the short
+  // answer is read first and the sources are below it.
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
+    const list = listRef.current
+    if (!list) return
+    const last = list.querySelector<HTMLElement>('.msg:last-child')
+    if (!busy && last?.classList.contains('msg--assistant')) {
+      const top = last.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - 8
+      list.scrollTo({ top, behavior: 'smooth' })
+    } else {
+      list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' })
+    }
   }, [msgs.length, busy])
 
   const ask = async (question: string) => {
@@ -126,7 +136,7 @@ export function AssistantPanel({
                     <p className="msg__text msg__summary">{m.answer.summary}</p>
                     {m.answer.details && (
                       <details className="msg__details">
-                        <summary>Fragmenty przepisów i poradników</summary>
+                        <summary className="summary-chevron">Fragmenty przepisów i poradników</summary>
                         <p className="msg__text">{m.answer.details.replace(/^Na podstawie:\s*/, '')}</p>
                       </details>
                     )}
@@ -203,7 +213,7 @@ function SourceDocuments() {
   })
   return (
     <details className="assistant__docs" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>Dokumenty źródłowe</summary>
+      <summary className="summary-chevron">Dokumenty źródłowe</summary>
       {docs.isPending && <p className="assistant__docs-note">Wczytuję listę…</p>}
       {docs.isError && <p className="assistant__docs-note">Nie udało się wczytać listy dokumentów.</p>}
       {docs.data && (

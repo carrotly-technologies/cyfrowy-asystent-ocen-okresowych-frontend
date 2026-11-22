@@ -56,8 +56,9 @@ export function EmployeeForm({ initial, units, submitLabel, pending, onSubmit, o
           ) : (
             <select
               id={`${id}-unit`}
-              className="select"
+              className="select emp-unit-select"
               required
+              title={f.unit || undefined}
               value={f.unit}
               onChange={(e) => {
                 if (e.target.value === '__new__') {

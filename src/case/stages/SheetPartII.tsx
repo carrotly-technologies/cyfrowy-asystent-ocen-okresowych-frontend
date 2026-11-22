@@ -63,11 +63,25 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   const urzednik = detail.person.employment === 'URZEDNIK'
   const attached = detail.promotionRequest.attached
   const template = criteria.sheet?.template
-  const [errors, setErrors] = useState<FormError[]>([])
-  const errorFor = (id: string) => errors.find((e) => e.id === id)?.message
+  // After the first "Dalej" the error summary is recomputed on every change, so it never shows a fixed error.
+  const [attempted, setAttempted] = useState(0)
 
   const r = liveResult(detail, criteria.all, model)
   const negative = r.result === 'NEGATIVE'
+  const validate = (): FormError[] => {
+    const e: FormError[] = criteria.all
+      .filter((c) => detail.decisions[c] == null)
+      .map((c) => ({ id: decisionId(c), message: `Wybierz ocenę cząstkową kryterium „${criterionName(model, c)}”` }))
+    if (negative && !justification.trim()) e.push({ id: JUST_ID, message: 'Wpisz uzasadnienie: przy ocenie negatywnej jest obowiązkowe' })
+    if (!iprz.trim()) e.push({ id: IPRZ_ID, message: 'Wpisz wnioski dotyczące indywidualnego programu rozwoju zawodowego' })
+    if (urzednik && attached === null) {
+      e.push({ id: ATTACHED_ID, message: 'Zaznacz, czy do oceny okresowej dołączono wniosek o przyznanie kolejnego stopnia służbowego' })
+    }
+    return e
+  }
+  const errors = attempted ? validate() : []
+  const errorFor = (id: string) => errors.find((e) => e.id === id)?.message
+
   // Defaults per the field schema: talk today; period from the criteria day to today (or the due date if passed).
   const conversationDate = detail.assessmentTalkOn ?? DEMO_TODAY
   const periodFrom = detail.assessmentPeriod?.from ?? detail.partI.confirmedByEvaluatorOn
@@ -83,17 +97,6 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
 
   const decide = (c: string, v: string) => patch.mutate({ decisions: { [c]: Number(v) } })
 
-  const validate = (): FormError[] => {
-    const e: FormError[] = criteria.all
-      .filter((c) => detail.decisions[c] == null)
-      .map((c) => ({ id: decisionId(c), message: `Wybierz ocenę cząstkową kryterium „${criterionName(model, c)}”` }))
-    if (negative && !justification.trim()) e.push({ id: JUST_ID, message: 'Wpisz uzasadnienie: przy ocenie negatywnej jest obowiązkowe' })
-    if (!iprz.trim()) e.push({ id: IPRZ_ID, message: 'Wpisz wnioski dotyczące indywidualnego programu rozwoju zawodowego' })
-    if (urzednik && attached === null) {
-      e.push({ id: ATTACHED_ID, message: 'Zaznacz, czy do oceny okresowej dołączono wniosek o przyznanie kolejnego stopnia służbowego' })
-    }
-    return e
-  }
 
   const previousDirty = urzednik && !samePrevious(previous, detail.previousAssessment ?? EMPTY_PREVIOUS)
   const dirty = justification !== detail.justification || iprz !== detail.iprz || previousDirty
@@ -127,7 +130,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
     ev.preventDefault()
     if (!editable) return onNext()
     const e = validate()
-    setErrors(e)
+    setAttempted((n) => n + 1)
     if (e.length) return
     try {
       if (dirty) await patch.mutateAsync(changes())
@@ -140,7 +143,7 @@ export function SheetPartII({ detail, model, criteria, onBack, onNext }: StagePr
   return (
     <form noValidate onSubmit={onSubmit} className={s.form}>
       <PartHeading roman="II">Ocena okresowa</PartHeading>
-      <ErrorSummary errors={errors} />
+      <ErrorSummary errors={errors} focusKey={attempted} />
 
       {template && (
         <InlineAlert tone="info" title="Pouczenie">

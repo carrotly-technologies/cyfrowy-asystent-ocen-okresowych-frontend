@@ -204,7 +204,7 @@ export function HrPage() {
                         {sentToday ? 'Wysłano dziś' : 'Przypomnij'}
                       </button>
                     ) : (
-                      <span className="faint small">{c.status === 'ZAKONCZONA' ? 'nie dotyczy (zakończona)' : 'nie dotyczy (sprzeciw u DG)'}</span>
+                      <span className="faint small">{c.status === 'ZAKONCZONA' ? 'nie dotyczy (zakończona)' : c.status === 'OKRES_SPRZECIWU' ? 'nie dotyczy (okres sprzeciwu)' : 'nie dotyczy (sprzeciw u DG)'}</span>
                     )}
                     {c.lastReminderOn && !sentToday && <span className="cell-sub num">ostatnio {fmtDate(c.lastReminderOn)}</span>}
                     {c.status === 'DO_ZAPOZNANIA' && <AckFictionButton caseId={c.id} name={`${c.person.firstName} ${c.person.lastName}`} />}

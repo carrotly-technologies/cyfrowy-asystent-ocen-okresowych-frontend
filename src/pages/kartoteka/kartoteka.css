@@ -287,3 +287,27 @@
   line-height: 1.2;
   white-space: normal;
 }
+
+/* long unit names („Wydział …, Departament …”): the select may span the whole form row */
+.emp-form__grid .field:has(.emp-unit-select) {
+  grid-column: 1 / -1;
+}
+
+.emp-unit-select {
+  max-width: 100%;
+}
+
+/* Zastępstwa: the note wraps, so the „Usuń” column stays in view at 1024 px */
+.subs-table td {
+  white-space: normal;
+}
+
+.subs-table .nowrap {
+  white-space: nowrap;
+}
+
+.table td.subs-note {
+  min-width: 10rem;
+  overflow-wrap: break-word;
+  white-space: normal;
+}

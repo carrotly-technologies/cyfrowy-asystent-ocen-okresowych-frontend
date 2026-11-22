@@ -53,7 +53,7 @@
   flex-direction: column;
   width: min(420px, calc(100vw - 32px));
   max-height: min(70vh, 560px);
-  border: var(--border-w) solid var(--border);
+  border: var(--border-w) solid var(--border-strong);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   box-shadow: var(--shadow-pop);

@@ -95,9 +95,9 @@ export function AdminUsersPage() {
                         }}
                       />
                     </td>
-                    <td className="cell-action">
-                      {draft && (
-                        <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
+                    <td className="cell-action users-actions">
+                      {/* always rendered, hidden without a change: the columns never jump when „Zapisz” appears */}
+                        <div className="btn-row" style={{ justifyContent: 'flex-end', visibility: draft ? undefined : 'hidden' }} aria-hidden={!draft || undefined}>
                           <button type="button" className="btn btn--sm btn--ghost" disabled={pending} onClick={() => setDrafts((d) => without(d, u.id))}>
                             Anuluj
                           </button>
@@ -105,13 +105,12 @@ export function AdminUsersPage() {
                             type="button"
                             className="btn btn--sm btn--primary"
                             disabled={pending}
-                            aria-label={`Zapisz rolę „${ROLE_LABEL[draft]}” dla: ${u.name}`}
-                            onClick={() => change.mutate({ id: u.id, role: draft, previous: u.role })}
+                            aria-label={`Zapisz rolę „${ROLE_LABEL[draft ?? u.role]}” dla: ${u.name}`}
+                            onClick={() => change.mutate({ id: u.id, role: draft ?? u.role, previous: u.role })}
                           >
                             {pending ? 'Zapisywanie…' : 'Zapisz'}
                           </button>
                         </div>
-                      )}
                     </td>
                   </tr>
                 )

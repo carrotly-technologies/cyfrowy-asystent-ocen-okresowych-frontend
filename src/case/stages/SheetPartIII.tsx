@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState, type FormEvent } from 'react'
+import { getEmployee } from '../../api/employees'
 import type { PromotionRequest } from '../../api/cases'
 import { ErrorSummary, Field, InfoList, InfoRow, InlineAlert, Select, TextArea, TextInput, type FormError } from '../../components/ui'
 import { usePatchCase } from '../../lib/caseQueries'
@@ -30,7 +32,8 @@ const pick = (r: PromotionRequest): Part3 => ({
 const same = (a: Part3, b: Part3) => (Object.keys(a) as (keyof Part3)[]).every((k) => a[k] === b[k])
 
 /**
- * Every field starts empty (nothing is suggested); the backend checks that the requested grade is the next one.
+ * The year of appointment, the grade and its date are prefilled from the register (kartoteka) when still empty;
+ * the backend checks that the requested grade is the next one.
  *
  * Part III: the request for the next civil-service grade (art. 89 ust. 1 ustawy o służbie cywilnej). It is a form
  * only when part II answers TAK; otherwise the part is not attached, as the template's footnote says.
@@ -58,6 +61,13 @@ export function SheetPartIII({
   const [form, setForm] = useState<Part3>(() => pick(request))
   const [year, setYear] = useState(request.appointedYear ? String(request.appointedYear) : '')
   const [errors, setErrors] = useState<FormError[]>([])
+  const employee = useQuery({
+    queryKey: ['employee', detail.person.id],
+    queryFn: ({ signal }) => getEmployee(detail.person.id, signal),
+    enabled: attached && editable,
+  })
+  const [prefilled, setPrefilled] = useState(false)
+  const [fromRegister, setFromRegister] = useState(false)
   const errorFor = (id: string) => errors.find((e) => e.id === id)?.message
 
   const list = grades.data?.grades ?? []
@@ -67,6 +77,30 @@ export function SheetPartIII({
     const i = list.findIndex((g) => g.id === id)
     return i >= 0 && i < list.length - 1 ? list[i + 1].id : null
   }
+  // Prefill from the register once, only the fields that are still empty.
+  useEffect(() => {
+    const e = employee.data
+    if (!e || prefilled || list.length === 0) return
+    setPrefilled(true)
+    let used = false
+    if (!year && e.appointedYear) {
+      setYear(String(e.appointedYear))
+      used = true
+    }
+    if (!form.currentGrade && e.grade) {
+      const grade = e.grade
+      setForm((v) => ({ ...v, currentGrade: grade, requestedGrade: v.requestedGrade ?? nextOf(grade) }))
+      used = true
+    }
+    if (!form.gradeGrantedOn && e.gradeGrantedOn) {
+      const on = e.gradeGrantedOn
+      setForm((v) => ({ ...v, gradeGrantedOn: on }))
+      used = true
+    }
+    if (!used) return
+    setFromRegister(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employee.data, list.length])
   const highest = !!form.currentGrade && list.length > 0 && list.at(-1)?.id === form.currentGrade
 
   const current: Part3 = { ...form, appointedYear: /^\d{4}$/.test(year) ? Number(year) : null }
@@ -125,6 +159,9 @@ export function SheetPartIII({
               <InfoRow label="Imię" value={detail.person.firstName} />
               <InfoRow label="Nazwisko" value={detail.person.lastName} />
             </InfoList>
+            {fromRegister && editable && (
+              <p className={layout.muted}>Rok mianowania, stopień i data jego przyznania uzupełnione z kartoteki: sprawdź je przed podpisaniem.</p>
+            )}
             <div className={s.fields}>
               <Field id={YEAR_ID} label="Rok mianowania" hint="4 cyfry, np. 2018" error={errorFor(YEAR_ID)}>
                 {(p) => (
@@ -193,7 +230,7 @@ export function SheetPartIII({
             {template && (
               <blockquote className={s.quote} aria-live="polite">
                 <p className={s.sentence}>
-                  {template.promotionRequest.beforeName} <strong>{name}</strong> {template.promotionRequest.afterName}{' '}
+                  {template.promotionRequest.beforeName}: <strong>{name}</strong> {template.promotionRequest.afterName}{' '}
                   <strong>{form.requestedGrade ?? '……'}</strong> {template.promotionRequest.afterGrade}
                 </p>
               </blockquote>
@@ -211,7 +248,7 @@ export function SheetPartIII({
             <InfoList>
               <InfoRow
                 label="Data i podpis oceniającego"
-                value={signed ? `${fmtDate(signed)}, ${detail.evaluator.firstName} ${detail.evaluator.lastName}, podpisano elektronicznie` : 'Po zatwierdzeniu oceny (krok „Dokument”)'}
+                value={signed ? `${fmtDate(signed)}, ${detail.evaluator.firstName} ${detail.evaluator.lastName}, podpisano elektronicznie` : 'Po podpisaniu oceny (krok „Podpis i przekazanie”)'}
               />
             </InfoList>
           </PartSection>
