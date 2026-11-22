@@ -1417,7 +1417,7 @@
 }
 
 /* Vertical timeline of the document stage (rozmowa → podpis → przekazanie → zapoznanie), styled like the StageStepper:
-   done = green circle with a check, current = accent outline, bold name, "Teraz" and its action expanded under it,
+   done = green circle with a check, current = accent outline, bold name and its action expanded under it,
    future = grey outline, collapsed. The line runs through the circles' centres. Tokens only. */
 .steps {
   --dot: 28px; /* px like the StageStepper circles, so the line always meets their centres */

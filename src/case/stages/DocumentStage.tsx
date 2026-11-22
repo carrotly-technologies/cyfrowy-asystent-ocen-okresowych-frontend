@@ -153,7 +153,6 @@ export function DocumentStage({ detail, model, criteria, stage }: StageProps) {
                       {s.label}
                       <span className="visually-hidden">{`, krok ${i + 1} z ${steps.length}, ${STATUS_TEXT[state]}`}</span>
                     </span>
-                    {state === 'current' && <span className="tag tag--accent steps__now" aria-hidden="true">Teraz</span>}
                     <span className="steps__date num">{s.date ? fmtDate(s.date) : '—'}</span>
                   </div>
                   {action && <div className="steps__body">{action}</div>}
