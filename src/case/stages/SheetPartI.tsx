@@ -1,11 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import type { PartI } from '../../api/cases'
-import { Checkbox, ErrorSummary, Field, Fieldset, InfoList, InfoRow, InlineAlert, TextArea, TextInput, type FormError } from '../../components/ui'
+import { errorMessage } from '../../api/client'
+import { Checkbox, ConfirmDialog, ErrorSummary, Field, Fieldset, InfoList, InfoRow, InlineAlert, TextArea, TextInput, type FormError } from '../../components/ui'
 import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { criterionName } from '../../lib/model'
 import { allows } from '../../lib/stages'
+import { useMe } from '../../lib/useAuth'
 import type { StageProps } from '../CasePage'
+import { AdditionalCriteriaPicker } from './AdditionalCriteriaPicker'
+import { MutationError } from './common'
 import { PartHeading, PartSection, WizardActions } from './SheetWizardCommon'
 import { StageError } from './StageLayout'
 import layout from './StageLayout.module.css'
@@ -42,6 +46,11 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
   // The backend accepts part I changes only at the opening talk, until the evaluator confirms it.
   const editable = !confirmed && detail.currentStage === 'OPENING_TALK'
   const afterNegative = detail.cycleLabel.toLowerCase().includes('negatyw')
+  // Only the evaluator changes the additional criteria (the API answers 403 to anyone else), until part I is confirmed.
+  const me = useMe()
+  const criteriaEditable = editable && me.role === 'SUPERVISOR'
+  const criteriaPatch = usePatchCase(detail.id)
+  const [removing, setRemoving] = useState<string | null>(null)
 
   const [topics, setTopics] = useState(detail.partI.topics)
   // Every field the evaluator types starts empty; only what is already saved in the case is shown.
@@ -50,6 +59,19 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
   )
   const [due, setDue] = useState(detail.partI.assessmentDue ?? '')
 
+  // Each change is saved at once: the new criterion gets its expectations field, a removed one loses it (also in the API).
+  const saveCriteria = (next: string[]) => criteriaPatch.mutateAsync({ partI: { additionalCriteria: next } })
+  const removeCriterion = async (c: string) => {
+    await saveCriteria(criteria.additional.filter((x) => x !== c))
+    setExpect((v) => Object.fromEntries(Object.entries(v).filter(([k]) => k !== c)))
+    clearError(expectId(c))
+  }
+  const toggleCriterion = (c: string, on: boolean) => {
+    if (on) void saveCriteria([...criteria.additional, c]).catch(() => {})
+    else if (expect[c]?.trim()) setRemoving(c)
+    else void removeCriterion(c).catch(() => {})
+  }
+
   // "Potwierdzamy: – …; – …" from the sheet template (GET /api/sheets). Ticking is kept only here: the record of the
   // confirmation is the existing action with its date (CONFIRM_PART_I, EMPLOYEE_ACK_PART_I).
   const confirmLines = (criteria.sheet?.template?.partIConfirmation ?? []).map(asLabel)
@@ -57,6 +79,7 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
   const errorFor = (id: string) => errors.find((e) => e.id === id)?.message
   const [ticked, setTicked] = useState<boolean[]>(() => confirmLines.map(() => false))
   const canConfirm = editable && allows(detail, 'CONFIRM_PART_I')
+  const maxAdditional = criteria.sheet?.maxAdditionalCriteria ?? 0
   const clearError = (id: string) => setErrors((v) => (v.some((e) => e.id === id) ? v.filter((e) => e.id !== id) : v))
   const tick = (i: number, on: boolean) => {
     setTicked((v) => confirmLines.map((_, j) => (j === i ? on : !!v[j])))
@@ -88,7 +111,8 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
         const e = [...validate(), ...(canConfirm ? confirmErrors() : [])]
         setErrors(e)
         if (e.length) return
-        await patch.mutateAsync({ partI: { topics, expectations: expect, assessmentDue: due } })
+        const expectations = Object.fromEntries(criteria.all.map((c) => [c, expect[c] ?? '']))
+        await patch.mutateAsync({ partI: { topics, expectations, assessmentDue: due } })
         if (canConfirm) await act.mutateAsync('CONFIRM_PART_I')
       }
       onNext?.()
@@ -120,7 +144,10 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
         </div>
       </PartSection>
 
-      <PartSection title="Kryteria oceny i termin sporządzenia oceny" hint="Kryteria ustalono w kroku „Arkusz i kryteria”.">
+      <PartSection
+        title="Kryteria oceny i termin sporządzenia oceny"
+        hint={criteriaEditable ? 'Kryteria dodatkowe możesz zmienić do potwierdzenia części I.' : 'Kryteria ustalono w kroku „Arkusz i kryteria”.'}
+      >
         <div className={s.criteria}>
           <div>
             <p className={s.listLabel}>Kryteria obowiązkowe</p>
@@ -128,8 +155,22 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
               {criteria.mandatory.map((c) => <li key={c}>{criterionName(model, c)}</li>)}
             </ul>
           </div>
+          {criteriaEditable ? (
+            <div>
+              <AdditionalCriteriaPicker
+                id="part-i-extra-criteria"
+                model={model}
+                mandatory={criteria.mandatory}
+                max={maxAdditional}
+                selected={criteria.additional}
+                onToggle={toggleCriterion}
+                disabled={criteriaPatch.isPending}
+              />
+              <MutationError error={criteriaPatch.error} />
+            </div>
+          ) : (
           <div>
-            <p className={s.listLabel}>Kryteria dodatkowe wybrane przez oceniającego (nie więcej niż 3)</p>
+            <p className={s.listLabel}>Kryteria dodatkowe wybrane przez oceniającego (nie więcej niż {maxAdditional})</p>
             {criteria.additional.length ? (
               <ul className={layout.bullets}>
                 {criteria.additional.map((c) => <li key={c}>{criterionName(model, c)}</li>)}
@@ -138,6 +179,7 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
               <p className={layout.muted}>Brak</p>
             )}
           </div>
+          )}
         </div>
         <Field
           id={DUE_ID}
@@ -220,6 +262,20 @@ export function SheetPartI({ detail, model, criteria, onNext }: StageProps & { o
       </PartSection>
 
       <StageError error={patch.error ?? act.error} />
+      <ConfirmDialog
+        open={removing !== null}
+        title="Usunąć kryterium i wpisane oczekiwania?"
+        confirmLabel="Usuń kryterium"
+        cancelLabel="Zostaw"
+        destructive
+        onConfirm={() => removeCriterion(removing!)}
+        onCancel={() => setRemoving(null)}
+        errorText={errorMessage}
+      >
+        <p>
+          Kryterium „{removing ? criterionName(model, removing) : ''}” zniknie z części I razem z oczekiwaniami, które do niego wpisano.
+        </p>
+      </ConfirmDialog>
       {editable && <WizardActions loading={patch.isPending || act.isPending} nextLabel={canConfirm ? 'Zatwierdź część I' : 'Zapisz'} />}
     </form>
   )

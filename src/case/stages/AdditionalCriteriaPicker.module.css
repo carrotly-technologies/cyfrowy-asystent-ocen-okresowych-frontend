@@ -1,0 +1,4 @@
+.checks {
+  display: grid;
+  gap: var(--s-3);
+}
