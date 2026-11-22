@@ -67,7 +67,7 @@ export function ObjectionSection({ detail, notice }: { detail: CaseDetail; notic
             Termin na sprzeciw: <DeadlineText deadline={detail.objectionDeadline} showLegal plain />
           </p>
           <Field label="Treść sprzeciwu" hint={`Wskaż kryteria lub ustalenia, z którymi się nie zgadzasz, i uzasadnij to. Sprzeciw trafi do ${to}.`} error={error}>
-            {(c) => <TextArea {...c} rows={5} value={text} onChange={(e) => setText(e.target.value)} />}
+            {(c) => <TextArea {...c} rows={5} value={text} onChange={(e) => { setText(e.target.value); if (error && e.target.value.trim()) setError(undefined) }} />}
           </Field>
           <Button type="submit" loading={m.isPending}>Wnieś sprzeciw</Button>
           {detail.objectionAddressee && <p className="small muted">Sprzeciw trafi do: {to} <span className="legal">{detail.objectionAddressee.legalBasis}</span></p>}

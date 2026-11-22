@@ -175,17 +175,17 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
                     ))}
                   </select>
                 </label>
-                <fieldset className="field obs-form__kind">
-                  <legend className="field__label">Rodzaj</legend>
+                <div className="field obs-form__kind" role="radiogroup" aria-labelledby="obs-kind-label">
+                  <span id="obs-kind-label" className="field__label">Rodzaj</span>
                   <div className="radio-row">
                     {(['STRENGTH', 'DEVELOPMENT'] as const).map((k) => (
                       <label key={k} className={`radio-pill ${form.kind === k ? 'is-on' : ''}`}>
-                        <input type="radio" name="kind" checked={form.kind === k} onChange={() => setForm({ ...form, kind: k })} />
+                        <input type="radio" name="kind" value={k} checked={form.kind === k} onChange={() => setForm({ ...form, kind: k })} />
                         {k === 'STRENGTH' ? 'Mocna strona' : 'Do rozwoju'}
                       </label>
                     ))}
                   </div>
-                </fieldset>
+                </div>
               </div>
               <div className="obs-form__sdr">
                 {SDR.map(([k, label, ph]) => (

@@ -945,10 +945,16 @@
   color: var(--text-secondary);
 }
 
-.deadline__date,
-.deadline__rel {
+.deadline__date {
   flex: none;
   white-space: nowrap;
+}
+
+/* "po terminie 30 dni" may wrap inside a narrow table cell instead of running into the next column. */
+.deadline__rel {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .deadline__date {
@@ -1500,12 +1506,9 @@
   border: 0;
 }
 
-/* A legend does not sit on the label baseline by default: make it lay out like the other .field__label. */
-.obs-form__kind > legend {
-  float: left;
-  width: 100%;
-  margin-bottom: var(--s-1);
-  padding: 0;
+/* The kind pills are as tall as the date and criterion controls next to them. */
+.obs-form__kind .radio-pill {
+  height: var(--control-h);
 }
 
 .obs-form__sdr {

@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
+import { STAGE_SHORT, stageFromSlug } from '../lib/stages'
 import { useMe } from '../lib/useAuth'
 import { usePageNames } from './usePageNames'
 import { useTeamPersonName } from './useTeamPersonName'
@@ -20,7 +21,10 @@ function trail(
       role === 'DIRECTOR' ? { to: '/sprzeciwy', label: 'Sprzeciwy' } : supervisor ? { to: '/zespol', label: 'Oceny zespołu' } : { to: '/hr', label: 'Monitoring' }
     const cp = names.casePerson
     const person = cp && role !== 'DIRECTOR' ? [{ to: supervisor ? `/zespol/${encodeURIComponent(cp.id)}` : `/kartoteka/${encodeURIComponent(cp.id)}`, label: cp.name }] : []
-    return { parents: [root, ...person], current: /^\/teczka\/[^/]+\/arkusz/.test(path) ? 'Arkusz' : 'Ocena' }
+    // The last crumb names the stage shown (/teczka/:id/:stage), e.g. "Okres obserwacji"; the sheet view is "Arkusz".
+    const stage = stageFromSlug(path.split('/')[3])
+    const current = /^\/teczka\/[^/]+\/arkusz(\/|$)/.test(path) ? 'Arkusz' : stage ? STAGE_SHORT[stage] : 'Ocena'
+    return { parents: [root, ...person], current }
   }
   if (/^\/dobrostan\/.+/.test(path)) return { parents: [{ to: '/dobrostan', label: 'Dobrostan zespołu' }], current: names.person ?? 'Pracownik' }
   if (/^\/moje-oceny\/.+/.test(path)) return { parents: [{ to: '/moje-oceny', label: 'Moje oceny' }], current: 'Ocena okresowa' }
