@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { apiGet, resetDemo, sessionFor, signIn } from './helpers.ts'
+import { apiGet, apiPost, confirmDialog, resetDemo, sessionFor, signIn } from './helpers.ts'
 
 /** "Oceny zespołu" (/zespol) of supervisor j.kaminska, against the backend demo seed. */
 const SUPERVISOR = 'j.kaminska'
@@ -47,7 +47,7 @@ test('Oceny zespołu: nagłówki kolumn bez „Ocena” i „Następna ocena”,
   await expect(page.getByRole('navigation', { name: 'Okruszki' }).getByRole('link', { name: 'Oceny zespołu' })).toBeVisible()
 })
 
-test('Oceny zespołu: wiersz otwiera stronę osoby z bieżącą oceną, historią, nieobecnościami i kartoteką', async ({ page }) => {
+test('Oceny zespołu: wiersz otwiera stronę osoby z kartoteką na górze, historią ocen i nieobecnościami, bez „Bieżąca ocena”', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol')
 
@@ -57,7 +57,8 @@ test('Oceny zespołu: wiersz otwiera stronę osoby z bieżącą oceną, histori�
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Anna Nowak')
 
   const sections = page.locator('main').getByRole('heading', { level: 2 })
-  await expect(sections).toHaveText(['Bieżąca ocena', 'Historia ocen', 'Nieobecności', 'Dane w kartotece'])
+  await expect(sections).toHaveText(['Dane w kartotece', 'Historia ocen', 'Nieobecności'])
+  await expect(page.getByRole('region', { name: 'Bieżąca ocena' })).toHaveCount(0)
 
   const crumbs = page.getByRole('navigation', { name: 'Okruszki' })
   await expect(crumbs.getByRole('link', { name: 'Oceny zespołu' })).toBeVisible()
@@ -66,8 +67,10 @@ test('Oceny zespołu: wiersz otwiera stronę osoby z bieżącą oceną, histori�
   await expect(page.getByRole('navigation', { name: 'Nawigacja główna' }).getByRole('link', { name: 'Oceny zespołu' })).toHaveAttribute('aria-current', 'page')
 
   await expect(page.getByRole('link', { name: 'Otwórz teczkę' })).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Podgląd arkusza C' })).toBeVisible()
-  await page.getByRole('link', { name: 'Prowadź ocenę' }).click()
+  await expect(page.getByRole('link', { name: 'Prowadź ocenę', exact: true })).toHaveCount(0)
+  // Assessment in progress: „Przeprowadź ocenę” next to „Historia ocen” opens the case file.
+  const history = page.getByRole('region', { name: 'Historia ocen' })
+  await history.getByRole('link', { name: 'Przeprowadź ocenę' }).click()
   await expect(page).toHaveURL(/\/teczka\/c-001$/)
 })
 
@@ -188,21 +191,21 @@ function plusTwoYears(iso: string): string {
   return `${d}.${m}.${Number(y) + 2}`
 }
 
-test('Profil pracownika: przewidywana data następnej oceny w „Bieżąca ocena” (/zespol/:id i /kartoteka/:id)', async ({ page, request, browser }) => {
+test('Profil pracownika: przewidywana data następnej oceny w „Dane w kartotece” (/zespol/:id) i w „Bieżąca ocena” (/kartoteka/:id)', async ({ page, request, browser }) => {
   // Anna Nowak (c-001 unsigned): from her previous, signed case c-000. Piotr Wójcik (c-002): none signed yet.
   const previous = await apiGet<{ signedByEvaluatorOn: string }>(request, 'a.lis', '/cases/c-000')
   const expected = plusTwoYears(previous.signedByEvaluatorOn)
 
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol/p-nowak')
-  const cycle = page.getByRole('region', { name: 'Bieżąca ocena' })
+  const cycle = page.getByRole('region', { name: 'Dane w kartotece' })
   await expect(cycle.getByRole('term').filter({ hasText: NEXT_EVALUATION })).toBeVisible()
   await expect(cycle.getByRole('term').filter({ hasText: NEXT_EVALUATION }).locator('xpath=following-sibling::dd[1]')).toHaveText(expected)
 
   await page.goto('/zespol')
   await page.getByRole('link', { name: 'Pokaż pracownika: Piotr Wójcik' }).click()
   await expect(page).toHaveURL(/\/zespol\/[^/]+$/)
-  const wojcikCycle = page.getByRole('region', { name: 'Bieżąca ocena' })
+  const wojcikCycle = page.getByRole('region', { name: 'Dane w kartotece' })
   const term = wojcikCycle.getByRole('term').filter({ hasText: NEXT_EVALUATION })
   await expect(term).toBeVisible()
   await expect(term.locator('xpath=following-sibling::dd[1]')).toHaveText('—')
@@ -213,4 +216,72 @@ test('Profil pracownika: przewidywana data następnej oceny w „Bieżąca ocena
   await expect(hrCycle.getByRole('term').filter({ hasText: NEXT_EVALUATION })).toBeVisible()
   await expect(hrCycle.getByRole('term').filter({ hasText: NEXT_EVALUATION }).locator('xpath=following-sibling::dd[1]')).toHaveText(expected)
   await hr.context().close()
+})
+
+/** The `<dd>` right after the `<dt>` named `term` in a section. */
+const valueOf = (region: import('@playwright/test').Locator, term: string) =>
+  region.getByRole('term').filter({ hasText: term }).locator('xpath=following-sibling::dd[1]')
+
+test('Profil pracownika: „Bieżący termin” w „Dane w kartotece” (termin oceny w toku albo „—”)', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol/p-nowak')
+  const data = page.getByRole('region', { name: 'Dane w kartotece' })
+  await expect(valueOf(data, 'Bieżący termin')).toContainText(/(Najbliższy termin|Termin): /)
+  await expect(valueOf(data, 'Bieżący termin')).toContainText(/\d{2}\.\d{2}\.\d{4}/)
+
+  await page.goto('/zespol/p-pietrzak')
+  await expect(valueOf(page.getByRole('region', { name: 'Dane w kartotece' }), 'Bieżący termin')).toHaveText('—')
+})
+
+test('Profil pracownika: „Przeprowadź ocenę” bez oceny w toku rozpoczyna cykl i otwiera nową teczkę', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol/p-pietrzak')
+  const history = page.getByRole('region', { name: 'Historia ocen' })
+  const start = history.getByRole('button', { name: 'Przeprowadź ocenę' })
+  await expect(start).toBeEnabled()
+  await start.click()
+  await expect(page).toHaveURL(/\/teczka\/c-[0-9a-f]{8}(\/|$)/)
+})
+
+test('Profil pracownika: „Przeprowadź ocenę” po terminie rozmowy rozpoczynającej pyta o potwierdzenie', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol/p-jasinska')
+  await page.getByRole('region', { name: 'Historia ocen' }).getByRole('button', { name: 'Przeprowadź ocenę' }).click()
+  await confirmDialog(page, 'Termin rozmowy rozpoczynającej już minął', 'Rozpocznij mimo to')
+  await expect(page).toHaveURL(/\/teczka\/c-[0-9a-f]{8}(\/|$)/)
+})
+
+test('Profil pracownika: „Przeprowadź ocenę” jest wyłączony z powodem, gdy nie można rozpocząć cyklu', async ({ page, request }) => {
+  // No date of indefinite employment: the backend cannot anchor a cycle.
+  await apiPost(request, 'a.lis', '/employees', {
+    firstName: 'Jan',
+    lastName: 'Bezterminu',
+    unit: 'Wydział Testów',
+    position: 'Specjalista',
+    employment: 'PRACOWNIK',
+    officeHead: false,
+    managesPeople: false,
+    appointedYear: null,
+    grade: null,
+    gradeGrantedOn: null,
+    indefiniteSince: null,
+    evaluatorId: 'ev-kaminska',
+  })
+  const people = await apiGet<{ id: string; lastName: string }[]>(request, 'a.lis', '/employees')
+  const person = people.find((p) => p.lastName === 'Bezterminu')!
+
+  await signIn(page, SUPERVISOR)
+  await page.goto(`/zespol/${person.id}`)
+  const history = page.getByRole('region', { name: 'Historia ocen' })
+  await expect(history.getByRole('button', { name: 'Przeprowadź ocenę' })).toBeDisabled()
+  await expect(history.getByRole('note')).not.toBeEmpty()
+})
+
+test('Kartoteka HR (/kartoteka/:id) bez zmian: „Bieżąca ocena” obok danych, bez „Przeprowadź ocenę”', async ({ page }) => {
+  await signIn(page, 'a.lis')
+  await page.goto('/kartoteka/p-pietrzak')
+  await expect(page.getByRole('region', { name: 'Bieżąca ocena' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Rozpocznij nowy cykl oceny' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Przeprowadź ocenę' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Dane w kartotece' }).getByRole('term').filter({ hasText: 'Bieżący termin' })).toHaveCount(0)
 })
