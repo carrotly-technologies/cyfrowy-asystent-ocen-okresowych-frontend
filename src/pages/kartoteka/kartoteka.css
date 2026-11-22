@@ -48,7 +48,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   gap: var(--gap-grid);
+  align-items: start;
   margin: var(--s-4) 0;
+}
+
+/* „Dane w kartotece” (heading above its table) next to „Bieżąca ocena” on /kartoteka/:id */
+.emp-grid > .section {
+  margin-top: 0;
 }
 
 /* „Przeprowadź ocenę” at the right of „Historia ocen”; the reason or result sits under the button. */
@@ -234,7 +240,7 @@
   margin-top: var(--s-0);
 }
 
-/* „Bieżąca ocena” and „Dane w kartotece” on /zespol/:id: a long label (next periodic assessment) wraps instead of squeezing the values on a phone. */
+/* „Bieżąca ocena”: a long label (next periodic assessment) wraps instead of squeezing the values on a phone. */
 .dl.emp-cycle-dl {
   grid-template-columns: fit-content(40%) minmax(0, 1fr);
 }
