@@ -13,11 +13,26 @@ const coverage = (page: Page) => page.getByRole('region', { name: 'Pokrycie kryt
 const journal = (page: Page) => page.getByRole('region', { name: /^Dziennik obserwacji/ })
 const cards = (page: Page) => journal(page).getByRole('list', { name: 'Obserwacje' }).getByRole('listitem')
 
+/** Journal as a timeline (like before #38): date on the left, then criterion + tag, then Sytuacja / Działanie / Rezultat one under another. */
+async function expectTimeline(page: Page) {
+  const item = cards(page).first()
+  await expect(item).toHaveClass(/timeline__item/)
+  const date = (await item.locator('.timeline__date').boundingBox())!
+  const meta = (await item.locator('.timeline__meta').boundingBox())!
+  expect(date.x + date.width).toBeLessThanOrEqual(meta.x)
+  await expect(item.locator('.timeline__meta .tag')).toHaveText(/mocna strona|do rozwoju/)
+  await expect(item.locator('dl dt')).toHaveText(['Sytuacja', 'Działanie', 'Rezultat'])
+  const ys = await item.locator('dl dd').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
+  expect(ys).toHaveLength(3)
+  expect(ys[1]).toBeGreaterThan(ys[0])
+  expect(ys[2]).toBeGreaterThan(ys[1])
+}
+
 async function noHorizontalScroll(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
 }
 
-test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, S-D-R w 3 kolumnach', async ({ page }) => {
+test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, dziennik jako oś czasu', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto(`/teczka/${CASE}/obserwacje`)
 
@@ -86,11 +101,8 @@ test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, S-D-R 
   await emptyRow.getByRole('button').click()
   await expect(cards(page)).toHaveCount(total)
 
-  // Desktop: Sytuacja, Działanie and Rezultat side by side.
-  const parts = cards(page).first().locator('dl > div')
-  await expect(parts).toHaveCount(3)
-  const ys = await parts.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
-  expect(new Set(ys).size).toBe(1)
+  // Journal: the timeline from before #38.
+  await expectTimeline(page)
 
   // Adding an observation works as before.
   await journal(page).getByRole('button', { name: 'Dodaj obserwację' }).click()
@@ -111,7 +123,7 @@ test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, S-D-R 
 })
 
 for (const assistant of [false, true]) {
-  test(`Okres obserwacji przy 375 px${assistant ? ' z panelem Asystenta' : ''}: bez poziomego przewijania, S-D-R jedna pod drugą`, async ({ page }) => {
+  test(`Okres obserwacji przy 375 px${assistant ? ' z panelem Asystenta' : ''}: bez poziomego przewijania, dziennik jako oś czasu`, async ({ page }) => {
     await page.addInitScript((on) => localStorage.setItem('ocena.assistant', on ? '1' : '0'), assistant)
     await page.setViewportSize({ width: 375, height: 800 })
     await signIn(page, SUPERVISOR)
@@ -125,9 +137,7 @@ for (const assistant of [false, true]) {
     const row = table.getByRole('row').filter({ has: page.getByRole('rowheader') }).first()
     await expect(row.getByRole('rowheader').getByText('Mało dowodów')).toBeVisible()
 
-    const parts = cards(page).first().locator('dl > div')
-    const ys = await parts.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)))
-    expect(new Set(ys).size).toBe(3)
+    await expectTimeline(page)
   })
 }
 
