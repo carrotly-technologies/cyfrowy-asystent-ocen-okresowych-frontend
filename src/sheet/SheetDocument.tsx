@@ -10,7 +10,7 @@ import '@fontsource/tinos/latin-ext-700-italic.css'
 import type { ReactNode } from 'react'
 import type { CaseDetail } from '../api/cases'
 import type { CriteriaCatalogue } from '../api/reference'
-import { fmtAvg, fmtDate } from '../lib/format'
+import { fmtDate } from '../lib/format'
 import { criterionName, type CaseCriteria } from '../lib/model'
 import { officePlace } from '../lib/office'
 import { BANDS } from '../lib/scale'
@@ -339,7 +339,7 @@ export function SheetDocument({ detail, model, criteria }: { detail: CaseDetail;
           {t && <p className="doc-muted doc-center">{t.partIIINotAttached}</p>}
         </div>
       )}
-      <p className="doc-footnote">Wygenerowano w Cyfrowym Asystencie Ocen Okresowych na podstawie wzoru z rozporządzenia PRM z 4.04.2016 (Dz.U. poz. 470). Średnia {ev ? fmtAvg(ev.average) : '—'} liczona bez zaokrągleń.</p>
+      <p className="doc-footnote">Wygenerowano w Cyfrowym Asystencie Ocen Okresowych na podstawie wzoru z rozporządzenia PRM z 4.04.2016 (Dz.U. poz. 470). Średnia {ev ? ev.averageDisplay : '—'} zaokrąglona do 2 miejsc po przecinku; poziom i wynik ustalono na podstawie średniej dokładnej.</p>
     </article>
   )
 }

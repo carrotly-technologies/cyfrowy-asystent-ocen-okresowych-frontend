@@ -111,6 +111,26 @@
   }
 }
 
+/* ---- Primary "Dodaj obserwację" at the top of the stage (the journal sits below the coverage table) ---- */
+.topAdd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-3);
+}
+
+.topAdd p {
+  margin: 0;
+}
+
+/* Headers and the opened form scroll below the sticky stage stepper, not under it. */
+.section,
+.section h3,
+.form {
+  scroll-margin-top: calc(var(--case-sticky-h, 0px) + var(--s-3));
+}
+
 /* ---- Journal ---- */
 .journalHead {
   display: flex;

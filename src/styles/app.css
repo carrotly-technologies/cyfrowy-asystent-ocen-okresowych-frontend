@@ -1430,14 +1430,35 @@
 
 .obs-form__row {
   display: flex;
-  align-items: flex-end;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--s-4);
+}
+
+/* The criterion select takes the free width (long criterion names are not cut), and wraps to its own line if needed. */
+.obs-form__crit {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.obs-form__crit .select {
+  width: 100%;
+  max-width: 100%;
+  text-overflow: ellipsis;
 }
 
 .obs-form__kind {
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+/* A legend does not sit on the label baseline by default: make it lay out like the other .field__label. */
+.obs-form__kind > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--s-1);
+  padding: 0;
 }
 
 .obs-form__sdr {

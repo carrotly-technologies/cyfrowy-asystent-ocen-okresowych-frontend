@@ -13,7 +13,7 @@ import { DeadlineText } from '../components/Deadline'
 import { Button, ConfirmDialog, Dialog, Field, InlineAlert, TextArea, TextInput } from '../components/ui'
 import { useCase } from '../lib/caseQueries'
 import { legalErrorText, useLegalMutation } from '../lib/legalQueries'
-import { DEMO_TODAY, fmtDate } from '../lib/format'
+import { DEMO_TODAY, fmtAvg, fmtDate } from '../lib/format'
 
 /**
  * Post-assessment paths shown on the case: fikcja zapoznania, sprzeciw (art. 83 ustawy o służbie cywilnej) and the
@@ -369,7 +369,7 @@ export function AssessmentVersions({ detail }: { detail: CaseDetail }) {
         {detail.assessmentVersions.map((v) => (
           <li key={v.round}>
             <strong>{v.status === 'CANCELLED' ? 'Anulowana' : 'Zmieniona'}</strong> {fmtDate(v.closedOn)} po sprzeciwie
-            {v.result && <> · wynik: {v.result === 'POSITIVE' ? 'pozytywna' : 'negatywna'}{v.average !== null && ` (średnia ${v.average.toFixed(2).replace('.', ',')})`}</>}
+            {v.result && <> · wynik: {v.result === 'POSITIVE' ? 'pozytywna' : 'negatywna'}{v.average !== null && ` (średnia ${fmtAvg(v.average)})`}</>}
             {v.signedByEvaluatorOn && <> · podpisana {fmtDate(v.signedByEvaluatorOn)}</>}
             <div className="small muted">Uzasadnienie rozstrzygnięcia: {v.reason}</div>
           </li>
