@@ -45,13 +45,15 @@ test('przełożony zmienia kryteria dodatkowe w części I do jej potwierdzenia'
   await expect(picker).toHaveAccessibleName('Kryteria dodatkowe (1/3)')
   await expect(picker.getByRole('checkbox', { name: 'Myślenie analityczne', exact: true })).toBeChecked()
   await page.goto(`/teczka/${CASE}/arkusz-i-kryteria`)
-  await expect(page.getByText(/kryteria dodatkowe: Myślenie analityczne/)).toBeVisible()
+  const stepExtra = page.getByRole('table', { name: 'Kryteria dodatkowe (1/3)' })
+  await expect(stepExtra.getByRole('rowheader', { name: 'Myślenie analityczne' })).toBeVisible()
   const detail = await apiGet<{ history: { text: string }[] }>(request, SUPERVISOR, `/cases/${CASE}`)
   expect(detail.history.map((h) => h.text)).toContainEqual(expect.stringContaining('Zmieniono kryteria dodatkowe: usunięto „Negocjowanie”'))
 
   // After the evaluator confirms part I the list is read only.
   await apiPost(request, SUPERVISOR, `/cases/${CASE}/actions`, { action: 'CONFIRM_PART_I' })
   await page.goto(`/teczka/${CASE}/rozmowa-rozpoczynajaca`)
-  await expect(page.getByText('Kryteria dodatkowe wybrane przez oceniającego (nie więcej niż 3)')).toBeVisible()
+  const readOnly = page.getByRole('table', { name: 'Kryteria dodatkowe wybrane przez oceniającego (1/3)' })
+  await expect(readOnly.getByRole('rowheader', { name: 'Myślenie analityczne' })).toBeVisible()
   await expect(page.getByRole('group', { name: /Kryteria dodatkowe \(\d\/3\)/ })).toHaveCount(0)
 })

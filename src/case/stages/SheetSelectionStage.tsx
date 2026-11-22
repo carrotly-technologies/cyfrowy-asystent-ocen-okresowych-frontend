@@ -3,10 +3,11 @@ import type { SheetId } from '../../api/reference'
 import { Button, ConfirmDialog, Field, InlineAlert, RadioGroup, TextInput } from '../../components/ui'
 import { useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
-import { criterionName, findCriterion, useSheets } from '../../lib/model'
+import { criterionName, useSheets } from '../../lib/model'
 import { allows } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { AdditionalCriteriaPicker } from './AdditionalCriteriaPicker'
+import { CriteriaSummary } from './CriteriaSummary'
 import { StageError, StageLayout } from './StageLayout'
 import layout from './StageLayout.module.css'
 import s from './SheetSelectionStage.module.css'
@@ -51,7 +52,7 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
         info={info}
         status={
           <InlineAlert tone="success" title="Arkusz i kryteria zatwierdzone">
-            Arkusz {detail.sheetId}, kryteria dodatkowe: {detail.partI.additionalCriteria.map((c) => criterionName(model, c)).join(', ') || 'brak'}
+            Arkusz {detail.sheetId}
             {detail.partI.assessmentDue && <>, termin sporządzenia oceny: {fmtDate(detail.partI.assessmentDue)}</>}.
             {canCorrect && (
               <p>
@@ -64,7 +65,13 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
           </InlineAlert>
         }
       >
-        <CriteriaList title="Kryteria obowiązkowe arkusza" ids={mandatory} model={model} />
+        <CriteriaSummary title={`Kryteria obowiązkowe (${mandatory.length})`} ids={mandatory} model={model} />
+        <CriteriaSummary
+          title={`Kryteria dodatkowe (${detail.partI.additionalCriteria.length}/${max})`}
+          ids={detail.partI.additionalCriteria}
+          model={model}
+          empty="Nie wybrano kryteriów dodatkowych."
+        />
       </StageLayout>
     )
   }
@@ -91,7 +98,7 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
         }))}
       />
 
-      <CriteriaList title={`Kryteria obowiązkowe arkusza ${sheetId}`} ids={mandatory} model={model} />
+      <CriteriaSummary title={`Kryteria obowiązkowe arkusza ${sheetId} (${mandatory.length})`} ids={mandatory} model={model} />
 
       <AdditionalCriteriaPicker id="extra-criteria" model={model} mandatory={mandatory} max={max} selected={selected} onToggle={toggle} />
 
@@ -143,21 +150,5 @@ export function SheetSelectionStage({ detail, model, stage }: StageProps) {
         {!correcting && <p>Arkusz i kryteria możesz jeszcze poprawić do zatwierdzenia części I po rozmowie rozpoczynającej.</p>}
       </ConfirmDialog>
     </StageLayout>
-  )
-}
-
-function CriteriaList({ title, ids, model }: { title: string; ids: string[]; model: StageProps['model'] }) {
-  return (
-    <section aria-label={title}>
-      <h3 className={s.questionsLabel}>{title}</h3>
-      <ul className={s.indicators}>
-        {ids.map((id) => (
-          <li key={id}>
-            <strong>{criterionName(model, id)}</strong>
-            {findCriterion(model, id) && <span className={layout.muted}> — {findCriterion(model, id)!.description.join(' ')}</span>}
-          </li>
-        ))}
-      </ul>
-    </section>
   )
 }
