@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { AlertTriangle, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { Observation } from '../../api/cases'
@@ -8,7 +8,8 @@ import { criterionName } from '../../lib/model'
 import { allows, caseUrl } from '../../lib/stages'
 import type { StageProps } from '../CasePage'
 import { MutationError, StageHeader } from './common'
-import { DateInput } from '../../components/ui'
+import { DateInput, Disclosure } from '../../components/ui'
+import css from './ObservationStage.module.css'
 
 const empty = (crit: string): Omit<Observation, 'id'> => ({
   date: DEMO_TODAY,
@@ -48,19 +49,66 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
 
   return (
     <div className="stage">
-      <StageHeader
-        title={info.name}
-        actions={
-          !done && (
-            <button type="button" className="btn" onClick={() => setFormOpen((v) => !v)} aria-expanded={formOpen}>
-              <Plus size={15} aria-hidden="true" /> Dodaj obserwację
-            </button>
-          )
-        }
-      />
+      <StageHeader title={info.name} />
 
-      <div className="two-col">
-        <div className="two-col__main">
+      <div className={`stage-pad ${css.page}`}>
+        <section className={css.section} aria-labelledby="obs-coverage">
+          <h3 id="obs-coverage" className="h-section">Pokrycie kryteriów dowodami</h3>
+          <p className="small muted">Kliknij kryterium, żeby zobaczyć w dzienniku tylko jego obserwacje. Ponowne kliknięcie pokazuje wszystkie.</p>
+          <ul className={css.tiles}>
+            {criteria.all.map((c) => {
+              const isThin = counts[c] < 2
+              return (
+                <li key={c}>
+                  <button
+                    type="button"
+                    className={`${css.tile} ${isThin ? css.tileThin : ''}`}
+                    aria-pressed={filter === c}
+                    onClick={() => setFilter(filter === c ? '' : c)}
+                  >
+                    <span className={css.tileName}>{criterionName(model, c)}</span>
+                    <span className={css.tileFoot}>
+                      <span className={css.tileCount}>
+                        {isThin && <AlertTriangle size={16} aria-hidden="true" />}
+                        <strong className="num">{counts[c]}</strong> {obsWord(counts[c])}
+                        {isThin && <span className="visually-hidden">, mało dowodów</span>}
+                      </span>
+                      <span className={css.bar} aria-hidden="true">
+                        {Array.from({ length: Math.max(3, counts[c]) }, (_, i) => (
+                          <span key={i} className={i < counts[c] ? css.on : ''} />
+                        ))}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          {thin.length > 0 && (
+            <p className="notice notice--warn">
+              {thin.length > 3 ? `Mniej niż 2 obserwacje w ${thin.length} z ${criteria.all.length} kryteriów.` : `Mało dowodów: ${thin.map((c) => criterionName(model, c)).join(', ')}.`} Bez przykładów ocena opiera się na ogólnym wrażeniu — zbieraj je przed rozmową oceniającą.
+            </p>
+          )}
+        </section>
+
+        <section className={css.section} aria-labelledby="obs-journal">
+          <div className={css.journalHead}>
+            <h3 id="obs-journal" className="h-section">Dziennik obserwacji <span className="faint num">({detail.observations.length})</span></h3>
+            <div className={css.journalTools}>
+              <select className="select select--inline" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtruj po kryterium">
+                <option value="">Wszystkie kryteria</option>
+                {criteria.all.map((c) => (
+                  <option key={c} value={c}>{criterionName(model, c)}</option>
+                ))}
+              </select>
+              {!done && (
+                <button type="button" className="btn" onClick={() => setFormOpen((v) => !v)} aria-expanded={formOpen}>
+                  <Plus size={15} aria-hidden="true" /> Dodaj obserwację
+                </button>
+              )}
+            </div>
+          </div>
+
           {formOpen && (
             <form className="obs-form panel" onSubmit={submit}>
               <div className="obs-form__row">
@@ -89,13 +137,7 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
                 </fieldset>
               </div>
               <div className="obs-form__sdr">
-                {(
-                  [
-                    ['situation', 'Sytuacja', 'Co się działo, kiedy, w jakim kontekście?'],
-                    ['action', 'Działanie', 'Co konkretnie zrobił(a) oceniany?'],
-                    ['result', 'Rezultat', 'Jaki był skutek?'],
-                  ] as const
-                ).map(([k, label, ph]) => (
+                {SDR.map(([k, label, ph]) => (
                   <label key={k} className="field">
                     <span className="field__label">{label}</span>
                     <textarea className="textarea" rows={3} required placeholder={ph} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
@@ -110,81 +152,60 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
             </form>
           )}
 
-          <div className="timeline-head">
-            <h3 className="h-section">Dziennik obserwacji <span className="faint num">({detail.observations.length})</span></h3>
-            <select className="select select--inline" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtruj po kryterium">
-              <option value="">Wszystkie kryteria</option>
-              {criteria.all.map((c) => (
-                <option key={c} value={c}>{criterionName(model, c)}</option>
-              ))}
-            </select>
-          </div>
           {list.length === 0 ? (
             <p className="muted">Brak obserwacji{filter ? ' dla tego kryterium' : ''}. Zapisuj je na bieżąco — po kilku miesiącach trudno odtworzyć szczegóły.</p>
           ) : (
-            <ol className="timeline">
+            <ol className={css.list} aria-label="Obserwacje">
               {list.map((o) => (
-                <li key={o.id} className="timeline__item">
-                  <span className="timeline__date num">{fmtDate(o.date)}</span>
-                  <div className="timeline__body">
-                    <div className="timeline__meta">
-                      <strong title={criterionName(model, o.criterionId)}>{criterionName(model, o.criterionId)}</strong>
-                      <span className={`tag ${o.kind === 'STRENGTH' ? 'tag--ok' : 'tag--warn'}`}>{o.kind === 'STRENGTH' ? 'mocna strona' : 'do rozwoju'}</span>
-                    </div>
-                    <dl className="sdr">
-                      <dt>Sytuacja</dt>
-                      <dd>{o.situation}</dd>
-                      <dt>Działanie</dt>
-                      <dd>{o.action}</dd>
-                      <dt>Rezultat</dt>
-                      <dd>{o.result}</dd>
-                    </dl>
+                <li key={o.id} className={css.card}>
+                  <div className={css.cardMeta}>
+                    <span className={`${css.cardDate} num`}>{fmtDate(o.date)}</span>
+                    <strong className={css.cardCrit}>{criterionName(model, o.criterionId)}</strong>
+                    <span className={`tag ${o.kind === 'STRENGTH' ? 'tag--ok' : 'tag--warn'}`}>{o.kind === 'STRENGTH' ? 'mocna strona' : 'do rozwoju'}</span>
                   </div>
+                  <dl className={css.sdr}>
+                    {SDR.map(([k, label]) => (
+                      <div key={k}>
+                        <dt>{label}</dt>
+                        <dd>{o[k]}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </li>
               ))}
             </ol>
           )}
-        </div>
+        </section>
 
-        <aside className="two-col__side">
-          <h3 className="h-sub">Pokrycie kryteriów dowodami</h3>
-          <ul className="coverage">
-            {criteria.all.map((c) => (
-              <li key={c}>
-                <button type="button" className={`coverage__row ${filter === c ? 'is-active' : ''}`} onClick={() => setFilter(filter === c ? '' : c)}>
-                  <span className="coverage__name" title={criterionName(model, c)}>{criterionName(model, c)}</span>
-                  <span className="coverage__bar" aria-hidden="true">
-                    {Array.from({ length: Math.max(3, counts[c]) }, (_, i) => (
-                      <span key={i} className={i < counts[c] ? 'is-on' : ''} />
-                    ))}
-                  </span>
-                  <span className={`coverage__n num ${counts[c] < 2 ? 'is-thin' : ''}`}>{counts[c]}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {thin.length > 0 && (
-            <p className="notice notice--warn" style={{ marginTop: 12 }}>
-              {thin.length > 3 ? `Mniej niż 2 obserwacje w ${thin.length} z ${criteria.all.length} kryteriów.` : `Mało dowodów: ${thin.map((c) => criterionName(model, c)).join(', ')}.`} Bez przykładów ocena opiera się na ogólnym wrażeniu — zbieraj je przed rozmową oceniającą.
-            </p>
-          )}
+        {!detail.signedByEvaluatorOn && <WorkingNotes caseId={detail.id} initial={detail.workingNotes ?? ''} />}
 
-          {!detail.signedByEvaluatorOn && <WorkingNotes caseId={detail.id} initial={detail.workingNotes ?? ''} />}
-
-          {!done && (
-            <div className="side-cta">
-              <h3 className="h-sub">Ocena</h3>
-              <p className="small muted">Gdy zbliża się termin oceny, zakończ okres obserwacji i przejdź do rozmowy oceniającej.</p>
-              <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'START_ASSESSMENT')} onClick={start}>
-                Zakończ obserwacje i przejdź do oceny
-              </button>
-              <MutationError error={act.error} />
-            </div>
-          )}
-        </aside>
+        {!done && (
+          <section className={css.next} aria-labelledby="obs-next">
+            <h3 id="obs-next" className="h-section">Co dalej?</h3>
+            <p className="small">Gdy zbliża się termin oceny, zakończ okres obserwacji i przejdź do rozmowy oceniającej.</p>
+            <button type="button" className="btn btn--primary" disabled={act.isPending || !allows(detail, 'START_ASSESSMENT')} onClick={start}>
+              Zakończ obserwacje i przejdź do oceny
+            </button>
+            <MutationError error={act.error} />
+          </section>
+        )}
       </div>
     </div>
   )
+}
+
+const SDR = [
+  ['situation', 'Sytuacja', 'Co się działo, kiedy, w jakim kontekście?'],
+  ['action', 'Działanie', 'Co konkretnie zrobił(a) oceniany?'],
+  ['result', 'Rezultat', 'Jaki był skutek?'],
+] as const
+
+/** Polish plural of „obserwacja” for a count (1 obserwacja, 2–4 obserwacje, 5+ obserwacji). */
+function obsWord(n: number): string {
+  if (n === 1) return 'obserwacja'
+  const d = n % 10
+  const t = n % 100
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? 'obserwacje' : 'obserwacji'
 }
 
 /**
@@ -195,8 +216,7 @@ function WorkingNotes({ caseId, initial }: { caseId: string; initial: string }) 
   const patch = usePatchCase(caseId)
   const [text, setText] = useState(initial)
   return (
-    <div className="side-cta">
-      <h3 className="h-sub">Notatki robocze</h3>
+    <Disclosure title="Notatki robocze" bodyClassName={css.notesBody}>
       <p className="small muted">
         Tylko dla Ciebie, bez skutków prawnych: nie trafiają do arkusza ani do ocenianego. Oceny cząstkowe, uzasadnienie i
         IPRZ wpiszesz na etapie rozmowy oceniającej.
@@ -211,6 +231,6 @@ function WorkingNotes({ caseId, initial }: { caseId: string; initial: string }) 
       />
       {patch.isSuccess && <p className="small muted" aria-live="polite">Zapisano.</p>}
       <MutationError error={patch.error} />
-    </div>
+    </Disclosure>
   )
 }
