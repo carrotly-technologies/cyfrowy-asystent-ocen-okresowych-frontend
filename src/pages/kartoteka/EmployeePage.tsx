@@ -129,53 +129,68 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
       <dd className="num">{fmtDate(e.nextEvaluationDueOn)}</dd>
     </>
   )
+  // One key–value row of „Dane w kartotece” (`.table--kv`: label | value, stacked on a phone).
+  const row = (label: string, value: ReactNode, className?: string) => (
+    <tr>
+      <th scope="row">{label}</th>
+      <td className={className}>{value}</td>
+    </tr>
+  )
   const dataSection = (
-    <section className="panel panel__body" aria-labelledby="data-h">
-      <h2 id="data-h" className="h-section">Dane w kartotece</h2>
+    <section className="section" aria-labelledby="data-h">
+      <div className="section__head">
+        <h2 id="data-h" className="h-section">Dane w kartotece</h2>
+        {canEdit && !editing && <button type="button" className="btn" onClick={() => setEditing(true)}>Edytuj dane</button>}
+      </div>
       {editing ? (
-        <>
+        <div className="panel panel__body">
           <EmployeeForm initial={fieldsOf(e)} units={units.length ? units : [e.unit]} submitLabel="Zapisz zmiany" pending={save.isPending} onSubmit={(f) => save.mutate(f)} onCancel={() => setEditing(false)} />
           <p className="small faint">Zmiana oceniającego przenosi ocenę w toku do nowego oceniającego (wpis w historii teczki).</p>
           <MutationError error={save.error} />
-        </>
+        </div>
       ) : (
-        <dl className={team ? 'dl emp-cycle-dl' : 'dl'}>
-          <dt>Status</dt><dd>{e.employment === 'URZEDNIK' ? 'urzędnik służby cywilnej' : 'pracownik służby cywilnej'}</dd>
-          {e.employment === 'URZEDNIK' && (
-            <>
-              <dt>Mianowanie / stopień</dt>
-              <dd>{e.appointedYear ?? '—'} · {e.grade ? `${e.grade} stopień` : 'brak danych'}{e.gradeGrantedOn && ` (od ${fmtDate(e.gradeGrantedOn)})`}</dd>
-            </>
-          )}
-          <dt>Zatrudnienie na czas nieokreślony od</dt><dd>{e.indefiniteSince ? fmtDate(e.indefiniteSince) : '—'}</dd>
-          <dt>Oceniający</dt>
-          <dd>
-            {e.evaluatorName ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : 'nie przypisano'}
-            {e.substitution && <span className="small faint block">zastępstwo do {fmtDate(e.substitution.to)}</span>}
-          </dd>
-          <dt>Arkusz</dt>
-          <dd className="emp-dl-text">
-            {e.sheetId} {!e.currentCase?.sheetId && <span className="faint">— sugestia: {e.sheetSuggestion.reason} ({e.sheetSuggestion.legalBasis}); decyduje oceniający</span>}
-          </dd>
-          {team && (
-            <>
-              <dt>Bieżący termin</dt>
-              <dd className="emp-dl-text">
-                {running && running.nextDeadline ? (
-                  <>
-                    <span className="block small">
-                      {due && due.date !== running.nextDeadline.date ? 'Najbliższy termin' : 'Termin'}: {running.nextDeadline.label}
-                    </span>
-                    <DeadlineText deadline={running.nextDeadline} />
-                  </>
-                ) : (
-                  '—'
+        <div className="panel table-scroll">
+          <table className="table table--kv">
+            <caption className="visually-hidden">Dane w kartotece</caption>
+            <tbody>
+              {row('Status', e.employment === 'URZEDNIK' ? 'urzędnik służby cywilnej' : 'pracownik służby cywilnej')}
+              {e.employment === 'URZEDNIK' &&
+                row(
+                  'Mianowanie / stopień',
+                  <>{e.appointedYear ?? '—'} · {e.grade ? `${e.grade} stopień` : 'brak danych'}{e.gradeGrantedOn && ` (od ${fmtDate(e.gradeGrantedOn)})`}</>,
                 )}
-              </dd>
-              {nextEvaluation}
-            </>
-          )}
-        </dl>
+              {row('Zatrudnienie na czas nieokreślony od', e.indefiniteSince ? fmtDate(e.indefiniteSince) : '—', 'num')}
+              {row(
+                'Oceniający',
+                <>
+                  {e.evaluatorName ? evaluatorLabel(e.evaluatorName, e.effectiveEvaluatorName) : 'nie przypisano'}
+                  {e.substitution && <span className="small faint block">zastępstwo do {fmtDate(e.substitution.to)}</span>}
+                </>,
+              )}
+              {row(
+                'Arkusz',
+                <>
+                  {e.sheetId} {!e.currentCase?.sheetId && <span className="faint">— sugestia: {e.sheetSuggestion.reason} ({e.sheetSuggestion.legalBasis}); decyduje oceniający</span>}
+                </>,
+              )}
+              {team &&
+                row(
+                  'Bieżący termin',
+                  running && running.nextDeadline ? (
+                    <>
+                      <span className="block small">
+                        {due && due.date !== running.nextDeadline.date ? 'Najbliższy termin' : 'Termin'}: {running.nextDeadline.label}
+                      </span>
+                      <DeadlineText deadline={running.nextDeadline} />
+                    </>
+                  ) : (
+                    '—'
+                  ),
+                )}
+              {team && row('Następna ocena okresowa (przewidywana)', fmtDate(e.nextEvaluationDueOn), 'num')}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )
@@ -279,7 +294,6 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
         </div>
         {canArchive && !editing && (
           <div className="btn-row">
-            {canEdit && <button type="button" className="btn" onClick={() => setEditing(true)}>Edytuj dane</button>}
             <button type="button" className="btn btn--ghost" onClick={() => setConfirmDelete(true)}>
               <Trash2 size={15} aria-hidden="true" /> Archiwizuj i anonimizuj dane
             </button>
@@ -296,7 +310,7 @@ export function EmployeePage({ variant = 'register' }: { variant?: 'register' | 
 
       {team ? (
         <>
-          <div className="section">{dataSection}</div>
+          {dataSection}
           <History employeeId={id} action={assessAction} />
           <Absences employeeId={id} canEdit={canEdit} onChange={refresh} dueShownIn="„Bieżący termin” w „Dane w kartotece”" />
         </>

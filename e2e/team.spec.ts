@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { apiGet, apiPost, confirmDialog, resetDemo, sessionFor, signIn } from './helpers.ts'
 
 /** "Oceny zespołu" (/zespol) of supervisor j.kaminska, against the backend demo seed. */
@@ -6,6 +6,10 @@ const SUPERVISOR = 'j.kaminska'
 // „Akcje” is read by screen readers only (the column of „Prowadź ocenę” / „Zobacz ocenę” buttons).
 const HEADERS = ['Pracownik', 'Stanowisko', 'Etap', 'Termin', 'Status', 'Akcje']
 const NEXT_EVALUATION = 'Następna ocena okresowa (przewidywana)'
+
+/** The value cell of the key–value row labelled `label` in „Dane w kartotece”. */
+const valueIn = (region: Locator, label: string) =>
+  region.getByRole('row').filter({ has: region.page().getByRole('rowheader', { name: label, exact: true }) }).getByRole('cell')
 
 test.beforeEach(async ({ request }) => {
   await resetDemo(request)
@@ -198,17 +202,16 @@ test('Profil pracownika: przewidywana data następnej oceny w „Dane w kartotec
 
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol/p-nowak')
-  const cycle = page.getByRole('region', { name: 'Dane w kartotece' })
-  await expect(cycle.getByRole('term').filter({ hasText: NEXT_EVALUATION })).toBeVisible()
-  await expect(cycle.getByRole('term').filter({ hasText: NEXT_EVALUATION }).locator('xpath=following-sibling::dd[1]')).toHaveText(expected)
+  const data = page.getByRole('region', { name: 'Dane w kartotece' })
+  await expect(data.getByRole('rowheader', { name: NEXT_EVALUATION })).toBeVisible()
+  await expect(valueIn(data, NEXT_EVALUATION)).toHaveText(expected)
 
   await page.goto('/zespol')
   await page.getByRole('link', { name: 'Pokaż pracownika: Piotr Wójcik' }).click()
   await expect(page).toHaveURL(/\/zespol\/[^/]+$/)
-  const wojcikCycle = page.getByRole('region', { name: 'Dane w kartotece' })
-  const term = wojcikCycle.getByRole('term').filter({ hasText: NEXT_EVALUATION })
-  await expect(term).toBeVisible()
-  await expect(term.locator('xpath=following-sibling::dd[1]')).toHaveText('—')
+  const wojcikData = page.getByRole('region', { name: 'Dane w kartotece' })
+  await expect(wojcikData.getByRole('rowheader', { name: NEXT_EVALUATION })).toBeVisible()
+  await expect(valueIn(wojcikData, NEXT_EVALUATION)).toHaveText('—')
 
   const hr = await sessionFor(browser, 'a.lis')
   await hr.goto('/kartoteka/p-nowak')
@@ -218,19 +221,16 @@ test('Profil pracownika: przewidywana data następnej oceny w „Dane w kartotec
   await hr.context().close()
 })
 
-/** The `<dd>` right after the `<dt>` named `term` in a section. */
-const valueOf = (region: import('@playwright/test').Locator, term: string) =>
-  region.getByRole('term').filter({ hasText: term }).locator('xpath=following-sibling::dd[1]')
 
 test('Profil pracownika: „Bieżący termin” w „Dane w kartotece” (termin oceny w toku albo „—”)', async ({ page }) => {
   await signIn(page, SUPERVISOR)
   await page.goto('/zespol/p-nowak')
   const data = page.getByRole('region', { name: 'Dane w kartotece' })
-  await expect(valueOf(data, 'Bieżący termin')).toContainText(/(Najbliższy termin|Termin): /)
-  await expect(valueOf(data, 'Bieżący termin')).toContainText(/\d{2}\.\d{2}\.\d{4}/)
+  await expect(valueIn(data, 'Bieżący termin')).toContainText(/(Najbliższy termin|Termin): /)
+  await expect(valueIn(data, 'Bieżący termin')).toContainText(/\d{2}\.\d{2}\.\d{4}/)
 
   await page.goto('/zespol/p-pietrzak')
-  await expect(valueOf(page.getByRole('region', { name: 'Dane w kartotece' }), 'Bieżący termin')).toHaveText('—')
+  await expect(valueIn(page.getByRole('region', { name: 'Dane w kartotece' }), 'Bieżący termin')).toHaveText('—')
 })
 
 test('Profil pracownika: „Przeprowadź ocenę” bez oceny w toku rozpoczyna cykl i otwiera nową teczkę', async ({ page }) => {
@@ -283,5 +283,52 @@ test('Kartoteka HR (/kartoteka/:id) bez zmian: „Bieżąca ocena” obok danych
   await expect(page.getByRole('region', { name: 'Bieżąca ocena' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Rozpocznij nowy cykl oceny' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Przeprowadź ocenę' })).toHaveCount(0)
-  await expect(page.getByRole('region', { name: 'Dane w kartotece' }).getByRole('term').filter({ hasText: 'Bieżący termin' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Dane w kartotece' }).getByRole('rowheader', { name: 'Bieżący termin' })).toHaveCount(0)
+})
+
+test('Profil pracownika: „Dane w kartotece” jak „Historia ocen”: nagłówek i „Edytuj dane” nad tabelą klucz–wartość', async ({ page, browser }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol/p-nowak')
+  const data = page.getByRole('region', { name: 'Dane w kartotece' })
+  const table = data.getByRole('table', { name: 'Dane w kartotece' })
+  await expect(table).toHaveClass(/\btable\b/)
+  await expect(table.getByRole('rowheader')).toHaveText([
+    'Status',
+    'Mianowanie / stopień',
+    'Zatrudnienie na czas nieokreślony od',
+    'Oceniający',
+    'Arkusz',
+    'Bieżący termin',
+    NEXT_EVALUATION,
+  ])
+  // The supervisor does not edit register data.
+  await expect(data.getByRole('button', { name: 'Edytuj dane' })).toHaveCount(0)
+
+  const hr = await sessionFor(browser, 'a.lis')
+  await hr.goto('/kartoteka/p-nowak')
+  const hrData = hr.getByRole('region', { name: 'Dane w kartotece' })
+  const hrTable = hrData.getByRole('table', { name: 'Dane w kartotece' })
+  await expect(hrTable.getByRole('rowheader').first()).toHaveText('Status')
+  const edit = hrData.getByRole('button', { name: 'Edytuj dane' })
+  // Heading and button sit above the framed table, as in „Historia ocen” and „Nieobecności”.
+  const [editBox, tableBox] = await Promise.all([edit.boundingBox(), hrTable.boundingBox()])
+  expect(editBox!.y + editBox!.height).toBeLessThanOrEqual(tableBox!.y)
+
+  await edit.click()
+  await expect(hrTable).toHaveCount(0)
+  await hrData.getByRole('button', { name: 'Anuluj' }).click()
+  await expect(hrTable).toBeVisible()
+  await hr.context().close()
+})
+
+test('Profil pracownika na telefonie: w „Dane w kartotece” etykieta nad wartością, bez przewijania w poziomie', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  await signIn(page, SUPERVISOR)
+  await page.goto('/zespol/p-nowak')
+  const data = page.getByRole('region', { name: 'Dane w kartotece' })
+  const label = data.getByRole('rowheader', { name: NEXT_EVALUATION })
+  const [labelBox, valueBox] = await Promise.all([label.boundingBox(), valueIn(data, NEXT_EVALUATION).boundingBox()])
+  expect(labelBox!.y + labelBox!.height).toBeLessThanOrEqual(valueBox!.y + 1)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(0)
 })

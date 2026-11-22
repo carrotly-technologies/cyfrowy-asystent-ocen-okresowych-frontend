@@ -838,6 +838,53 @@
   white-space: nowrap;
 }
 
+/* Key–value table (`<table class="table table--kv">`, one `<th scope="row">` label + `<td>` value per row): same
+   paddings, lines and type as the data tables, label in secondary text; on a phone the label sits above the value.
+   Used by „Dane w kartotece” on the employee profile; reusable for any label | value list. */
+.table--kv th[scope='row'] {
+  width: 35%;
+  padding: var(--s-3) var(--pad-cell-x);
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text-secondary);
+  font-size: inherit;
+  font-weight: var(--weight-regular);
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+  vertical-align: top;
+}
+
+.table.table--kv td {
+  max-width: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  vertical-align: top;
+}
+
+.table--kv tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .table--kv tr,
+  .table--kv th[scope='row'],
+  .table.table--kv td {
+    display: block;
+    width: auto;
+  }
+
+  .table--kv th[scope='row'] {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .table.table--kv td {
+    padding-top: var(--s-1);
+  }
+}
+
 /* Buttons in a table never get cut with "…": the action cell grows (the table scrolls inside its panel) and stacks
    several buttons. */
 .table td.cell-action {
