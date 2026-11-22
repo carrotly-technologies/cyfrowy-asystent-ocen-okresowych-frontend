@@ -1,37 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
 import { fmtDate, fmtNumber } from '../lib/format'
+import { useMedia, useWidth } from './chartHooks'
 import s from './Partner.module.css'
 
 const PHONE = '(max-width: 767px)'
-
-/** Width of an element in CSS px, kept up to date with a ResizeObserver. */
-function useWidth<T extends HTMLElement>(fallback: number) {
-  const ref = useRef<T>(null)
-  const [width, setWidth] = useState(fallback)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const measure = () => setWidth(Math.max(1, Math.round(el.getBoundingClientRect().width)))
-    measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-  return [ref, width] as const
-}
-
-function useMedia(query: string) {
-  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const onChange = () => setMatches(mq.matches)
-    onChange()
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [query])
-  return matches
-}
 
 /**
  * Line chart of one person's 1–5 wellbeing index over the pulses, as wide as its container (/dobrostan/:personId).

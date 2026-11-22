@@ -75,7 +75,8 @@ export interface TeamMember {
   lastPulse: string | null
   trend: TrendKind
   series: { date: string; index: number }[]
-  signals: Pick<Signal, 'kind' | 'level' | 'title'>[]
+  /** Flags with their reasons (`GET /api/partner/team`, same as on the card); no actions. */
+  signals: Pick<Signal, 'kind' | 'level' | 'title' | 'reasons'>[]
   notes: string[]
 }
 

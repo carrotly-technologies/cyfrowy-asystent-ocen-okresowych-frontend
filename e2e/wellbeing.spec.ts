@@ -37,9 +37,10 @@ test('Dobrostan: lista jak w „Oceny zespołu”, karty, wyjaśnienie, że wirt
   // Employees: ResultTable with column headers, a "Zobacz kartę" action and no click handler on table rows.
   const list = page.getByRole('region', { name: 'Puls pracowników' })
   const table = list.getByRole('table', { name: 'Puls pracowników' })
-  for (const name of ['Pracownik', 'Wskaźnik dobrostanu (1–5)', 'Trend', 'Sygnały', 'Akcje']) {
+  for (const name of ['Pracownik', 'Trend', 'Sygnały', 'Akcje']) {
     await expect(table.getByRole('columnheader', { name })).toHaveCount(1)
   }
+  await expect(table.getByRole('columnheader')).toHaveCount(4)
   await expect(list.locator('.section__head')).toContainText(/\d+ os(oba|oby|ób)/)
   await expect(page.locator('main tr.is-link')).toHaveCount(0)
   const rows = table.getByRole('row')
@@ -58,7 +59,7 @@ test('Dobrostan: lista jak w „Oceny zespołu”, karty, wyjaśnienie, że wirt
   const counter = page.getByRole('list', { name: 'Liczba sygnałów według rodzaju' }).getByRole('listitem').first().locator('> *')
   const chartCard = page.getByRole('region', { name: 'Puls zespołu' }).locator('section').first()
   expect(await counter.evaluate(cardLook)).toBe(await chartCard.evaluate(cardLook))
-  await expect(chartCard.getByRole('img', { name: /Średni indeks pulsu zespołu/ })).toBeVisible()
+  await expect(chartCard.getByRole('group', { name: /Średni indeks pulsu zespołu/ })).toBeVisible()
 
   // Phone: no horizontal scroll.
   await page.setViewportSize({ width: 375, height: 800 })
@@ -140,4 +141,113 @@ test('Karta pracownika w Dobrostanie: sygnały i wykres pulsu dopasowują się d
   await expect(page).toHaveURL(/\/zespol\/[^/]+$/)
   await expect(page.locator('main .page-head h1')).toBeVisible()
   await expect.poll(async () => Math.abs((await left()) - wellbeingLeft)).toBeLessThanOrEqual(1)
+})
+
+test('Dobrostan: jedna kolumna „Trend” z wykresem, etykietą i ostatnim wskaźnikiem', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/dobrostan')
+  const table = page.getByRole('table', { name: 'Puls pracowników' })
+  const row = table.getByRole('row').filter({ hasText: 'Michał Lewandowski' })
+  const trend = row.getByRole('cell').nth(1)
+  await expect(trend.locator('svg')).toHaveCount(1)
+  await expect(trend).toContainText('nagły spadek')
+  await expect(trend).toContainText(/\d(,\d)? · ostatni \d{2}\.\d{2}\.\d{4}/)
+  // One text for a screen reader: name, trend, last index and date; the sparkline and the badge are hidden.
+  await expect(trend.locator('.visually-hidden')).toHaveText(/^Puls: Michał Lewandowski, nagły spadek, ostatni wskaźnik \d(,\d)?, \d{2}\.\d{2}\.\d{4}$/)
+  await expect(trend.getByRole('img')).toHaveCount(0)
+
+  // No pulse: just the note, no chart and no label.
+  const none = table.getByRole('row').filter({ hasText: 'Katarzyna Michalska' }).getByRole('cell').nth(1)
+  await expect(none).toHaveText('Trend:nie wypełnia pulsu')
+  await expect(none.locator('svg')).toHaveCount(0)
+})
+
+test('Dobrostan: wykres „Puls zespołu” na całą szerokość, wartości, wyróżniony ostatni okres, tooltip', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/dobrostan')
+  const card = page.getByRole('region', { name: 'Puls zespołu' }).locator('section').first()
+  const chart = card.getByRole('group', { name: /Średni indeks pulsu zespołu/ })
+  await expect(chart).toBeVisible()
+  for (const width of [768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await expect
+      .poll(async () => {
+        const [c, b] = await Promise.all([chart.boundingBox(), card.boundingBox()])
+        return c && b ? b.width - c.width : 999
+      })
+      .toBeLessThan(80)
+  }
+  expect(Math.round((await chart.boundingBox())!.height)).toBe(220)
+
+  const bars = chart.getByRole('img')
+  const n = await bars.count()
+  expect(n).toBeGreaterThan(1)
+  // A value above every visible bar, the last period highlighted (accent), earlier ones in accent-border.
+  await expect(bars.last()).toHaveAccessibleName(/^\d{2}\.\d{2}–\d{2}\.\d{2}: indeks \d(,\d)?, odpowiedzi: \d+$/)
+  const fills = await bars.evaluateAll((els) => els.map((el) => getComputedStyle(el.querySelector('path')!).fill))
+  const tokens = await page.evaluate(() => {
+    const probe = document.createElement('div')
+    document.body.append(probe)
+    const read = (v: string) => ((probe.style.color = `var(${v})`), getComputedStyle(probe).color)
+    const out = { accent: read('--accent'), border: read('--accent-border') }
+    probe.remove()
+    return out
+  })
+  expect(fills.at(-1)).toBe(tokens.accent)
+  expect(fills.slice(0, -1).every((f) => f === tokens.border)).toBe(true)
+
+  // Keyboard focus shows the tooltip.
+  await bars.last().focus()
+  const tooltip = card.locator('[class*="tooltip"]')
+  await expect(tooltip).toHaveText(/^\d{2}\.\d{2}–\d{2}\.\d{2}: indeks \d(,\d)?, odpowiedzi: \d+$/)
+  const focused = await tooltip.textContent()
+  // Hover on another bar moves it.
+  await bars.first().hover()
+  await expect(tooltip).toHaveCount(1)
+  await expect(tooltip).not.toHaveText(focused!)
+
+  // Screen-reader list of values stays.
+  await expect(card.locator('ul.visually-hidden li')).toHaveCount(n)
+
+  // Phone: shorter, no horizontal scroll.
+  await page.setViewportSize({ width: 375, height: 800 })
+  await expect.poll(async () => Math.round((await chart.boundingBox())!.height)).toBe(160)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
+
+test('Dobrostan: okres z za małą liczbą odpowiedzi to niski kreskowany słupek „ukryte”', async ({ page }) => {
+  // r.sikora's team is small, so every period is hidden.
+  await signIn(page, 'r.sikora')
+  await page.goto('/dobrostan')
+  const chart = page.getByRole('group', { name: /Średni indeks pulsu zespołu/ })
+  const bars = chart.getByRole('img')
+  await expect(bars.first()).toHaveAccessibleName(/: za mało odpowiedzi \(min\. \d+ os(oba|oby|ób)\)$/)
+  await expect(bars.first()).toContainText('ukryte')
+  expect(await bars.first().locator('path').getAttribute('fill')).toMatch(/^url\(#/)
+})
+
+test('Dobrostan: kafelki sygnałów mówią, co oznacza sygnał, kogo dotyczy i dlaczego', async ({ page }) => {
+  await signIn(page, SUPERVISOR)
+  await page.goto('/dobrostan')
+  const tiles = page.getByRole('list', { name: 'Liczba sygnałów według rodzaju' })
+  const overload = tiles.getByRole('listitem').filter({ has: page.getByRole('heading', { name: /^Przeciążenie\s*: \d+ os(oba|oby|ób)$/ }) })
+  await expect(overload).toHaveCount(1)
+  await expect(overload).toContainText('Za dużo pracy')
+  const people = overload.getByRole('list', { name: 'Przeciążenie: kogo dotyczy' }).getByRole('listitem')
+  expect(await people.count()).toBeGreaterThan(0)
+  // Alert first, a level as text (not only colour), a reason with its source, a link to the card.
+  await expect(people.first()).toContainText('Alert')
+  await expect(people.first()).toContainText(/Puls|Zadania|Zakres obowiązków|Nieobecności|Obserwacje/)
+  const link = people.first().getByRole('link')
+  const name = await link.textContent()
+  await link.click()
+  await expect(page).toHaveURL(/\/dobrostan\/p-/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(name!)
+
+  // Phone: one tile per row and no horizontal scroll.
+  await page.goBack()
+  await page.setViewportSize({ width: 375, height: 800 })
+  const boxes = await tiles.locator('> li').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().left))
+  expect(new Set(boxes.map(Math.round)).size).toBe(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
