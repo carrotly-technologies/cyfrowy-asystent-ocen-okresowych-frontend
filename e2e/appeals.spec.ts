@@ -79,3 +79,37 @@ test('zmiana oceny przez DG: baner i blokada części II u oceniającego, brak k
   await expect(employee.getByText(/Termin na wniesienie sprzeciwu/)).toHaveCount(0)
   await employee.context().close()
 })
+
+test('arkusz A: oceniana zapoznaje się (z potwierdzeniem) i wnosi sprzeciw do oceniającego, który go rozstrzyga', async ({ page, browser }) => {
+  const employee = await sessionFor(browser, 'm.wasilewska')
+  await employee.goto('/moje-oceny/c-202')
+  await employee.getByRole('button', { name: 'Zapoznałem(-am) się z oceną' }).click()
+  const ack = employee.getByRole('dialog', { name: 'Potwierdzić zapoznanie z oceną?' })
+  await expect(ack.getByText(/7 dni na wniesienie sprzeciwu do osoby, która dokonała oceny okresowej/)).toBeVisible()
+  await confirmDialog(employee, 'Potwierdzić zapoznanie z oceną?', 'Potwierdzam zapoznanie')
+  await expect(employee.getByText(/Sprzeciw trafi do: osoby, która dokonała oceny okresowej/)).toBeVisible()
+  await employee.getByLabel('Treść sprzeciwu').fill('Nie zgadzam się z oceną kryterium „Zarządzanie strategiczne”.')
+  await employee.getByRole('button', { name: 'Wnieś sprzeciw' }).click()
+  await confirmDialog(employee, 'Wnieść sprzeciw od oceny?', 'Tak, wnoszę sprzeciw')
+  // "Co dalej?" now says what happens with the filed objection, not the 7 days again.
+  await expect(employee.getByText(/Sprzeciw złożony 21\.11\.2026/)).toBeVisible()
+  await expect(employee.getByText(/w ciągu 7 dni od zapoznania/)).toHaveCount(0)
+  await employee.context().close()
+
+  await signIn(page, 'k.zawadzki')
+  await page.goto('/teczka/c-202')
+  await page.getByRole('link', { name: 'Rozpatrz sprzeciw' }).click()
+  await expect(page).toHaveURL(/\/sprzeciwy\/c-202/)
+  await expect(page.getByRole('heading', { name: 'Rozstrzygnięcie sprzeciwu' })).toBeVisible()
+})
+
+test('narzędzia demo (reset danych, status API) są ukryte dla dyrektora generalnego i ocenianego', async ({ page, browser }) => {
+  await signIn(page, 'b.wisniewska')
+  await expect(page.getByRole('button', { name: 'Reset danych' })).toHaveCount(0)
+  const employee = await sessionFor(browser, 't.jankowski')
+  await expect(employee.getByRole('button', { name: 'Reset danych' })).toHaveCount(0)
+  await employee.context().close()
+  const hr = await sessionFor(browser, 'a.lis')
+  await expect(hr.getByRole('button', { name: 'Reset danych' }).first()).toBeAttached()
+  await hr.context().close()
+})

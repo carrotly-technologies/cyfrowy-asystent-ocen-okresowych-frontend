@@ -3,9 +3,28 @@ import { fmtDate, fmtDaysLeft } from '../lib/format'
 
 const TONE = { OK: 'ok', SOON: 'warn', OVERDUE: 'danger', NONE: 'none' } as const
 
-/** "12.12.2026 · za 21 dni" with the relative part coloured by state. */
-export function DeadlineText({ deadline, showLabel = false, showLegal = false }: { deadline: Deadline | null; showLabel?: boolean; showLegal?: boolean }) {
-  if (!deadline) return <span className="faint">—</span>
+/** The legal basis without the Civil Code citation of the working-day shift (jargon for the assessed person). */
+function plainLegal(legalBasis: string): string {
+  return legalBasis.replace(/\s*\(art\. 115 KC\)/g, '')
+}
+
+/**
+ * "12.12.2026 · za 21 dni" with the relative part coloured by state. `plain`: for the assessed person, the shift to
+ * the next working day is said in words only (no "art. 115 KC").
+ */
+export function DeadlineText({
+  deadline: raw,
+  showLabel = false,
+  showLegal = false,
+  plain = false,
+}: {
+  deadline: Deadline | null
+  showLabel?: boolean
+  showLegal?: boolean
+  plain?: boolean
+}) {
+  if (!raw) return <span className="faint">—</span>
+  const deadline = plain ? { ...raw, legalBasis: plainLegal(raw.legalBasis) } : raw
   const tone = TONE[deadline.state]
   const full = [
     showLabel ? deadline.label : '',

@@ -55,6 +55,9 @@ export default function App() {
           </Route>
           <Route element={<RequireRole roles={['DIRECTOR']} />}>
             <Route path="/sprzeciwy" element={<ObjectionsPage />} />
+          </Route>
+          {/* Sheet A: the evaluator decides the sprzeciw (art. 83 ust. 2); the API checks who may decide. */}
+          <Route element={<RequireRole roles={['DIRECTOR', 'SUPERVISOR']} />}>
             <Route path="/sprzeciwy/:id" element={<ObjectionCasePage />} />
           </Route>
           <Route element={<RequireRole roles={['HR', 'ADMIN', 'SUPERVISOR']} />}>

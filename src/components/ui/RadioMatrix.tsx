@@ -133,13 +133,16 @@ export function RadioMatrix({ id, label, rowHeader, columns, rows, groups, value
 
   return (
     <div className={s.stack}>
-      <ul className={s.key} aria-label={`${label}: skala`}>
-        {columns.map((c) => (
-          <li key={c.value}>
-            <span className={s.keyValue}>{c.value}</span> {c.label.toLocaleLowerCase('pl-PL')}
-          </li>
-        ))}
-      </ul>
+      {/* The key explains the numbers; columns labelled only by their number (e.g. the pulse) need none. */}
+      {columns.some((c) => c.label !== c.value) && (
+        <ul className={s.key} aria-label={`${label}: skala`}>
+          {columns.map((c) => (
+            <li key={c.value}>
+              <span className={s.keyValue}>{c.value}</span> {c.label.toLocaleLowerCase('pl-PL')}
+            </li>
+          ))}
+        </ul>
+      )}
       {all.map((g, gi) => {
         const headingId = `${uid}-g${gi}`
         const body = g.rows.map((r) => {
@@ -159,7 +162,11 @@ export function RadioMatrix({ id, label, rowHeader, columns, rows, groups, value
                 ))}
               </div>
               <p className={cx(s.chosen, !chosen && s.chosenNone)}>
-                {chosen ? [chosen.sublabel, chosen.label.toLocaleLowerCase('pl-PL')].filter(Boolean).join(': ') : 'Nie wybrano'}
+                {chosen
+                  ? chosen.label === chosen.value
+                    ? `Wybrano: ${chosen.value}`
+                    : [chosen.sublabel, chosen.label.toLocaleLowerCase('pl-PL')].filter(Boolean).join(': ')
+                  : 'Nie wybrano'}
               </p>
             </fieldset>
           )

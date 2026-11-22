@@ -1,9 +1,8 @@
 import { Check, X } from 'lucide-react'
-import type { CaseAction, CaseDetail, FormalCheckItem } from '../../api/cases'
+import type { CaseAction, CaseDetail } from '../../api/cases'
 import { useState } from 'react'
 import { ConfirmDialog, InlineAlert } from '../../components/ui'
 import { errorMessage } from '../../api/client'
-import { SCALE_LABELS } from '../../lib/scale'
 import { useCaseAction } from '../../lib/caseQueries'
 import { fmtDate } from '../../lib/format'
 import { BlockedReason, MutationError } from './common'
@@ -34,7 +33,7 @@ export function FormalCheck({
   const act = useCaseAction(detail.id)
   const [confirming, setConfirming] = useState(false)
   const ev = detail.evaluation
-  const items = [...detail.formalCheck, ...localChecks(detail)]
+  const items = detail.formalCheck
   const errors = items.filter((i) => !i.ok)
   const signed = !!detail.signedByEvaluatorOn
   return (
@@ -99,30 +98,4 @@ export function FormalCheck({
       )}
     </section>
   )
-}
-
-/**
- * Checks the backend does not (yet) perform: the level named in the justification text must match the
- * computed level (examples E5, E7 in the official samples get this wrong).
- */
-function localChecks(detail: CaseDetail): FormalCheckItem[] {
-  if (detail.formalCheck.some((i) => /LEVEL_TEXT|level_text/.test(i.id))) return []
-  const computed = detail.evaluation?.level?.label.toLowerCase()
-  const text = detail.justification.toLowerCase()
-  if (!computed || !text.trim()) return []
-  const mentioned = Object.values(SCALE_LABELS)
-    .map((l) => l.toLowerCase())
-    .filter((l) => text.includes(l))
-    .sort((a, b) => b.length - a.length)[0]
-  const ok = !mentioned || mentioned === computed
-  return [
-    {
-      id: 'LEVEL_TEXT_CLIENT',
-      ok,
-      message: ok
-        ? 'Poziom opisany w uzasadnieniu jest zgodny z wyliczonym.'
-        : `W uzasadnieniu wpisano poziom „${mentioned}”, a wyliczony ze średniej to „${computed}”.`,
-      legalBasis: '§11 ust. 1 pkt 2 rozp. PRM z 4.04.2016',
-    },
-  ]
 }
