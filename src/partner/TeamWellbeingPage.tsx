@@ -1,15 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { Award, ChevronRight, Flame, Gauge, TrendingDown, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Award, ChevronRight, Flame, Gauge, TrendingDown, type LucideIcon } from 'lucide-react'
 import { getPartnerTeam, type PartnerTeam, type SignalKind, type SignalLevel, type TeamMember, type TeamPeriod } from '../api/partner'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { ButtonLink, Card, ClampText, InlineAlert, ResultStatus, ResultTable, ResultTableRow, type ResultTableColumn } from '../components/ui'
 import { countLabel, fmtDate, fmtNumber } from '../lib/format'
-import { PrivacyNote, SignalBadge, Sparkline, TrendBadge } from './common'
+import { PrivacyNote, Sparkline } from './common'
 import {
   ASSISTANT_INTRO,
   ASSISTANT_NAME,
   ASSISTANT_SCOPE,
   LEVEL_DOT,
+  LEVEL_LABEL,
   LEVEL_SHORT,
   SIGNAL_DESCRIPTION,
   SIGNAL_SHORT,
@@ -101,17 +102,7 @@ function MemberRow({ m }: { m: TeamMember }) {
       titleLabel={title}
       cells={[
         { label: trend, value: <TrendCell m={m} /> },
-        {
-          label: signals,
-          value: (
-            <span className={s.badges}>
-              {m.signals.length === 0 && <span className={s.muted}>brak</span>}
-              {m.signals.map((sg) => (
-                <SignalBadge key={sg.kind} kind={sg.kind} level={sg.level} />
-              ))}
-            </span>
-          ),
-        },
+        { label: signals, value: <SignalsCell m={m} /> },
       ]}
       action={
         <ButtonLink to={to} variant="secondary" size="small" aria-label={`Zobacz kartę: ${m.name}`}>
@@ -122,7 +113,10 @@ function MemberRow({ m }: { m: TeamMember }) {
   )
 }
 
-/** One trend per row: sparkline and trend label, the last index with its date underneath; read once by a screen reader. */
+/**
+ * One trend per row: the sparkline and one small line under it (index · trend name · date of the last pulse), with a
+ * warning icon for a sudden drop; read once by a screen reader.
+ */
 function TrendCell({ m }: { m: TeamMember }) {
   const last = m.series.at(-1)
   if (!last) return <span className={s.muted}>nie wypełnia pulsu</span>
@@ -134,10 +128,41 @@ function TrendCell({ m }: { m: TeamMember }) {
       </span>
       <span className={s.trendVisual} aria-hidden="true">
         <Sparkline points={m.series} label={`Puls: ${m.name}`} width={120} height={32} />
-        <TrendBadge kind={m.trend} />
       </span>
       <span className={s.trendMeta} aria-hidden="true">
-        {fmtNumber(last.index)} · ostatni {date}
+        {fmtNumber(last.index)} ·{' '}
+        {m.trend === 'SUDDEN_DROP' && <AlertTriangle size={12} aria-hidden="true" className={s.trendWarn} />}
+        {TREND_LABEL[m.trend]} · ostatni {date}
+      </span>
+    </span>
+  )
+}
+
+const LEVEL_CLASS: Record<SignalLevel, string> = { ALERT: s.lvDanger, WATCH: s.lvWarn, POSITIVE: s.lvOk }
+
+/**
+ * Only the most important signal of a person (ALERT → WATCH → POSITIVE, then in `KINDS` order) as an icon in the
+ * level colour and plain text, the rest as "+N" with a tooltip; a screen reader gets all signals with their levels.
+ */
+function SignalsCell({ m }: { m: TeamMember }) {
+  if (m.signals.length === 0) return <span className={s.muted}>brak</span>
+  const [top, ...rest] = [...m.signals].sort(
+    (a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind),
+  )
+  const Icon = SIGNAL_ICON[top.kind]
+  return (
+    <span className={s.signalCell}>
+      <span className="visually-hidden">
+        Sygnały: {[top, ...rest].map((sg) => `${SIGNAL_SHORT[sg.kind]} (${LEVEL_LABEL[sg.level]})`).join(', ')}
+      </span>
+      <span className={s.signalTop} aria-hidden="true">
+        <Icon size={16} aria-hidden="true" className={`${s.signalIcon} ${LEVEL_CLASS[top.level]}`} />
+        <ClampText className={s.signalName}>{SIGNAL_SHORT[top.kind]}</ClampText>
+        {rest.length > 0 && (
+          <span className={s.signalMore} title={`Także: ${rest.map((sg) => SIGNAL_SHORT[sg.kind]).join(', ')}`}>
+            +{rest.length}
+          </span>
+        )}
       </span>
     </span>
   )
