@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { Fragment, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { Observation } from '../../api/cases'
 import { useAddObservation, useCaseAction, usePatchCase } from '../../lib/caseQueries'
@@ -174,22 +174,24 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           {list.length === 0 ? (
             <p className="muted">Brak obserwacji{filter ? ' dla tego kryterium' : ''}. Zapisuj je na bieżąco — po kilku miesiącach trudno odtworzyć szczegóły.</p>
           ) : (
-            <ol className={css.list} aria-label="Obserwacje">
+            <ol className="timeline" aria-label="Obserwacje">
               {list.map((o) => (
-                <li key={o.id} className={css.card}>
-                  <div className={css.cardMeta}>
-                    <span className={`${css.cardDate} num`}>{fmtDate(o.date)}</span>
-                    <strong className={css.cardCrit}>{criterionName(model, o.criterionId)}</strong>
-                    <span className={`tag ${o.kind === 'STRENGTH' ? 'tag--ok' : 'tag--warn'}`}>{o.kind === 'STRENGTH' ? 'mocna strona' : 'do rozwoju'}</span>
+                <li key={o.id} className="timeline__item">
+                  <span className="timeline__date num">{fmtDate(o.date)}</span>
+                  <div className="timeline__body">
+                    <div className="timeline__meta">
+                      <strong title={criterionName(model, o.criterionId)}>{criterionName(model, o.criterionId)}</strong>
+                      <span className={`tag ${o.kind === 'STRENGTH' ? 'tag--ok' : 'tag--warn'}`}>{o.kind === 'STRENGTH' ? 'mocna strona' : 'do rozwoju'}</span>
+                    </div>
+                    <dl className="sdr">
+                      {SDR.map(([k, label]) => (
+                        <Fragment key={k}>
+                          <dt>{label}</dt>
+                          <dd>{o[k]}</dd>
+                        </Fragment>
+                      ))}
+                    </dl>
                   </div>
-                  <dl className={css.sdr}>
-                    {SDR.map(([k, label]) => (
-                      <div key={k}>
-                        <dt>{label}</dt>
-                        <dd>{o[k]}</dd>
-                      </div>
-                    ))}
-                  </dl>
                 </li>
               ))}
             </ol>

@@ -1563,6 +1563,53 @@
   gap: 12px;
 }
 
+/* Observation journal (ObservationStage): a timeline, date on the left, criterion + tag, then S-D-R one under another */
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline__item {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.timeline__date {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.timeline__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  font-size: var(--text-sm);
+}
+
+.sdr {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 2px 8px;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.sdr dt {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  padding-top: 1px;
+}
+
+.sdr dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
 /* =========================================================
    Document stage
    ========================================================= */
@@ -2210,10 +2257,13 @@
    Long prose (justifications, notes, assistant answers, sheet) still wraps.
    ========================================================= */
 .topbar__brand,
+.timeline__meta,
 .result-strip,
 .sources__text {
   min-width: 0;
 }
+.timeline__meta strong,
+.timeline__date,
 .steps__date,
 .mini-table__name,
 .ctx-chip,
@@ -2234,6 +2284,11 @@
   flex: none;
 }
 
+.timeline__meta strong {
+  flex: 0 1 auto;
+}
+
+.timeline__meta .tag,
 .steps__date {
   flex: none;
 }
