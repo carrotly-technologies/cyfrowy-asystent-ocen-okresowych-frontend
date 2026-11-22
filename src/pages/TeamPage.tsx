@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { FolderOpen } from 'lucide-react'
-import { Link } from 'react-router'
-import { getTeam, type CaseSummary } from '../api/cases'
+import { getTeam, type CaseSummary, type Role } from '../api/cases'
+import { CaseActionLink } from '../components/CaseActionLink'
 import { DeadlineText } from '../components/Deadline'
 import { ErrorState, LoadingState } from '../components/QueryState'
 import { StageDots } from '../components/StageDots'
 import { ResultTable, ResultTableRow, type ResultTableColumn, type ResultTone } from '../components/ui'
 import { useMe } from '../lib/useAuth'
 import { countLabel, fmtDate } from '../lib/format'
-import { caseUrl, CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
+import { CASE_STATUS_LABEL, STAGE_SHORT } from '../lib/stages'
 
 export function TeamPage() {
   const team = useQuery({ queryKey: ['team'], queryFn: ({ signal }) => getTeam(signal) })
@@ -35,7 +34,7 @@ export function TeamPage() {
         </div>
         <ResultTable label="Pracownicy i ich oceny okresowe" columns={COLUMNS}>
           {cases.map((c) => (
-            <TeamRow key={c.id} c={c} />
+            <TeamRow key={c.id} c={c} role={me.role} />
           ))}
         </ResultTable>
       </section>
@@ -62,7 +61,7 @@ function statusOf(c: CaseSummary): { label: string; sub?: string; tone: ResultTo
   return { label, tone: 'ok' }
 }
 
-function TeamRow({ c }: { c: CaseSummary }) {
+function TeamRow({ c, role }: { c: CaseSummary; role: Role }) {
   const current = c.stages.find((s) => s.id === c.currentStage)
   const idx = c.stages.findIndex((s) => s.id === c.currentStage)
   const sheet = c.sheetId ? `arkusz ${c.sheetId}` : 'arkusz do ustalenia'
@@ -73,11 +72,7 @@ function TeamRow({ c }: { c: CaseSummary }) {
     <ResultTableRow
       to={`/zespol/${encodeURIComponent(c.person.id)}`}
       linkLabel={`Pokaż pracownika: ${name}`}
-      actions={
-        <Link to={caseUrl(c.id)} className="btn btn--sm" aria-label={`Teczka oceny: ${name}`}>
-          <FolderOpen size={15} aria-hidden="true" /> Teczka
-        </Link>
-      }
+      actions={<CaseActionLink caseId={c.id} status={c.status} role={role} name={name} small />}
       title={name}
       titleLabel={title}
       status={statusOf(c)}
