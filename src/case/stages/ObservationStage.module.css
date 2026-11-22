@@ -131,14 +131,6 @@
   margin-top: var(--s-2);
 }
 
-.journalTools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2);
-  min-width: 0;
-  max-width: 100%;
-}
 
 /* ---- Working notes and next step ---- */
 .notesBody textarea {

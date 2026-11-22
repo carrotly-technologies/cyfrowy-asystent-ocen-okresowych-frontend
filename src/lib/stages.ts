@@ -109,3 +109,13 @@ export function caseSteps(detail: Pick<CaseDetail, 'stages'>): CaseStep[] {
 export function stepTarget(step: CaseStep): StageId {
   return step.stages[0].id
 }
+
+/**
+ * Why the evaluator cannot add an observation now, or null when the journal is open. The journal stays open in the
+ * observation period and at the assessment talk (evidence is gathered right up to it) and closes once the assessment
+ * is signed. From the API (`observationsLock`); older responses fall back to the signature date.
+ */
+export function observationLockOf(detail: CaseDetail): string | null {
+  if (detail.observationsLock !== undefined) return detail.observationsLock
+  return detail.signedByEvaluatorOn ? 'Ocena została podpisana — dziennik obserwacji jest zamknięty.' : null
+}

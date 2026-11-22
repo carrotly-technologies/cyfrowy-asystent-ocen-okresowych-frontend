@@ -5,7 +5,8 @@ import type { Observation } from '../../api/cases'
 import { useAddObservation, useCaseAction, usePatchCase } from '../../lib/caseQueries'
 import { DEMO_TODAY, fmtDate } from '../../lib/format'
 import { criterionName } from '../../lib/model'
-import { allows, caseUrl } from '../../lib/stages'
+import { allows, caseUrl, observationLockOf } from '../../lib/stages'
+import { useMe } from '../../lib/useAuth'
 import type { StageProps } from '../CasePage'
 import { MutationError, StageHeader } from './common'
 import { DateInput, Disclosure } from '../../components/ui'
@@ -23,6 +24,10 @@ const empty = (crit: string): Omit<Observation, 'id'> => ({
 export function ObservationStage({ detail, model, criteria, stage }: StageProps) {
   const info = detail.stages.find((s) => s.id === stage)!
   const done = info.status === 'DONE'
+  const me = useMe()
+  const lock = observationLockOf(detail)
+  // Only the evaluator writes the journal; it is open until the assessment is signed, not just in this stage.
+  const canAdd = me.role === 'SUPERVISOR' && lock === null
   const add = useAddObservation(detail.id)
   const act = useCaseAction(detail.id)
   const navigate = useNavigate()
@@ -110,13 +115,13 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           <div>
             <div className={css.journalHead}>
               <h3 id="obs-journal" className="h-section">Dziennik obserwacji <span className="faint num">({detail.observations.length})</span></h3>
-              <div className={css.journalTools}>
-                {!done && (
-                  <button type="button" className="btn" onClick={() => setFormOpen((v) => !v)} aria-expanded={formOpen}>
-                    <Plus size={15} aria-hidden="true" /> Dodaj obserwację
-                  </button>
-                )}
-              </div>
+              {canAdd ? (
+                <button type="button" className="btn" onClick={() => setFormOpen((v) => !v)} aria-expanded={formOpen}>
+                  <Plus size={15} aria-hidden="true" /> Dodaj obserwację
+                </button>
+              ) : (
+                lock && me.role === 'SUPERVISOR' && <p className="small muted">{lock}</p>
+              )}
             </div>
             <p className={`small ${css.filterStatus}`} aria-live="polite">
               {filter && (
@@ -128,7 +133,7 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
             </p>
           </div>
 
-          {formOpen && (
+          {formOpen && canAdd && (
             <form className="obs-form panel" onSubmit={submit}>
               <div className="obs-form__row">
                 <label className="field">
@@ -172,7 +177,7 @@ export function ObservationStage({ detail, model, criteria, stage }: StageProps)
           )}
 
           {list.length === 0 ? (
-            <p className="muted">Brak obserwacji{filter ? ' dla tego kryterium' : ''}. Zapisuj je na bieżąco — po kilku miesiącach trudno odtworzyć szczegóły.</p>
+            <p className="muted">Brak obserwacji{filter ? ' dla tego kryterium' : ''}.{canAdd ? ' Zapisuj je na bieżąco — po kilku miesiącach trudno odtworzyć szczegóły.' : ''}</p>
           ) : (
             <ol className="timeline" aria-label="Obserwacje">
               {list.map((o) => (

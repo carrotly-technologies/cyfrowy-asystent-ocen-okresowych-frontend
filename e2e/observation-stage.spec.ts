@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { resetDemo, signIn, openAssistant } from './helpers.ts'
+import { apiPost, resetDemo, signIn, openAssistant } from './helpers.ts'
 
 /** Case c-003 (Michał Lewandowski, sheet B) in the observation period, supervisor j.kaminska (backend demo seed). */
 const CASE = 'c-003'
@@ -120,6 +120,31 @@ test('Okres obserwacji: jedna kolumna, tabela pokrycia filtruje dziennik, dzienn
   await expect(notes.getByText('Zapisano.')).toBeVisible()
 
   await expect(next.getByRole('button', { name: 'Zakończ obserwacje i przejdź do oceny' })).toBeEnabled()
+})
+
+test('Dziennik obserwacji otwarty na etapie oceny, zamknięty po podpisaniu oceny', async ({ page, request }) => {
+  await apiPost(request, SUPERVISOR, `/cases/${CASE}/actions`, { action: 'START_ASSESSMENT' })
+  await signIn(page, SUPERVISOR)
+
+  // From the assessment step a link leads back to the journal.
+  await page.goto(`/teczka/${CASE}`)
+  await page.getByRole('link', { name: 'Dodaj obserwację' }).click()
+  await expect(page).toHaveURL(/\/obserwacje/)
+
+  // The observation step is done, yet the evaluator still records evidence; no empty control in the journal head.
+  await expect(journal(page).getByRole('combobox')).toHaveCount(0)
+  const total = await cards(page).count()
+  await journal(page).getByRole('button', { name: 'Dodaj obserwację' }).click()
+  await page.getByLabel('Sytuacja').fill('Przygotowanie wizyty studyjnej.')
+  await page.getByLabel('Działanie').fill('Ustalił program z partnerem.')
+  await page.getByLabel('Rezultat').fill('Wizyta odbyła się zgodnie z planem.')
+  await page.getByRole('button', { name: 'Zapisz obserwację' }).click()
+  await expect(cards(page)).toHaveCount(total + 1)
+
+  // A signed assessment (c-006): the journal is closed, with the reason instead of the button.
+  await page.goto('/teczka/c-006/obserwacje')
+  await expect(journal(page).getByText(/dziennik obserwacji jest zamknięty/)).toBeVisible()
+  await expect(journal(page).getByRole('button', { name: 'Dodaj obserwację' })).toHaveCount(0)
 })
 
 for (const assistant of [false, true]) {
