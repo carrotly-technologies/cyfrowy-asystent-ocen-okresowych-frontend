@@ -945,10 +945,16 @@
   color: var(--text-secondary);
 }
 
-.deadline__date,
-.deadline__rel {
+.deadline__date {
   flex: none;
   white-space: nowrap;
+}
+
+/* "po terminie 30 dni" may wrap inside a narrow table cell instead of running into the next column. */
+.deadline__rel {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .deadline__date {
