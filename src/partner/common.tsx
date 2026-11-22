@@ -1,16 +1,8 @@
-import type { ReasonSource, Signal, SignalKind, SignalLevel, TrendKind } from '../api/partner'
-import { LEVEL_LABEL, LEVEL_TONE, SIGNAL_SHORT, TREND_LABEL, TREND_TONE } from './labels'
+import type { Signal, SignalKind, SignalLevel, TrendKind } from '../api/partner'
+import { LEVEL_LABEL, LEVEL_TONE, SIGNAL_SHORT, SOURCE_LABEL, TREND_LABEL, TREND_TONE } from './labels'
 import { Card, StatusBadge } from '../components/ui'
 import { fmtDate, fmtNumber } from '../lib/format'
 import s from './Partner.module.css'
-
-const SOURCE_LABEL: Record<ReasonSource, string> = {
-  PULSE: 'Puls',
-  JOURNAL: 'Obserwacje',
-  TASKS: 'Zadania',
-  SCOPE: 'Zakres obowiązków',
-  ABSENCE: 'Nieobecności',
-}
 
 export function SignalBadge({ kind, level }: { kind: SignalKind; level: SignalLevel }) {
   return <StatusBadge tone={LEVEL_TONE[level]}>{SIGNAL_SHORT[kind]}</StatusBadge>
