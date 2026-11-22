@@ -71,6 +71,7 @@
   --ok-bg: #eefae1;
   --ok-border: #b5dba0;
   --on-ok: #ffffff;
+  --ok-hover: #00602a; /* hover/focus of a green control (stage stepper); --on-ok on it >= 4.5:1 */
   --warn: #8a4a00;
   --warn-bg: #fdf1d2;
   --warn-border: #efd29a;
@@ -139,6 +140,7 @@
     --ok-bg: #16281a;
     --ok-border: #2e5a2e;
     --on-ok: #0c1f0d;
+    --ok-hover: #b4ecb0;
     --warn: #f1c46c;
     --warn-bg: #2d2410;
     --warn-border: #6a5019;
@@ -199,6 +201,7 @@
   --ok-bg: #16281a;
   --ok-border: #2e5a2e;
   --on-ok: #0c1f0d;
+  --ok-hover: #b4ecb0;
   --warn: #f1c46c;
   --warn-bg: #2d2410;
   --warn-border: #6a5019;
@@ -280,6 +283,7 @@
   --ok: #1d4a19;
   --ok-border: #4b8a43;
   --on-ok: #ffffff;
+  --ok-hover: #12330f;
   --warn: #5a3500;
   --warn-border: #9a6a14;
   --on-warn: #ffffff;
@@ -327,6 +331,7 @@
     --ok-bg: #0b1a0e;
     --ok-border: #5e9e5a;
     --on-ok: #000000;
+    --ok-hover: #d4f6d1;
     --warn: #ffd98a;
     --warn-bg: #1f1806;
     --warn-border: #a8853a;
@@ -381,6 +386,7 @@
   --ok-bg: #0b1a0e;
   --ok-border: #5e9e5a;
   --on-ok: #000000;
+  --ok-hover: #d4f6d1;
   --warn: #ffd98a;
   --warn-bg: #1f1806;
   --warn-border: #a8853a;
