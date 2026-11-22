@@ -331,10 +331,16 @@
   padding-right: calc(var(--tap) - var(--s-2));
 }
 
+/* The bar is as tall as the "i" tap target, which sits inside it (inside the 1px border), not over its edges. */
+.hintsWrap > details > summary {
+  box-sizing: border-box;
+  min-height: var(--tap);
+}
+
 .hintsInfo {
   position: absolute;
-  top: calc((1lh + 2 * var(--s-2) - var(--tap)) / 2);
-  right: 0;
+  top: var(--border-w, 1px);
+  right: var(--border-w, 1px);
   font-size: var(--text-sm);
 }
 
